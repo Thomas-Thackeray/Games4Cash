@@ -141,6 +141,18 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // ----------------------------------------------------------
+    //  Price slider — update display label in real time
+    // ----------------------------------------------------------
+    const priceSlider  = document.getElementById('price-slider');
+    const priceDisplay = document.getElementById('price-display');
+    if (priceSlider && priceDisplay) {
+        priceSlider.addEventListener('input', () => {
+            const val = priceSlider.value;
+            priceDisplay.textContent = val >= 60 ? '£60+' : '£' + val;
+        });
+    }
+
+    // ----------------------------------------------------------
     //  Back to top button – appears at 60% scroll depth
     // ----------------------------------------------------------
     const backToTop = document.getElementById('back-to-top');
