@@ -34,6 +34,20 @@ return [
         'PC'              => ['id' => 6,   'icon' => '💻', 'short' => 'PC'],
     ],
 
+    'franchises' => [
+        "Assassin's Creed" => 60,
+        'Battlefield'      => 83,
+        'Call of Duty'     => 77,
+        'Final Fantasy'    => 134,
+        'Grand Theft Auto' => 133,
+        'Halo'             => 87,
+        'Mario'            => 111,
+        'Need for Speed'   => 156,
+        'Pokémon'          => 165,
+        'Resident Evil'    => 130,
+        'The Legend of Zelda' => 82,
+    ],
+
     'genres' => [
         'Action'       => 14,
         'Adventure'    => 31,

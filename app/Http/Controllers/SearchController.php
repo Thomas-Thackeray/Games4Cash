@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\GamePrice;
 use App\Services\ActivityLogger;
 use App\Services\IgdbService;
 use App\Services\PriceSyncService;
@@ -12,23 +13,24 @@ class SearchController extends Controller
 {
     public function index(Request $request): View
     {
-        $query  = trim($request->input('q', ''));
-        $sort   = $request->input('sort', 'trending');
-        $page   = max(1, (int) $request->input('page', 1));
-        $limit  = 24;
-        $offset = ($page - 1) * $limit;
+        $query     = trim($request->input('q', ''));
+        $genre     = $request->input('genre', '');
+        $franchise = $request->input('franchise', '');
+        $maxPrice  = $request->input('max_price', '');
+        $page      = max(1, (int) $request->input('page', 1));
+        $limit     = 24;
+        $offset    = ($page - 1) * $limit;
 
         // Log only on page 1 to avoid pagination noise
         if ($page === 1) {
             if ($query !== '') {
                 ActivityLogger::search('Searched for "' . $query . '"', $request);
-            } elseif ($sort !== 'trending') {
-                $labels = [
-                    'top_rated' => 'Top Rated',
-                    'recent'    => 'New Releases',
-                    'upcoming'  => 'Upcoming',
-                ];
-                ActivityLogger::filter('Browsed games sorted by: ' . ($labels[$sort] ?? $sort), $request);
+            } elseif ($genre !== '') {
+                ActivityLogger::filter('Filtered by genre ID: ' . $genre, $request);
+            } elseif ($franchise !== '') {
+                ActivityLogger::filter('Filtered by franchise ID: ' . $franchise, $request);
+            } elseif ($maxPrice !== '') {
+                ActivityLogger::filter('Filtered by max price: £' . $maxPrice, $request);
             }
         }
 
@@ -40,13 +42,19 @@ class SearchController extends Controller
 
             if ($query !== '') {
                 $games = $igdb->searchGames($query, $limit, $offset);
+            } elseif ($genre !== '') {
+                $games = $igdb->getGamesByGenre((int) $genre, $limit, $offset);
+            } elseif ($franchise !== '') {
+                $games = $igdb->getGamesByFranchise((int) $franchise, $limit, $offset);
+            } elseif ($maxPrice !== '') {
+                $gameIds = GamePrice::where('steam_gbp', '<=', (float) $maxPrice)
+                    ->where('is_free', false)
+                    ->whereNotNull('steam_gbp')
+                    ->pluck('igdb_game_id')
+                    ->toArray();
+                $games = $igdb->getGamesByIds($gameIds, $limit, $offset);
             } else {
-                $games = match ($sort) {
-                    'top_rated' => $igdb->getTopRated($limit),
-                    'recent'    => $igdb->getRecentGames($limit),
-                    'upcoming'  => $igdb->getUpcomingGames($limit),
-                    default     => $igdb->getTrendingGames($limit),
-                };
+                $games = $igdb->getTrendingGames($limit);
             }
 
         } catch (\RuntimeException $e) {
@@ -55,6 +63,6 @@ class SearchController extends Controller
 
         PriceSyncService::ensureForGames($games);
 
-        return view('search', compact('games', 'query', 'sort', 'page', 'limit', 'error'));
+        return view('search', compact('games', 'query', 'genre', 'franchise', 'maxPrice', 'page', 'limit', 'error'));
     }
 }

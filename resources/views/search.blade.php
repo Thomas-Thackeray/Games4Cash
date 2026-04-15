@@ -8,7 +8,7 @@
 @else
 @section('meta_description', 'Browse thousands of games across every platform and genre. Check what your games are worth and get cash today.')
 @endif
-@section('canonical', route('search', array_filter(['q' => $query, 'sort' => ($sort !== 'trending' ? $sort : null)])))
+@section('canonical', route('search', array_filter(['q' => $query, 'genre' => $genre, 'franchise' => $franchise])))
 
 @section('content')
 
@@ -38,34 +38,35 @@
 <!-- ===== FILTER BAR ===== -->
 @if(!$query)
 <div class="container">
-    <div class="filter-bar">
-        <span class="filter-label">Sort by:</span>
-        <div class="filter-chips">
-            @php
-                $filters = [
-                    'trending'  => '🔥 Trending',
-                    'top_rated' => '⭐ Top Rated',
-                    'recent'    => '🆕 New Releases',
-                    'upcoming'  => '⏳ Upcoming',
-                ];
-            @endphp
-            @foreach($filters as $key => $label)
-            <a href="{{ route('search', ['sort' => $key]) }}"
-               class="chip {{ $sort === $key ? 'active' : '' }}">
-                {{ $label }}
-            </a>
+    <form class="filter-bar" method="GET" action="{{ route('search') }}" id="filter-form">
+        <select name="genre" class="filter-select" onchange="this.form.submit()">
+            <option value="">All Genres</option>
+            @foreach(config('igdb.genres') as $name => $id)
+            <option value="{{ $id }}" {{ $genre == $id ? 'selected' : '' }}>{{ $name }}</option>
             @endforeach
+        </select>
+
+        <select name="franchise" class="filter-select" onchange="this.form.submit()">
+            <option value="">All Franchises</option>
+            @foreach(config('igdb.franchises') as $name => $id)
+            <option value="{{ $id }}" {{ $franchise == $id ? 'selected' : '' }}>{{ $name }}</option>
+            @endforeach
+        </select>
+
+        <div class="filter-price">
+            <label class="filter-price__label">
+                Max Price: <strong id="price-display">£{{ $maxPrice ?: '60' }}{{ !$maxPrice ? '+' : '' }}</strong>
+            </label>
+            <input type="range" name="max_price" min="1" max="60" step="1"
+                   value="{{ $maxPrice ?: 60 }}"
+                   class="price-slider" id="price-slider">
+            <button type="submit" class="btn btn--sm btn--primary">Go</button>
         </div>
 
-        <span class="filter-label" style="margin-left:auto">Platform:</span>
-        <div class="filter-chips">
-            @foreach(config('igdb.platforms') as $pName => $pData)
-            <a href="{{ route('platform.show', ['id' => $pData['id'], 'name' => $pName]) }}" class="chip">
-                {{ $pData['short'] }}
-            </a>
-            @endforeach
-        </div>
-    </div>
+        @if($genre || $franchise || $maxPrice)
+        <a href="{{ route('search') }}" class="chip chip--clear">✕ Clear</a>
+        @endif
+    </form>
 </div>
 @endif
 
@@ -90,17 +91,20 @@
 
         <!-- Pagination -->
         @if(!$query)
+        @php
+            $pageParams = array_filter(['genre' => $genre, 'franchise' => $franchise, 'max_price' => $maxPrice]);
+        @endphp
         <div class="pagination">
             @if($page > 1)
-            <a href="{{ route('search', ['sort' => $sort, 'page' => $page - 1]) }}" class="page-btn">← Prev</a>
+            <a href="{{ route('search', array_merge($pageParams, ['page' => $page - 1])) }}" class="page-btn">← Prev</a>
             @endif
             @for($i = max(1, $page - 2); $i <= min(8, $page + 4); $i++)
-            <a href="{{ route('search', ['sort' => $sort, 'page' => $i]) }}"
+            <a href="{{ route('search', array_merge($pageParams, ['page' => $i])) }}"
                class="page-btn {{ $i === $page ? 'active' : '' }}">
                 {{ $i }}
             </a>
             @endfor
-            <a href="{{ route('search', ['sort' => $sort, 'page' => $page + 1]) }}" class="page-btn">Next →</a>
+            <a href="{{ route('search', array_merge($pageParams, ['page' => $page + 1])) }}" class="page-btn">Next →</a>
         </div>
         @elseif(count($games) === $limit)
         <div class="pagination">
