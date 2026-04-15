@@ -11,9 +11,6 @@
             <ul style="list-style:none; padding:0; display:flex; flex-direction:column; gap:0.5rem;">
                 <li><a href="{{ route('home') }}" style="color:var(--text-muted);">Home</a></li>
                 <li><a href="{{ route('search') }}" style="color:var(--text-muted);">Browse All Games</a></li>
-                <li><a href="{{ route('search', ['sort' => 'top_rated']) }}" style="color:var(--text-muted);">Top Rated</a></li>
-                <li><a href="{{ route('search', ['sort' => 'recent']) }}" style="color:var(--text-muted);">New Releases</a></li>
-                <li><a href="{{ route('search', ['sort' => 'upcoming']) }}" style="color:var(--text-muted);">Upcoming</a></li>
             </ul>
         </div>
 
