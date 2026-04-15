@@ -7,8 +7,26 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [1.0.2] — 2026-04-15
+
+### Added
+- SVG favicon using site diamond logo mark, with browser/SEO meta tags and theme-color
+- Search bar in mobile slide-out nav panel
+- Cache-busting timestamps on CSS and JS asset URLs to prevent stale file issues
+
+### Changed
+- Browse page: replaced sort-by chips (Trending/Top Rated/New Releases/Upcoming) with franchise dropdown filter
+- Franchise filter uses name-based IGDB search (reliable, no hardcoded IDs)
+- Removed Top Rated button from home page hero
+- Removed Discover section from footer and mobile menu
+
 ### Fixed
-- Mobile navigation hamburger menu not visible on screens ≤520px due to header search bar pushing nav-toggle off screen — hide search bar at that breakpoint
+- Register page surname field misaligned — settings `.form-group` separator rule was bleeding into auth forms
+- Franchise filter 500 error when switching back to All Franchises — Laravel `ConvertEmptyStringsToNull` middleware converting empty param to null
+- Browse page genre IDs — Action and Sports were both mapped to ID 14, Horror is a Theme not a Genre
+- Admin FAQ entries overflowing off screen on small screens
+- Mobile search bar invisible due to `overflow:hidden` clipping the input rendering
+- Email sending via Brevo HTTP API (DigitalOcean blocks SMTP port 587 on new accounts)
 
 ---
 
