@@ -8,7 +8,7 @@
 @else
 @section('meta_description', 'Browse thousands of games across every platform and genre. Check what your games are worth and get cash today.')
 @endif
-@section('canonical', route('search', array_filter(['q' => $query, 'genre' => $genre, 'franchise' => $franchise, 'min_price' => $minPrice, 'max_price' => $maxPrice])))
+@section('canonical', route('search', array_filter(['q' => $query, 'franchise' => $franchise])))
 
 @section('content')
 
@@ -39,13 +39,6 @@
 @if(!$query)
 <div class="container">
     <form class="filter-bar" method="GET" action="{{ route('search') }}" id="filter-form">
-        <select name="genre" class="filter-select" onchange="this.form.submit()">
-            <option value="">All Genres</option>
-            @foreach(config('igdb.genres') as $name => $id)
-            <option value="{{ $id }}" {{ $genre == $id ? 'selected' : '' }}>{{ $name }}</option>
-            @endforeach
-        </select>
-
         <select name="franchise" class="filter-select" onchange="this.form.submit()">
             <option value="">All Franchises</option>
             @foreach(config('igdb.franchises') as $name)
@@ -53,20 +46,7 @@
             @endforeach
         </select>
 
-        <div class="filter-price">
-            <span class="filter-price__label">
-                Price: <strong id="price-display">
-                    £{{ $minPrice ?: '0' }} – £{{ ($maxPrice && $maxPrice < 60) ? $maxPrice : '60+' }}
-                </strong>
-            </span>
-            <div class="dual-range">
-                <input type="range" name="min_price" id="range-min" min="0" max="60" step="1" value="{{ $minPrice ?: 0 }}">
-                <input type="range" name="max_price" id="range-max" min="0" max="60" step="1" value="{{ $maxPrice ?: 60 }}">
-            </div>
-            <button type="submit" class="btn btn--sm btn--primary">Go</button>
-        </div>
-
-        @if($genre || $franchise || $minPrice || $maxPrice)
+        @if($franchise)
         <a href="{{ route('search') }}" class="chip chip--clear">✕ Clear</a>
         @endif
     </form>
@@ -95,7 +75,7 @@
         <!-- Pagination -->
         @if(!$query)
         @php
-            $pageParams = array_filter(['genre' => $genre, 'franchise' => $franchise, 'min_price' => $minPrice, 'max_price' => $maxPrice]);
+            $pageParams = array_filter(['franchise' => $franchise]);
         @endphp
         <div class="pagination">
             @if($page > 1)
