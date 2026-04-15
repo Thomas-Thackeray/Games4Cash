@@ -199,7 +199,7 @@
 </footer>
 
 <nav class="mobile-nav" id="mobile-nav">
-    <form class="mobile-search" action="{{ route('search') }}" method="GET">
+    <form class="mobile-search" action="{{ route('search') }}" method="GET" style="width:100%;">
         <input type="search" name="q" placeholder="Search games…" class="mobile-search__input" autocomplete="off">
         <button type="submit" class="mobile-search__btn" aria-label="Search">⌕</button>
     </form>
@@ -231,11 +231,6 @@
     @foreach(config('igdb.genres') as $gName => $gId)
     <a href="{{ route('genre.show', ['id' => $gId, 'name' => $gName]) }}">{{ $gName }}</a>
     @endforeach
-    <span class="m-section-title">DISCOVER</span>
-    <a href="{{ route('search') }}">Browse All Games</a>
-    <a href="{{ route('search', ['sort' => 'top_rated']) }}">Top Rated</a>
-    <a href="{{ route('search', ['sort' => 'recent']) }}">New Releases</a>
-    <a href="{{ route('search', ['sort' => 'upcoming']) }}">Upcoming</a>
 </nav>
 
 <button id="back-to-top" aria-label="Back to top">↑</button>
