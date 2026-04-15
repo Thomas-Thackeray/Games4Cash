@@ -180,16 +180,7 @@
                     @endforeach
                 </ul>
             </div>
-            <div class="footer-col">
-                <h4 class="footer-heading">Discover</h4>
-                <ul>
-                    <li><a href="{{ route('search') }}">All Games</a></li>
-                    <li><a href="{{ route('search', ['sort' => 'top_rated']) }}">Top Rated</a></li>
-                    <li><a href="{{ route('search', ['sort' => 'recent']) }}">New Releases</a></li>
-                    <li><a href="{{ route('search', ['sort' => 'upcoming']) }}">Upcoming</a></li>
-                </ul>
-            </div>
-            <div class="footer-col">
+<div class="footer-col">
                 <h4 class="footer-heading">Company</h4>
                 <ul>
                     <li><a href="{{ route('about') }}">About Us</a></li>
