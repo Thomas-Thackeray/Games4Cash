@@ -27,9 +27,6 @@ class SitemapController extends Controller
         return [
             ['url' => route('home'),                                    'priority' => '1.0', 'freq' => 'daily',   'mod' => $now],
             ['url' => route('search'),                                  'priority' => '0.9', 'freq' => 'daily',   'mod' => $now],
-            ['url' => route('search', ['sort' => 'top_rated']),        'priority' => '0.8', 'freq' => 'daily',   'mod' => $now],
-            ['url' => route('search', ['sort' => 'recent']),           'priority' => '0.8', 'freq' => 'daily',   'mod' => $now],
-            ['url' => route('search', ['sort' => 'upcoming']),         'priority' => '0.7', 'freq' => 'weekly',  'mod' => $now],
             ['url' => route('about'),                                   'priority' => '0.5', 'freq' => 'monthly', 'mod' => $now],
             ['url' => route('faq'),                                     'priority' => '0.5', 'freq' => 'monthly', 'mod' => $now],
             ['url' => route('contact'),                                 'priority' => '0.4', 'freq' => 'yearly',  'mod' => $now],
@@ -80,7 +77,7 @@ class SitemapController extends Controller
         }
 
         return '<?xml version="1.0" encoding="UTF-8"?>'
-            . "\n<urlset xmlns=\"https://www.sitemaps.org/schemas/sitemap/0.9\">"
+            . "\n<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">"
             . $urls
             . "\n</urlset>";
     }
