@@ -176,11 +176,12 @@ class IgdbService
         return $this->query('games', $body);
     }
 
-    public function getGamesByFranchise(int $franchiseId, int $limit = 24, int $offset = 0): array
+    public function getGamesByFranchise(string $franchiseName, int $limit = 24, int $offset = 0): array
     {
+        $safe = addslashes($franchiseName);
         $body = "fields id,name,cover.image_id,rating,genres.name,platforms.id,first_release_date;
-                 where franchises = ({$franchiseId}) & cover != null & version_parent = null;
-                 sort rating_count desc;
+                 search \"{$safe}\";
+                 where cover != null & version_parent = null;
                  limit {$limit};
                  offset {$offset};";
         return $this->query('games', $body);
@@ -191,7 +192,8 @@ class IgdbService
         if (empty($ids)) {
             return [];
         }
-        $idList = implode(',', array_map('intval', array_slice($ids, $offset, $limit)));
+        $page   = array_slice($ids, $offset, $limit);
+        $idList = implode(',', array_map('intval', $page));
         if (empty($idList)) {
             return [];
         }

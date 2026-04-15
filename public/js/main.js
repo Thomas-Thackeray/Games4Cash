@@ -141,15 +141,24 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // ----------------------------------------------------------
-    //  Price slider — update display label in real time
+    //  Dual price range slider
     // ----------------------------------------------------------
-    const priceSlider  = document.getElementById('price-slider');
+    const rangeMin     = document.getElementById('range-min');
+    const rangeMax     = document.getElementById('range-max');
     const priceDisplay = document.getElementById('price-display');
-    if (priceSlider && priceDisplay) {
-        priceSlider.addEventListener('input', () => {
-            const val = priceSlider.value;
-            priceDisplay.textContent = val >= 60 ? '£60+' : '£' + val;
-        });
+
+    if (rangeMin && rangeMax && priceDisplay) {
+        function updatePriceDisplay() {
+            let min = parseInt(rangeMin.value);
+            let max = parseInt(rangeMax.value);
+            if (min > max) { rangeMin.value = max; min = max; }
+            if (max < min) { rangeMax.value = min; max = min; }
+            const maxLabel = max >= 60 ? '£60+' : '£' + max;
+            priceDisplay.innerHTML = '£' + min + ' – ' + maxLabel;
+        }
+        rangeMin.addEventListener('input', updatePriceDisplay);
+        rangeMax.addEventListener('input', updatePriceDisplay);
+        updatePriceDisplay();
     }
 
     // ----------------------------------------------------------
