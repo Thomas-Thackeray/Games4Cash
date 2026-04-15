@@ -1347,15 +1347,20 @@ h1,h2,h3,h4,h5,h6 { line-height: 1.2; }
 }
 .mobile-search__input {
     flex: 1;
-    background: none;
+    -webkit-appearance: none;
+    appearance: none;
+    background: transparent;
     border: none;
     color: var(--text);
     padding: 0.75rem 1rem;
     font-size: 1rem;
     font-family: 'Outfit', sans-serif;
     outline: none;
+    min-width: 0;
 }
-.mobile-search__input::placeholder { color: var(--text-dim); }
+.mobile-search__input::placeholder { color: var(--text-muted); }
+.mobile-search__input::-webkit-search-decoration,
+.mobile-search__input::-webkit-search-cancel-button { display: none; }
 .mobile-search__btn {
     background: var(--accent);
     border: none;
