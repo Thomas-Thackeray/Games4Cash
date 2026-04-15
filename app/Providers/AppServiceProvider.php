@@ -4,8 +4,10 @@ namespace App\Providers;
 
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
+use Symfony\Component\Mailer\Bridge\Brevo\Transport\BrevoApiTransport;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -34,6 +36,11 @@ class AppServiceProvider extends ServiceProvider
         if (env('SESSION_SECURE_COOKIE', false)) {
             ini_set('session.cookie_secure', '1');
         }
+
+        // Brevo HTTP API mail transport (bypasses SMTP port restrictions)
+        Mail::extend('brevo', function (array $config = []) {
+            return new BrevoApiTransport($config['key'] ?? config('services.brevo.key'));
+        });
 
         // Rate limiters for auth routes
         RateLimiter::for('login', function (Request $request) {
