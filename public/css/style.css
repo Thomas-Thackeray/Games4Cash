@@ -1337,7 +1337,6 @@ h1,h2,h3,h4,h5,h6 { line-height: 1.2; }
     background: var(--bg-card);
     border: 1px solid var(--border);
     border-radius: var(--radius);
-    overflow: hidden;
     margin-bottom: 1rem;
     transition: var(--transition);
 }
@@ -1364,6 +1363,7 @@ h1,h2,h3,h4,h5,h6 { line-height: 1.2; }
 .mobile-search__btn {
     background: var(--accent);
     border: none;
+    border-radius: 0 var(--radius) var(--radius) 0;
     color: #fff;
     padding: 0.75rem 1.1rem;
     font-size: 1.2rem;
@@ -1371,6 +1371,7 @@ h1,h2,h3,h4,h5,h6 { line-height: 1.2; }
     transition: var(--transition);
     display: flex;
     align-items: center;
+    flex-shrink: 0;
 }
 .mobile-search__btn:hover { background: var(--accent-2); }
 .mobile-nav a {
