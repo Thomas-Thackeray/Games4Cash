@@ -32,10 +32,16 @@
 
     @stack('head_meta')
 
+    {{-- Favicon --}}
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+    <link rel="icon" href="/favicon.ico" sizes="32x32">
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+    <meta name="theme-color" content="#080810">
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{{ asset('css/style.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/style.css') }}?v={{ filemtime(public_path('css/style.css')) }}">
 </head>
 <body>
 
@@ -174,16 +180,7 @@
                     @endforeach
                 </ul>
             </div>
-            <div class="footer-col">
-                <h4 class="footer-heading">Discover</h4>
-                <ul>
-                    <li><a href="{{ route('search') }}">All Games</a></li>
-                    <li><a href="{{ route('search', ['sort' => 'top_rated']) }}">Top Rated</a></li>
-                    <li><a href="{{ route('search', ['sort' => 'recent']) }}">New Releases</a></li>
-                    <li><a href="{{ route('search', ['sort' => 'upcoming']) }}">Upcoming</a></li>
-                </ul>
-            </div>
-            <div class="footer-col">
+<div class="footer-col">
                 <h4 class="footer-heading">Company</h4>
                 <ul>
                     <li><a href="{{ route('about') }}">About Us</a></li>
@@ -202,6 +199,10 @@
 </footer>
 
 <nav class="mobile-nav" id="mobile-nav">
+    <form class="mobile-search" action="{{ route('search') }}" method="GET" style="width:100%;">
+        <input type="search" name="q" placeholder="Search games…" class="mobile-search__input" autocomplete="off">
+        <button type="submit" class="mobile-search__btn" aria-label="Search">⌕</button>
+    </form>
     <a href="{{ route('home') }}">🏠 Home</a>
     <span class="m-section-title">ACCOUNT</span>
     @auth
@@ -230,11 +231,6 @@
     @foreach(config('igdb.genres') as $gName => $gId)
     <a href="{{ route('genre.show', ['id' => $gId, 'name' => $gName]) }}">{{ $gName }}</a>
     @endforeach
-    <span class="m-section-title">DISCOVER</span>
-    <a href="{{ route('search') }}">Browse All Games</a>
-    <a href="{{ route('search', ['sort' => 'top_rated']) }}">Top Rated</a>
-    <a href="{{ route('search', ['sort' => 'recent']) }}">New Releases</a>
-    <a href="{{ route('search', ['sort' => 'upcoming']) }}">Upcoming</a>
 </nav>
 
 <button id="back-to-top" aria-label="Back to top">↑</button>
@@ -276,7 +272,7 @@
 </div>
 <div id="cash-dropdown-backdrop" class="cash-dropdown-backdrop" hidden></div>
 
-<script src="{{ asset('js/main.js') }}"></script>
+<script src="{{ asset('js/main.js') }}?v={{ filemtime(public_path('js/main.js')) }}"></script>
 <script>
 (function () {
     if (!localStorage.getItem('cookies_accepted')) {
