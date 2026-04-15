@@ -1331,6 +1331,36 @@ h1,h2,h3,h4,h5,h6 { line-height: 1.2; }
     gap: 0.5rem;
 }
 .mobile-nav.open { display: flex; }
+.mobile-search {
+    display: flex;
+    align-items: center;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    margin-bottom: 0.5rem;
+}
+.mobile-search__input {
+    flex: 1;
+    background: none;
+    border: none;
+    color: var(--text);
+    padding: 0.65rem 1rem;
+    font-size: 1rem;
+    font-family: 'Outfit', sans-serif;
+    outline: none;
+}
+.mobile-search__input::placeholder { color: var(--text-muted); }
+.mobile-search__btn {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    padding: 0.65rem 1rem;
+    font-size: 1.2rem;
+    cursor: pointer;
+    transition: var(--transition);
+}
+.mobile-search__btn:hover { color: var(--accent); }
 .mobile-nav a {
     padding: 0.8rem 1rem;
     border-radius: var(--radius);

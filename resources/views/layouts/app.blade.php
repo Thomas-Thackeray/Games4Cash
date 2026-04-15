@@ -208,6 +208,10 @@
 </footer>
 
 <nav class="mobile-nav" id="mobile-nav">
+    <form class="mobile-search" action="{{ route('search') }}" method="GET">
+        <input type="search" name="q" placeholder="Search games…" class="mobile-search__input" autocomplete="off">
+        <button type="submit" class="mobile-search__btn" aria-label="Search">⌕</button>
+    </form>
     <a href="{{ route('home') }}">🏠 Home</a>
     <span class="m-section-title">ACCOUNT</span>
     @auth
