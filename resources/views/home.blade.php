@@ -23,7 +23,6 @@
             </p>
             <div class="hero__actions">
                 <a href="{{ route('search') }}" class="btn btn--primary">💰 See What Your Games Are Worth</a>
-                <a href="{{ route('search', ['sort' => 'top_rated']) }}" class="btn btn--outline">⭐ Top Rated</a>
             </div>
         </div>
     </div>
