@@ -31,12 +31,12 @@
                 <h2 class="admin-section__title">{{ $faqs->count() }} {{ $faqs->count() === 1 ? 'Entry' : 'Entries' }}</h2>
                 <div style="display:flex; flex-direction:column; gap:0.75rem;">
                     @foreach($faqs as $faq)
-                    <div class="account-card" style="display:flex; align-items:flex-start; gap:1rem; padding:1rem 1.25rem;">
-                        <div style="flex:1; min-width:0;">
-                            <p style="font-weight:600; color:var(--text); margin-bottom:0.25rem;">{{ $faq->title }}</p>
-                            <p style="color:var(--text-muted); font-size:0.875rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ $faq->description }}</p>
+                    <div class="account-card" style="display:flex; align-items:flex-start; gap:0.75rem 1rem; padding:1rem 1.25rem; flex-wrap:wrap;">
+                        <div style="flex:1; min-width:200px;">
+                            <p style="font-weight:600; color:var(--text); margin-bottom:0.25rem; word-break:break-word;">{{ $faq->title }}</p>
+                            <p style="color:var(--text-muted); font-size:0.875rem; overflow:hidden; text-overflow:ellipsis; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;">{{ $faq->description }}</p>
                         </div>
-                        <div style="display:flex; gap:0.5rem; flex-shrink:0;">
+                        <div style="display:flex; gap:0.5rem; flex-shrink:0; align-self:center;">
                             <a href="{{ route('admin.faqs.edit', $faq->id) }}" class="btn btn--outline btn--sm">Edit</a>
                             <form method="POST" action="{{ route('admin.faqs.destroy', $faq->id) }}">
                                 @csrf
