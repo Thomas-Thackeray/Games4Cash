@@ -36,7 +36,7 @@ return [
 
     // Franchise names used for name-based IGDB search (no IDs needed)
     'franchises' => [
-        "Assassin's Creed",
+        'Assassins Creed',
         'Battlefield',
         'Call of Duty',
         'FIFA',
