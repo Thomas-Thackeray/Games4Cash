@@ -12,7 +12,7 @@ class SearchController extends Controller
 {
     public function index(Request $request): View
     {
-        $query     = trim($request->input('q', ''));
+        $query     = trim($request->input('q') ?? '');
         $franchise = $request->input('franchise') ?? '';
         $page      = max(1, (int) $request->input('page', 1));
         $limit     = 24;
