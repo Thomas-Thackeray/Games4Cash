@@ -11,7 +11,7 @@
     $franchiseNames = array_column($game['franchises'] ?? [], 'name');
 
     $gamePrice = \App\Models\GamePrice::where('igdb_game_id', $cardId)->first();
-    $pricing   = $gamePrice?->getComputedPrice($franchiseNames);
+    $pricing   = $gamePrice?->getComputedPrice($franchiseNames, $name);
 
     // Don't show free-to-play games in the actions bar
     if ($pricing && $pricing['is_free']) {
@@ -27,7 +27,7 @@
             if (! isset($allPlatforms[$pid])) {
                 continue;
             }
-            $p = $gamePrice->getComputedPriceForPlatform((int) $pid, $franchiseNames);
+            $p = $gamePrice->getComputedPriceForPlatform((int) $pid, $franchiseNames, $name);
             if ($p && ! $p['is_free']) {
                 $platformsData[] = [
                     'id'           => (int) $pid,

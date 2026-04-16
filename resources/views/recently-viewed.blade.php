@@ -38,7 +38,7 @@
 
             // Pricing & cash dropdown data from DB
             $gamePrice   = \App\Models\GamePrice::where('igdb_game_id', $gameId)->first();
-            $pricing     = $gamePrice?->getComputedPrice($franchiseNames);
+            $pricing     = $gamePrice?->getComputedPrice($franchiseNames, $name);
             if ($pricing && $pricing['is_free']) { $pricing = null; }
 
             $platformsData = [];
@@ -46,7 +46,7 @@
                 $platformIds = json_decode($gamePrice->platform_ids ?? '[]', true);
                 foreach ($platformIds as $pid) {
                     if (!isset($allPlatforms[$pid])) continue;
-                    $p = $gamePrice->getComputedPriceForPlatform((int) $pid, $franchiseNames);
+                    $p = $gamePrice->getComputedPriceForPlatform((int) $pid, $franchiseNames, $name);
                     if ($p && !$p['is_free']) {
                         $platformsData[] = [
                             'id'           => (int) $pid,

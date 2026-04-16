@@ -169,7 +169,7 @@
                     foreach ($platforms as $__p) {
                         $__pid = $__p['id'] ?? null;
                         if (! $__pid || ! isset($__allP[$__pid]) || ! $gamePrice) continue;
-                        $__pp = $gamePrice->getComputedPriceForPlatform((int) $__pid, $franchiseNames);
+                        $__pp = $gamePrice->getComputedPriceForPlatform((int) $__pid, $franchiseNames, $game['name'] ?? null);
                         if ($__pp && ! $__pp['is_free']) {
                             $__pd[] = ['id' => $__pid, 'name' => $__allP[$__pid], 'price' => number_format($__pp['price_numeric'], 2)];
                         }
