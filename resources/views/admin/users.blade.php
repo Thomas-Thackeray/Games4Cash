@@ -29,8 +29,8 @@
         @endif
     </form>
 
-    {{-- Table --}}
-    <div class="admin-table-wrap">
+    {{-- Table (hidden on mobile) --}}
+    <div class="admin-table-wrap admin-table-wrap--desktop-only">
         <table class="admin-table">
             <thead>
                 <tr>
@@ -100,6 +100,51 @@
                 @endforelse
             </tbody>
         </table>
+    </div>
+
+    {{-- Mobile cards --}}
+    <div class="admin-mobile-cards">
+        @forelse($users as $u)
+        <div class="admin-mobile-card">
+            <div class="admin-mobile-card__header">
+                <div style="display:flex; align-items:center; gap:0.65rem;">
+                    <div class="admin-user-avatar">{{ strtoupper(substr($u->username, 0, 1)) }}</div>
+                    <div>
+                        <div class="admin-mobile-card__title">{{ $u->first_name }} {{ $u->surname }}</div>
+                        <div class="admin-mobile-card__sub">&#64;{{ $u->username }}</div>
+                    </div>
+                </div>
+                @if($u->force_password_reset)
+                <span class="admin-badge admin-badge--warning">Reset Pending</span>
+                @else
+                <span class="admin-badge admin-badge--ok">Active</span>
+                @endif
+            </div>
+            <div class="admin-mobile-card__meta">
+                <span>{{ $u->email }}</span>
+                <span>Joined {{ $u->created_at->format('d M Y') }}</span>
+                <span>Active {{ $u->last_active_at ? $u->last_active_at->diffForHumans() : 'never' }}</span>
+            </div>
+            <div class="admin-mobile-card__actions">
+                <a href="{{ route('admin.users.detail', $u->id) }}" class="btn btn--outline btn--xs">View</a>
+                @unless($u->force_password_reset)
+                <form method="POST" action="{{ route('admin.users.force-reset', $u->id) }}">
+                    @csrf
+                    <button type="submit" class="btn btn--outline btn--xs"
+                        data-confirm="Force this user to reset their password?">Force Reset</button>
+                </form>
+                @endunless
+                <form method="POST" action="{{ route('admin.users.delete', $u->id) }}">
+                    @csrf
+                    @method('DELETE')
+                    <button type="submit" class="btn btn--danger btn--xs"
+                        data-confirm="Permanently delete the account for {{ $u->username }}?">Delete</button>
+                </form>
+            </div>
+        </div>
+        @empty
+        <p style="color:var(--text-dim); text-align:center; padding:2rem 0;">No users found.</p>
+        @endforelse
     </div>
 
     {{-- Pagination --}}
