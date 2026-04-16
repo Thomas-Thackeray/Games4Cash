@@ -21,11 +21,13 @@ class PlatformController extends Controller
         $error        = null;
         $platformName = html_entity_decode($name, ENT_QUOTES | ENT_HTML5, 'UTF-8');
 
-        // Find matching icon from config
-        $platformIcon = '🎮';
+        // Find matching config entry by ID
+        $platformIcon   = '🎮';
+        $platformConfig = [];
         foreach (config('igdb.platforms') as $pName => $data) {
             if ($data['id'] === $id) {
-                $platformIcon = $data['icon'];
+                $platformIcon   = $data['icon'];
+                $platformConfig = $data;
                 break;
             }
         }
@@ -46,7 +48,7 @@ class PlatformController extends Controller
 
         return view('platform', compact(
             'games', 'platform', 'error', 'id',
-            'platformName', 'platformIcon', 'page', 'limit'
+            'platformName', 'platformIcon', 'platformConfig', 'page', 'limit'
         ));
     }
 }

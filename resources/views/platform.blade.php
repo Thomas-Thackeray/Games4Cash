@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
-@section('title', $platformName . ' Games')
-@section('meta_description', 'Browse ' . $platformName . ' games, check what they\'re worth, and get cash for your collection. Free pickup, fast quotes.')
+@section('title', $platformName . ' Games — Sell for Cash')
+@section('meta_description', $platformConfig['meta'] ?? 'Browse ' . $platformName . ' games, check what they\'re worth, and get cash for your collection. Free pickup, fast quotes.')
 @section('canonical', route('platform.show', ['id' => $id, 'name' => $platformName]))
 
 @section('content')
@@ -16,8 +16,12 @@
                     Platform
                 </p>
                 <h1 class="section-title">{{ $platformName }}</h1>
-                @if(!empty($platform['summary']))
-                <p style="color:var(--text-muted); max-width:600px; margin-top:0.75rem; font-size:0.95rem; line-height:1.7;">
+                @if(!empty($platformConfig['desc']))
+                <p style="color:var(--text-muted); max-width:620px; margin-top:0.75rem; font-size:0.95rem; line-height:1.7;">
+                    {{ $platformConfig['desc'] }}
+                </p>
+                @elseif(!empty($platform['summary']))
+                <p style="color:var(--text-muted); max-width:620px; margin-top:0.75rem; font-size:0.95rem; line-height:1.7;">
                     {{ e(truncate_text($platform['summary'], 200)) }}
                 </p>
                 @endif
