@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\BlogPost;
+use App\Models\Setting;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -11,9 +12,21 @@ class AdminBlogController extends Controller
 {
     public function index(): View
     {
-        $posts = BlogPost::latest('created_at')->paginate(20);
+        $posts       = BlogPost::latest('created_at')->paginate(20);
+        $blogVisible = (bool) Setting::get('blog_visible', true);
 
-        return view('admin.blog.index', compact('posts'));
+        return view('admin.blog.index', compact('posts', 'blogVisible'));
+    }
+
+    public function toggleVisibility(): RedirectResponse
+    {
+        $current = (bool) Setting::get('blog_visible', true);
+        Setting::set('blog_visible', $current ? '0' : '1');
+
+        $label = $current ? 'hidden from visitors' : 'visible to visitors';
+
+        return redirect()->route('admin.blog.index')
+                         ->with('flash_success', 'Blog is now ' . $label . '.');
     }
 
     public function create(): View

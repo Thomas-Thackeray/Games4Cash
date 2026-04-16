@@ -3,12 +3,15 @@
 namespace App\Http\Controllers;
 
 use App\Models\BlogPost;
+use App\Models\Setting;
 use Illuminate\View\View;
 
 class BlogController extends Controller
 {
     public function index(): View
     {
+        abort_unless((bool) Setting::get('blog_visible', true), 404);
+
         $posts = BlogPost::published()
                          ->latest('published_at')
                          ->paginate(9);
@@ -18,6 +21,8 @@ class BlogController extends Controller
 
     public function show(string $slug): View
     {
+        abort_unless((bool) Setting::get('blog_visible', true), 404);
+
         $post = BlogPost::published()
                         ->where('slug', $slug)
                         ->firstOrFail();

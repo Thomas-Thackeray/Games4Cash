@@ -10,7 +10,9 @@
             <p class="admin-subtitle"><a href="{{ route('admin.dashboard') }}" style="color:var(--accent);">← Dashboard</a></p>
         </div>
         <div style="display:flex;gap:0.75rem;align-items:center;">
+            @if($blogVisible)
             <a href="{{ route('blog.index') }}" target="_blank" class="btn btn--outline btn--sm">View Blog ↗</a>
+            @endif
             <a href="{{ route('admin.blog.create') }}" class="btn btn--primary btn--sm">+ New Post</a>
         </div>
     </div>
@@ -18,6 +20,31 @@
     @if(session('flash_success'))
     <div class="alert alert--success" style="margin-bottom:1.5rem;">{{ session('flash_success') }}</div>
     @endif
+
+    {{-- Visibility toggle --}}
+    <div class="admin-section" style="margin-bottom:1.75rem;">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap;">
+            <div>
+                <h2 class="admin-section__title" style="margin-bottom:0.2rem;">Blog Visibility</h2>
+                <p style="font-size:0.875rem;color:var(--text-muted);margin:0;">
+                    @if($blogVisible)
+                    The blog is currently <strong style="color:#4ade80;">visible</strong> to all visitors.
+                    @else
+                    The blog is currently <strong style="color:var(--accent);">hidden</strong> from all visitors. Existing post URLs return 404.
+                    @endif
+                </p>
+            </div>
+            <form method="POST" action="{{ route('admin.blog.toggle-visibility') }}">
+                @csrf
+                <button type="submit"
+                    class="btn btn--sm {{ $blogVisible ? 'btn--outline' : 'btn--primary' }}"
+                    style="{{ $blogVisible ? 'color:var(--accent);border-color:rgba(230,57,70,0.4);' : '' }}"
+                    data-confirm="{{ $blogVisible ? 'Hide the blog from all visitors?' : 'Make the blog visible to all visitors?' }}">
+                    {{ $blogVisible ? 'Hide Blog' : 'Show Blog' }}
+                </button>
+            </form>
+        </div>
+    </div>
 
     @if($posts->isEmpty())
     <div class="empty-state" style="padding:4rem 0;">

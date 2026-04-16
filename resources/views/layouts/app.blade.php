@@ -81,9 +81,11 @@
                 <li class="nav-item">
                     <a href="{{ route('search') }}" class="nav-link {{ ($activePage ?? '') === 'search' ? 'active' : '' }}">Browse</a>
                 </li>
+                @if(\App\Models\Setting::get('blog_visible', true))
                 <li class="nav-item">
                     <a href="{{ route('blog.index') }}" class="nav-link {{ ($activePage ?? '') === 'blog' ? 'active' : '' }}">Blog</a>
                 </li>
+                @endif
             </ul>
         </nav>
 

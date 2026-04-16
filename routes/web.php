@@ -156,6 +156,7 @@ Route::middleware(['auth', 'track.active', 'admin'])->prefix('admin')->name('adm
 
     // Blog management
     Route::get('/blog', [AdminBlogController::class, 'index'])->name('blog.index');
+    Route::post('/blog/toggle-visibility', [AdminBlogController::class, 'toggleVisibility'])->name('blog.toggle-visibility');
     Route::get('/blog/create', [AdminBlogController::class, 'create'])->name('blog.create');
     Route::post('/blog', [AdminBlogController::class, 'store'])->name('blog.store');
     Route::get('/blog/{id}/edit', [AdminBlogController::class, 'edit'])->name('blog.edit')->where('id', '[0-9]+');
