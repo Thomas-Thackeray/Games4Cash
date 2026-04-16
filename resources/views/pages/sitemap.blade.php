@@ -38,6 +38,7 @@
                 <li><a href="{{ route('about') }}" style="color:var(--text-muted);">About Us</a></li>
                 <li><a href="{{ route('contact') }}" style="color:var(--text-muted);">Contact Us</a></li>
                 <li><a href="{{ route('faq') }}" style="color:var(--text-muted);">FAQ</a></li>
+                <li><a href="{{ route('blog.index') }}" style="color:var(--text-muted);">Blog</a></li>
                 <li><a href="{{ route('terms') }}" style="color:var(--text-muted);">Terms &amp; Conditions</a></li>
                 <li><a href="{{ route('privacy') }}" style="color:var(--text-muted);">Privacy Policy</a></li>
             </ul>

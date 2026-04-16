@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\BlogPost;
 use Illuminate\Http\Response;
 
 class SitemapController extends Controller
@@ -11,6 +12,7 @@ class SitemapController extends Controller
         $pages = $this->staticPages();
         $pages = array_merge($pages, $this->platformPages());
         $pages = array_merge($pages, $this->genrePages());
+        $pages = array_merge($pages, $this->blogPages());
 
         $xml = $this->buildXml($pages);
 
@@ -60,6 +62,28 @@ class SitemapController extends Controller
                 'mod'      => now()->toAtomString(),
             ];
         }
+        return $pages;
+    }
+
+    private function blogPages(): array
+    {
+        $pages   = [];
+        $pages[] = [
+            'url'      => route('blog.index'),
+            'priority' => '0.7',
+            'freq'     => 'weekly',
+            'mod'      => now()->toAtomString(),
+        ];
+
+        BlogPost::published()->latest('published_at')->each(function (BlogPost $post) use (&$pages) {
+            $pages[] = [
+                'url'      => route('blog.show', $post->slug),
+                'priority' => '0.6',
+                'freq'     => 'monthly',
+                'mod'      => $post->updated_at->toAtomString(),
+            ];
+        });
+
         return $pages;
     }
 

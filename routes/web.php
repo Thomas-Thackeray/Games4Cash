@@ -1,7 +1,9 @@
 <?php
 
+use App\Http\Controllers\AdminBlogController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AdminFaqController;
+use App\Http\Controllers\BlogController;
 use App\Http\Controllers\PasswordResetController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CashBasketController;
@@ -151,7 +153,19 @@ Route::middleware(['auth', 'track.active', 'admin'])->prefix('admin')->name('adm
     Route::get('/faqs/{id}/edit', [AdminFaqController::class, 'edit'])->name('faqs.edit')->where('id', '[0-9]+');
     Route::patch('/faqs/{id}', [AdminFaqController::class, 'update'])->name('faqs.update')->where('id', '[0-9]+');
     Route::delete('/faqs/{id}', [AdminFaqController::class, 'destroy'])->name('faqs.destroy')->where('id', '[0-9]+');
+
+    // Blog management
+    Route::get('/blog', [AdminBlogController::class, 'index'])->name('blog.index');
+    Route::get('/blog/create', [AdminBlogController::class, 'create'])->name('blog.create');
+    Route::post('/blog', [AdminBlogController::class, 'store'])->name('blog.store');
+    Route::get('/blog/{id}/edit', [AdminBlogController::class, 'edit'])->name('blog.edit')->where('id', '[0-9]+');
+    Route::patch('/blog/{id}', [AdminBlogController::class, 'update'])->name('blog.update')->where('id', '[0-9]+');
+    Route::delete('/blog/{id}', [AdminBlogController::class, 'destroy'])->name('blog.destroy')->where('id', '[0-9]+');
 });
+
+// Blog
+Route::get('/blog', [BlogController::class, 'index'])->name('blog.index');
+Route::get('/blog/{slug}', [BlogController::class, 'show'])->name('blog.show');
 
 // Static pages
 Route::view('/about', 'pages.about')->name('about');

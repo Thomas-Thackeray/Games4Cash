@@ -81,6 +81,9 @@
                 <li class="nav-item">
                     <a href="{{ route('search') }}" class="nav-link {{ ($activePage ?? '') === 'search' ? 'active' : '' }}">Browse</a>
                 </li>
+                <li class="nav-item">
+                    <a href="{{ route('blog.index') }}" class="nav-link {{ ($activePage ?? '') === 'blog' ? 'active' : '' }}">Blog</a>
+                </li>
             </ul>
         </nav>
 
