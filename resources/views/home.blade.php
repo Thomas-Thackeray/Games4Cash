@@ -32,7 +32,7 @@
 <div class="container">
     <div class="platform-strip">
         @foreach(config('igdb.platforms') as $pName => $pData)
-        <a href="{{ route('platform.show', ['id' => $pData['id'], 'name' => $pName]) }}" class="platform-pill">
+        <a href="{{ route('platform.show', ['id' => $pData['id'], 'name' => $pData['slug'] ?? $pName]) }}" class="platform-pill">
             <span class="icon">{{ $pData['icon'] }}</span>
             {{ $pName }}
         </a>

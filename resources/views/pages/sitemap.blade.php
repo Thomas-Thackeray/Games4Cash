@@ -18,7 +18,7 @@
             <h3 style="font-size:1.1rem; margin-bottom:1rem; color:var(--accent);">Platforms</h3>
             <ul style="list-style:none; padding:0; display:flex; flex-direction:column; gap:0.5rem;">
                 @foreach(config('igdb.platforms') as $pName => $pData)
-                <li><a href="{{ route('platform.show', ['id' => $pData['id'], 'name' => $pName]) }}" style="color:var(--text-muted);">{{ $pName }}</a></li>
+                <li><a href="{{ route('platform.show', ['id' => $pData['id'], 'name' => $pData['slug'] ?? $pName]) }}" style="color:var(--text-muted);">{{ $pName }}</a></li>
                 @endforeach
             </ul>
         </div>

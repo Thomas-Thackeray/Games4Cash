@@ -23,10 +23,12 @@ class PlatformController extends Controller
 
         // Find matching config entry by ID
         $platformIcon   = '🎮';
+        $platformSlug   = $name; // fallback to whatever came in the URL
         $platformConfig = [];
         foreach (config('igdb.platforms') as $pName => $data) {
             if ($data['id'] === $id) {
                 $platformIcon   = $data['icon'];
+                $platformSlug   = $data['slug'] ?? $pName;
                 $platformConfig = $data;
                 break;
             }
@@ -48,7 +50,7 @@ class PlatformController extends Controller
 
         return view('platform', compact(
             'games', 'platform', 'error', 'id',
-            'platformName', 'platformIcon', 'platformConfig', 'page', 'limit'
+            'platformName', 'platformIcon', 'platformConfig', 'platformSlug', 'page', 'limit'
         ));
     }
 }

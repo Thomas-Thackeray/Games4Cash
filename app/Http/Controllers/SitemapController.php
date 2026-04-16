@@ -40,7 +40,7 @@ class SitemapController extends Controller
         $pages = [];
         foreach (config('igdb.platforms', []) as $name => $data) {
             $pages[] = [
-                'url'      => route('platform.show', ['id' => $data['id'], 'name' => $name]),
+                'url'      => route('platform.show', ['id' => $data['id'], 'name' => $data['slug'] ?? $name]),
                 'priority' => '0.8',
                 'freq'     => 'weekly',
                 'mod'      => now()->toAtomString(),

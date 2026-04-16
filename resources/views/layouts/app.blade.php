@@ -61,7 +61,7 @@
                     <a href="#" class="nav-link">Platforms <span class="chevron">▾</span></a>
                     <div class="dropdown">
                         @foreach(config('igdb.platforms') as $pName => $pData)
-                        <a href="{{ route('platform.show', ['id' => $pData['id'], 'name' => $pName]) }}" class="dropdown-item">
+                        <a href="{{ route('platform.show', ['id' => $pData['id'], 'name' => $pData['slug'] ?? $pName]) }}" class="dropdown-item">
                             <span class="di-icon">{{ $pData['icon'] }}</span>
                             {{ $pName }}
                         </a>
@@ -169,7 +169,7 @@
                 <h4 class="footer-heading">Platforms</h4>
                 <ul>
                     @foreach(config('igdb.platforms') as $pName => $pData)
-                    <li><a href="{{ route('platform.show', ['id' => $pData['id'], 'name' => $pName]) }}">{{ $pName }}</a></li>
+                    <li><a href="{{ route('platform.show', ['id' => $pData['id'], 'name' => $pData['slug'] ?? $pName]) }}">{{ $pName }}</a></li>
                     @endforeach
                 </ul>
             </div>
@@ -227,7 +227,7 @@
     @endauth
     <span class="m-section-title">PLATFORMS</span>
     @foreach(config('igdb.platforms') as $pName => $pData)
-    <a href="{{ route('platform.show', ['id' => $pData['id'], 'name' => $pName]) }}">{{ $pData['icon'] }} {{ $pName }}</a>
+    <a href="{{ route('platform.show', ['id' => $pData['id'], 'name' => $pData['slug'] ?? $pName]) }}">{{ $pData['icon'] }} {{ $pName }}</a>
     @endforeach
     <span class="m-section-title">GENRES</span>
     @foreach(config('igdb.genres') as $gName => $gId)
