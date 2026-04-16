@@ -56,8 +56,8 @@
                     A percentage adjustment is applied based on the console.
                     A positive % increases the offer (e.g. PS5 games may be worth more);
                     a negative % reduces it. Set to 0 to leave a platform's price unchanged.
-                    On the game detail page each platform shows its own adjusted price in the Get Cash dropdown.
-                    For multi-platform game cards the most favourable modifier is used.
+                    Each console is listed individually in the Get Cash dropdown with its own adjusted price —
+                    so Xbox, Xbox 360, and Xbox One will each show a different offer if their modifiers differ.
                 </p>
             </div>
 
@@ -127,7 +127,7 @@
 
                 <div class="form-group">
                     <label class="form-label">Discount Applied to Prices (%)</label>
-                    <p class="settings-hint">The historical low (converted to GBP) is reduced by this percentage before display. Falls back to Steam price if unavailable.</p>
+                    <p class="settings-hint">The Steam price (or CheapShark historical low if no Steam data) is reduced by this percentage to produce the cash offer.</p>
                     <div class="settings-input-row">
                         <input type="number" name="pricing_discount_percent"
                             value="{{ old('pricing_discount_percent', $settings['pricing_discount_percent']) }}"
@@ -209,8 +209,9 @@
         <div class="settings-card settings-card--wide" style="margin-top:1.5rem;">
             <h2 class="settings-card__title">Console Price Modifiers</h2>
             <p class="settings-hint" style="margin-bottom:1.5rem;">
-                Adjust the final price up or down based on the console. Positive % increases the price; negative % reduces it.
-                For multi-platform games the most favourable modifier is applied.
+                Each console has its own modifier. Positive % increases the cash offer; negative % reduces it.
+                In the Get Cash dropdown, every console is listed separately with its own adjusted price —
+                Xbox, Xbox 360, and Xbox One will each show a different offer if their modifiers differ.
             </p>
             <div class="settings-platforms-grid">
                 @foreach($platforms as $platform)

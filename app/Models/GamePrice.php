@@ -104,18 +104,8 @@ class GamePrice extends Model
         $discountPct = (float) Setting::get('pricing_discount_percent', 85);
         $computed    = $baseGbp * (1 - ($discountPct / 100));
 
-        // 4. Best platform modifier across the game's stored platforms
-        $platformIds = json_decode($this->platform_ids ?? '[]', true);
-        if (! empty($platformIds)) {
-            $adjustments    = array_map(
-                fn($pid) => (float) Setting::get("platform_modifier_{$pid}", 0),
-                $platformIds
-            );
-            $bestAdjustment = max($adjustments);
-            if ($bestAdjustment !== 0.0) {
-                $computed *= 1 + ($bestAdjustment / 100);
-            }
-        }
+        // 4. No platform modifier here — per-platform prices are computed by
+        //    getComputedPriceForPlatform() and shown individually in the Get Cash dropdown.
 
         // 5. Age-based reduction
         if ($this->release_date !== null) {
