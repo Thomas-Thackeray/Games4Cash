@@ -52,6 +52,8 @@ class GameController extends Controller
                         $platformIds = array_values(array_filter(
                             array_column($game['platforms'] ?? [], 'id')
                         ));
+                        // IGDB category 3 = bundle
+                        $isBundle = ($game['category'] ?? 0) === 3;
                         GamePrice::record(
                             $id,
                             $steamAppId,
@@ -61,6 +63,7 @@ class GameController extends Controller
                             $raw['cheapshark_usd'] ?? null,
                             $platformIds,
                             $franchiseNames,
+                            $isBundle,
                         );
                     }
                 }

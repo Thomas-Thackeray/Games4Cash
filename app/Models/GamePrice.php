@@ -20,6 +20,7 @@ class GamePrice extends Model
         'platform_ids',
         'franchise_names',
         'is_free',
+        'is_bundle',
         'steam_gbp',
         'cheapshark_usd',
         'updated_at',
@@ -27,6 +28,7 @@ class GamePrice extends Model
 
     protected $casts = [
         'is_free'         => 'boolean',
+        'is_bundle'       => 'boolean',
         'steam_gbp'       => 'float',
         'cheapshark_usd'  => 'float',
         'franchise_names' => 'array',
@@ -44,6 +46,7 @@ class GamePrice extends Model
         ?float $cheapsharkUsd,
         array  $platformIds = [],
         array  $franchiseNames = [],
+        bool   $isBundle = false,
     ): void {
         self::updateOrCreate(
             ['igdb_game_id' => $igdbGameId],
@@ -53,6 +56,7 @@ class GamePrice extends Model
                 'platform_ids'    => empty($platformIds) ? null : json_encode(array_values($platformIds)),
                 'franchise_names' => empty($franchiseNames) ? null : json_encode(array_values($franchiseNames)),
                 'is_free'         => $isFree,
+                'is_bundle'       => $isBundle,
                 'steam_gbp'       => $steamGbp,
                 'cheapshark_usd'  => $cheapsharkUsd,
                 'updated_at'      => now(),
@@ -122,10 +126,17 @@ class GamePrice extends Model
             $computed = round($computed + 0.20, 2);
         }
 
-        // 7. High-price reduction: if price > £10, deduct X%
-        $highPriceThreshold = 10.00;
+        // 7. Bundle bonus: if this is a game bundle, increase by X%
+        if ($this->is_bundle) {
+            $bundlePct = (float) Setting::get('bundle_price_increase_pct', 0);
+            if ($bundlePct > 0) {
+                $computed = round($computed * (1 + ($bundlePct / 100)), 2);
+            }
+        }
+
+        // 8. High-price reduction: if price > £10, deduct X%
         $highPricePct = (float) Setting::get('high_price_reduction_pct', 0);
-        if ($highPricePct > 0 && $computed > $highPriceThreshold) {
+        if ($highPricePct > 0 && $computed > 10.00) {
             $computed = round($computed * (1 - ($highPricePct / 100)), 2);
         }
 
@@ -201,10 +212,17 @@ class GamePrice extends Model
             $computed = round($computed + 0.20, 2);
         }
 
-        // 7. High-price reduction: if price > £10, deduct X%
-        $highPriceThreshold = 10.00;
+        // 7. Bundle bonus: if this is a game bundle, increase by X%
+        if ($this->is_bundle) {
+            $bundlePct = (float) Setting::get('bundle_price_increase_pct', 0);
+            if ($bundlePct > 0) {
+                $computed = round($computed * (1 + ($bundlePct / 100)), 2);
+            }
+        }
+
+        // 8. High-price reduction: if price > £10, deduct X%
         $highPricePct = (float) Setting::get('high_price_reduction_pct', 0);
-        if ($highPricePct > 0 && $computed > $highPriceThreshold) {
+        if ($highPricePct > 0 && $computed > 10.00) {
             $computed = round($computed * (1 - ($highPricePct / 100)), 2);
         }
 

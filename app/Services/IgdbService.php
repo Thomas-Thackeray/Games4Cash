@@ -156,7 +156,7 @@ class IgdbService
                  genres.name,platforms.name,platforms.id,franchises.name,
                  screenshots.image_id,artworks.image_id,
                  involved_companies.company.name,involved_companies.developer,involved_companies.publisher,
-                 game_modes.name,themes.name,
+                 game_modes.name,themes.name,category,
                  first_release_date,websites.url,websites.category,
                  similar_games.name,similar_games.cover.image_id,similar_games.first_release_date,
                  videos.video_id,videos.name;

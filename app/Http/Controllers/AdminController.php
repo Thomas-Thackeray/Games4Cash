@@ -332,6 +332,7 @@ class AdminController extends Controller
             'condition_complete_pct'     => Setting::get('condition_complete_pct', 0),
             'condition_disk_pct'         => Setting::get('condition_disk_pct', -50),
             'high_price_reduction_pct'   => Setting::get('high_price_reduction_pct', 0),
+            'bundle_price_increase_pct'  => Setting::get('bundle_price_increase_pct', 0),
         ];
 
         $platforms = array_map(function ($p) {
@@ -402,6 +403,7 @@ class AdminController extends Controller
             'condition_complete_pct'    => ['required', 'numeric', 'min:-100', 'max:100'],
             'condition_disk_pct'        => ['required', 'numeric', 'min:-100', 'max:100'],
             'high_price_reduction_pct'  => ['required', 'numeric', 'min:0', 'max:99'],
+            'bundle_price_increase_pct' => ['required', 'numeric', 'min:0', 'max:999'],
             'platform_modifier.*'       => ['nullable', 'numeric', 'min:-999.99', 'max:999.99'],
             'platform_modifier_type.*'  => ['nullable', 'in:percent,gbp'],
         ], [
@@ -421,6 +423,7 @@ class AdminController extends Controller
         Setting::set('condition_complete_pct', $request->input('condition_complete_pct'));
         Setting::set('condition_disk_pct', $request->input('condition_disk_pct'));
         Setting::set('high_price_reduction_pct', $request->input('high_price_reduction_pct'));
+        Setting::set('bundle_price_increase_pct', $request->input('bundle_price_increase_pct'));
 
         $modifierTypes = $request->input('platform_modifier_type', []);
         foreach ($request->input('platform_modifier', []) as $platformId => $modifier) {
