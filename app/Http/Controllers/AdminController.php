@@ -343,7 +343,7 @@ class AdminController extends Controller
                         new \App\Models\CashOrder([
                             'order_ref'          => 'TEST-0001',
                             'status'             => 'pending',
-                            'total_gbp'          => '12.50',
+                            'total_gbp'          => 12.50,
                             'house_name_number'  => '42',
                             'address_line1'      => 'Example Street',
                             'address_line2'      => null,

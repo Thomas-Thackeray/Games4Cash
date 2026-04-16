@@ -12,6 +12,14 @@
         <button type="submit" form="email-templates-form" class="btn btn--primary">Save Templates</button>
     </div>
 
+    {{--
+        Three isolated test forms — placed outside the save form so they are
+        never nested. Test buttons reference them via the form= attribute.
+    --}}
+    <form id="test-form-order"   method="POST" action="{{ route('admin.email-templates.test') }}">@csrf<input type="hidden" name="template" value="order"></form>
+    <form id="test-form-welcome" method="POST" action="{{ route('admin.email-templates.test') }}">@csrf<input type="hidden" name="template" value="welcome"></form>
+    <form id="test-form-reset"   method="POST" action="{{ route('admin.email-templates.test') }}">@csrf<input type="hidden" name="template" value="reset"></form>
+
     {{-- Token reference --}}
     <div class="settings-card settings-card--wide" style="margin-bottom:1.5rem; border-left:3px solid var(--accent);">
         <h2 class="settings-card__title">Available Placeholders</h2>
@@ -22,6 +30,7 @@
         </div>
     </div>
 
+    {{-- Save form wraps all cards so textareas are direct form children --}}
     <form method="POST" action="{{ route('admin.email-templates.update') }}" id="email-templates-form">
         @csrf
 
@@ -32,14 +41,11 @@
                     <h2 class="settings-card__title" style="margin-bottom:0.25rem;">Order Confirmation Email</h2>
                     <p class="settings-hint">Sent to the customer after they submit a Get Cash quote.</p>
                 </div>
-                <form method="POST" action="{{ route('admin.email-templates.test') }}" style="flex-shrink:0; margin-top:2px;">
-                    @csrf
-                    <input type="hidden" name="template" value="order">
-                    <button type="submit" class="btn btn--outline btn--sm"
-                        data-confirm="Send a test Order Confirmation email to thomasthackeray0@gmail.com?">
-                        Send Test
-                    </button>
-                </form>
+                <button type="button" form="test-form-order"
+                    class="btn btn--outline btn--sm" style="flex-shrink:0; margin-top:2px;"
+                    data-confirm="Send a test Order Confirmation email to thomasthackeray0@gmail.com?">
+                    Send Test
+                </button>
             </div>
 
             <div class="form-group" style="margin-top:1.25rem;">
@@ -66,14 +72,11 @@
                     <h2 class="settings-card__title" style="margin-bottom:0.25rem;">Welcome Email</h2>
                     <p class="settings-hint">Sent when a user creates a new account.</p>
                 </div>
-                <form method="POST" action="{{ route('admin.email-templates.test') }}" style="flex-shrink:0; margin-top:2px;">
-                    @csrf
-                    <input type="hidden" name="template" value="welcome">
-                    <button type="submit" class="btn btn--outline btn--sm"
-                        data-confirm="Send a test Welcome email to thomasthackeray0@gmail.com?">
-                        Send Test
-                    </button>
-                </form>
+                <button type="button" form="test-form-welcome"
+                    class="btn btn--outline btn--sm" style="flex-shrink:0; margin-top:2px;"
+                    data-confirm="Send a test Welcome email to thomasthackeray0@gmail.com?">
+                    Send Test
+                </button>
             </div>
 
             <div class="form-group" style="margin-top:1.25rem;">
@@ -100,14 +103,11 @@
                     <h2 class="settings-card__title" style="margin-bottom:0.25rem;">Password Reset Email</h2>
                     <p class="settings-hint">Sent when a user requests a password reset link.</p>
                 </div>
-                <form method="POST" action="{{ route('admin.email-templates.test') }}" style="flex-shrink:0; margin-top:2px;">
-                    @csrf
-                    <input type="hidden" name="template" value="reset">
-                    <button type="submit" class="btn btn--outline btn--sm"
-                        data-confirm="Send a test Password Reset email to thomasthackeray0@gmail.com?">
-                        Send Test
-                    </button>
-                </form>
+                <button type="button" form="test-form-reset"
+                    class="btn btn--outline btn--sm" style="flex-shrink:0; margin-top:2px;"
+                    data-confirm="Send a test Password Reset email to thomasthackeray0@gmail.com?">
+                    Send Test
+                </button>
             </div>
 
             <div class="form-group" style="margin-top:1.25rem;">
@@ -127,7 +127,7 @@
             </div>
         </div>
 
-    </form>
+    </form>{{-- #email-templates-form --}}
 
 </div>
 @endsection

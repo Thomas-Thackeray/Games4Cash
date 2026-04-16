@@ -81,7 +81,7 @@
                     @endforeach
                     <tr class="total-row">
                         <td>Total Estimated Value</td>
-                        <td class="price">£{{ number_format($order->total_gbp, 2) }}</td>
+                        <td class="price">£{{ number_format((float) $order->total_gbp, 2) }}</td>
                     </tr>
                 </tbody>
             </table>
