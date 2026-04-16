@@ -5,8 +5,6 @@
     $name    = $game['name'] ?? 'Unknown';
     $imgId   = $game['cover']['image_id'] ?? null;
     $imgUrl  = $imgId ? igdb_img($imgId, 'cover_big') : asset('img/placeholder.jpg');
-    $rating  = isset($game['rating']) ? round($game['rating']) : null;
-    $rClass  = $rating ? rating_class($rating) : '';
     $genre   = $game['genres'][0]['name'] ?? '';
     $year    = isset($game['first_release_date']) ? date('Y', $game['first_release_date']) : '';
 
@@ -45,9 +43,6 @@
     <a href="{{ route('game.show', $cardId) }}" class="game-card__link">
         <div class="game-card__img-wrap">
             <img src="{{ $imgUrl }}" alt="{{ e($name) }}" loading="lazy" class="game-card__img">
-            @if($rating)
-            <span class="game-card__rating {{ $rClass }}">{{ $rating }}</span>
-            @endif
         </div>
         <div class="game-card__info">
             <h3 class="game-card__title">{{ $name }}</h3>

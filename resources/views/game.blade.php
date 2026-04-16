@@ -5,9 +5,6 @@
         $name        = $game['name'] ?? 'Unknown';
         $summary     = $game['summary'] ?? '';
         $storyline   = $game['storyline'] ?? '';
-        $rating      = isset($game['rating']) ? round($game['rating']) : null;
-        $ratingCount = $game['rating_count'] ?? 0;
-        $rClass      = $rating ? rating_class($rating) : '';
         $releaseDate = isset($game['first_release_date']) ? format_date($game['first_release_date']) : 'TBA';
         $coverId     = $game['cover']['image_id'] ?? null;
         $coverUrl    = $coverId ? igdb_img($coverId, 'cover_big') : asset('img/placeholder.jpg');
@@ -69,7 +66,6 @@
     {!! $seoGenres    ? ', "genre": "' . e($seoGenres) . '"'           : '' !!}
     {!! $seoPlatforms ? ', "gamePlatform": "' . e($seoPlatforms) . '"' : '' !!}
     {!! $developer    ? ', "author": {"@type":"Organization","name":"' . e($developer) . '"}' : '' !!}
-    {!! ($rating && $ratingCount > 0) ? ', "aggregateRating": {"@type":"AggregateRating","ratingValue":"' . $rating . '","ratingCount":"' . $ratingCount . '","bestRating":"100","worstRating":"0"}' : '' !!}
 }
 </script>
 @endif
@@ -131,17 +127,6 @@
 
                 <h1 class="gd-title">{{ $name }}</h1>
 
-                @if($rating)
-                <div class="gd-rating-block">
-                    <span class="gd-score {{ $rClass }}">{{ $rating }}</span>
-                    <div>
-                        {!! star_rating($rating) !!}
-                        <div style="font-size:0.8rem; color:var(--text-muted); margin-top:4px">
-                            Based on {{ number_format($ratingCount) }} ratings
-                        </div>
-                    </div>
-                </div>
-                @endif
 
                 <!-- Meta grid -->
                 <div class="gd-meta-grid">

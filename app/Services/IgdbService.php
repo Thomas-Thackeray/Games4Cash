@@ -102,7 +102,7 @@ class IgdbService
 
     public function getTrendingGames(int $limit = 12): array
     {
-        $body = "fields id,name,cover.image_id,rating,genres.name,platforms.id,first_release_date;
+        $body = "fields id,name,cover.image_id,genres.name,platforms.id,first_release_date;
                  where rating != null & cover != null & version_parent = null & themes != (42);
                  sort rating_count desc;
                  limit {$limit};";
@@ -111,9 +111,9 @@ class IgdbService
 
     public function getTopRated(int $limit = 8): array
     {
-        $body = "fields id,name,cover.image_id,rating,rating_count,genres.name,platforms.id,first_release_date;
+        $body = "fields id,name,cover.image_id,genres.name,platforms.id,first_release_date;
                  where rating > 85 & rating_count > 200 & cover != null & version_parent = null & themes != (42);
-                 sort rating desc;
+                 sort rating_count desc;
                  limit {$limit};";
         return $this->query('games', $body);
     }
@@ -122,7 +122,7 @@ class IgdbService
     {
         $now         = time();
         $sixMonthsAgo = $now - (60 * 60 * 24 * 180);
-        $body = "fields id,name,cover.image_id,rating,genres.name,platforms.id,first_release_date;
+        $body = "fields id,name,cover.image_id,genres.name,platforms.id,first_release_date;
                  where first_release_date > {$sixMonthsAgo} & first_release_date < {$now} & cover != null & version_parent = null;
                  sort first_release_date desc;
                  limit {$limit};";
@@ -142,7 +142,7 @@ class IgdbService
     public function searchGames(string $term, int $limit = 20, int $offset = 0): array
     {
         $safe = addslashes($term);
-        $body = "fields id,name,cover.image_id,rating,genres.name,platforms.id,first_release_date;
+        $body = "fields id,name,cover.image_id,genres.name,platforms.id,first_release_date;
                  search \"{$safe}\";
                  where version_parent = null & cover != null;
                  limit {$limit};
@@ -152,13 +152,13 @@ class IgdbService
 
     public function getGame(int $id): ?array
     {
-        $body = "fields id,name,summary,storyline,cover.image_id,rating,rating_count,
+        $body = "fields id,name,summary,storyline,cover.image_id,
                  genres.name,platforms.name,platforms.id,
                  screenshots.image_id,artworks.image_id,
                  involved_companies.company.name,involved_companies.developer,involved_companies.publisher,
                  game_modes.name,themes.name,
                  first_release_date,websites.url,websites.category,
-                 similar_games.name,similar_games.cover.image_id,similar_games.rating,similar_games.first_release_date,
+                 similar_games.name,similar_games.cover.image_id,similar_games.first_release_date,
                  videos.video_id,videos.name;
                  where id = {$id};
                  limit 1;";
@@ -168,7 +168,7 @@ class IgdbService
 
     public function getGamesByPlatform(int $platformId, int $limit = 24, int $offset = 0): array
     {
-        $body = "fields id,name,cover.image_id,rating,genres.name,platforms.id,first_release_date;
+        $body = "fields id,name,cover.image_id,genres.name,platforms.id,first_release_date;
                  where platforms = ({$platformId}) & cover != null & version_parent = null & themes != (42) & rating != null;
                  sort rating_count desc;
                  limit {$limit};
@@ -179,7 +179,7 @@ class IgdbService
     public function getGamesByFranchise(string $franchiseName, int $limit = 24, int $offset = 0): array
     {
         $safe = addslashes($franchiseName);
-        $body = "fields id,name,cover.image_id,rating,genres.name,platforms.id,first_release_date;
+        $body = "fields id,name,cover.image_id,genres.name,platforms.id,first_release_date;
                  search \"{$safe}\";
                  where cover != null & version_parent = null;
                  limit {$limit};
@@ -197,7 +197,7 @@ class IgdbService
         if (empty($idList)) {
             return [];
         }
-        $body = "fields id,name,cover.image_id,rating,genres.name,platforms.id,first_release_date;
+        $body = "fields id,name,cover.image_id,genres.name,platforms.id,first_release_date;
                  where id = ({$idList}) & cover != null & version_parent = null;
                  sort rating_count desc;
                  limit {$limit};";
@@ -206,7 +206,7 @@ class IgdbService
 
     public function getGamesByGenre(int $genreId, int $limit = 24, int $offset = 0): array
     {
-        $body = "fields id,name,cover.image_id,rating,genres.name,platforms.id,first_release_date;
+        $body = "fields id,name,cover.image_id,genres.name,platforms.id,first_release_date;
                  where genres = ({$genreId}) & cover != null & version_parent = null & themes != (42) & rating > 70;
                  sort rating_count desc;
                  limit {$limit};
@@ -217,7 +217,7 @@ class IgdbService
     public function getRandomGames(int $limit = 20): array
     {
         $offset = rand(0, 150);
-        $body = "fields id,name,cover.image_id,rating,genres.name,platforms.id,first_release_date;
+        $body = "fields id,name,cover.image_id,genres.name,platforms.id,first_release_date;
                  where rating != null & cover != null & version_parent = null & themes != (42) & rating_count > 50;
                  sort rating_count desc;
                  limit {$limit};
