@@ -6,6 +6,9 @@ use RuntimeException;
 
 class IgdbService
 {
+    /** Platform IDs that are mobile-only (Android, iOS, iPad, generic Mobile). */
+    private const MOBILE_PLATFORM_IDS = [34, 39, 55, 122];
+
     private string $clientId;
     private string $clientSecret;
     private string $accessToken;
@@ -97,6 +100,26 @@ class IgdbService
     }
 
     // ----------------------------------------------------------
+    //  Helpers
+    // ----------------------------------------------------------
+
+    /**
+     * Remove games whose entire platform list consists only of mobile platforms
+     * (Android, iOS, iPad, generic Mobile). Games with no platform data are kept.
+     */
+    private function filterMobileOnly(array $games): array
+    {
+        return array_values(array_filter($games, function (array $game): bool {
+            $platformIds = array_column($game['platforms'] ?? [], 'id');
+            if (empty($platformIds)) {
+                return true; // no platform data — keep it
+            }
+            // Keep the game if it has at least one non-mobile platform
+            return count(array_diff($platformIds, self::MOBILE_PLATFORM_IDS)) > 0;
+        }));
+    }
+
+    // ----------------------------------------------------------
     //  Convenience methods
     // ----------------------------------------------------------
 
@@ -106,7 +129,7 @@ class IgdbService
                  where rating != null & cover != null & version_parent = null & themes != (42);
                  sort rating_count desc;
                  limit {$limit};";
-        return $this->query('games', $body);
+        return $this->filterMobileOnly($this->query('games', $body));
     }
 
     public function getTopRated(int $limit = 8): array
@@ -115,7 +138,7 @@ class IgdbService
                  where rating > 85 & rating_count > 200 & cover != null & version_parent = null & themes != (42);
                  sort rating_count desc;
                  limit {$limit};";
-        return $this->query('games', $body);
+        return $this->filterMobileOnly($this->query('games', $body));
     }
 
     public function getRecentGames(int $limit = 8): array
@@ -126,7 +149,7 @@ class IgdbService
                  where first_release_date > {$sixMonthsAgo} & first_release_date < {$now} & cover != null & version_parent = null;
                  sort first_release_date desc;
                  limit {$limit};";
-        return $this->query('games', $body);
+        return $this->filterMobileOnly($this->query('games', $body));
     }
 
     public function getUpcomingGames(int $limit = 8): array
@@ -136,7 +159,7 @@ class IgdbService
                  where first_release_date > {$now} & cover != null & version_parent = null;
                  sort first_release_date asc;
                  limit {$limit};";
-        return $this->query('games', $body);
+        return $this->filterMobileOnly($this->query('games', $body));
     }
 
     public function searchGames(string $term, int $limit = 20, int $offset = 0): array
@@ -147,7 +170,7 @@ class IgdbService
                  where version_parent = null & cover != null;
                  limit {$limit};
                  offset {$offset};";
-        return $this->query('games', $body);
+        return $this->filterMobileOnly($this->query('games', $body));
     }
 
     public function getGame(int $id): ?array
@@ -173,7 +196,7 @@ class IgdbService
                  sort rating_count desc;
                  limit {$limit};
                  offset {$offset};";
-        return $this->query('games', $body);
+        return $this->filterMobileOnly($this->query('games', $body));
     }
 
     public function getGamesByFranchise(string $franchiseName, int $limit = 24, int $offset = 0): array
@@ -184,7 +207,7 @@ class IgdbService
                  where cover != null & version_parent = null;
                  limit {$limit};
                  offset {$offset};";
-        return $this->query('games', $body);
+        return $this->filterMobileOnly($this->query('games', $body));
     }
 
     public function getGamesByIds(array $ids, int $limit = 24, int $offset = 0): array
@@ -211,7 +234,7 @@ class IgdbService
                  sort rating_count desc;
                  limit {$limit};
                  offset {$offset};";
-        return $this->query('games', $body);
+        return $this->filterMobileOnly($this->query('games', $body));
     }
 
     public function getRandomGames(int $limit = 20): array
@@ -222,7 +245,7 @@ class IgdbService
                  sort rating_count desc;
                  limit {$limit};
                  offset {$offset};";
-        return $this->query('games', $body);
+        return $this->filterMobileOnly($this->query('games', $body));
     }
 
     public function getPlatform(int $id): ?array
