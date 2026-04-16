@@ -322,6 +322,61 @@ class AdminController extends Controller
         return view('admin.email-templates', compact('templates'));
     }
 
+    private const EMAIL_TEST_ADDRESS = 'thomasthackeray0@gmail.com';
+
+    public function testEmailTemplate(Request $request): RedirectResponse
+    {
+        $template = $request->input('template');
+
+        $testUser = new \App\Models\User([
+            'first_name' => 'Thomas',
+            'surname'    => 'Thackeray',
+            'username'   => 'thomas',
+            'email'      => self::EMAIL_TEST_ADDRESS,
+        ]);
+
+        try {
+            match ($template) {
+                'order' => \Illuminate\Support\Facades\Mail::to(self::EMAIL_TEST_ADDRESS)
+                    ->send(new \App\Mail\OrderConfirmationMail(
+                        $testUser,
+                        new \App\Models\CashOrder([
+                            'order_ref'          => 'TEST-0001',
+                            'status'             => 'pending',
+                            'total_gbp'          => '12.50',
+                            'house_name_number'  => '42',
+                            'address_line1'      => 'Example Street',
+                            'address_line2'      => null,
+                            'address_line3'      => null,
+                            'city'               => 'Manchester',
+                            'county'             => 'Greater Manchester',
+                            'postcode'           => 'M1 1AA',
+                            'items'              => [
+                                ['game_title' => 'Grand Theft Auto V', 'platform_name' => 'PlayStation 5', 'condition_label' => 'Complete (In Case)', 'display_price' => '£7.50'],
+                                ['game_title' => 'Assassin\'s Creed Valhalla', 'platform_name' => 'Xbox Series X|S', 'condition_label' => 'Just Disk', 'display_price' => '£5.00'],
+                            ],
+                        ])
+                    )),
+                'welcome' => \Illuminate\Support\Facades\Mail::to(self::EMAIL_TEST_ADDRESS)
+                    ->send(new \App\Mail\WelcomeEmail($testUser)),
+                'reset' => \Illuminate\Support\Facades\Mail::to(self::EMAIL_TEST_ADDRESS)
+                    ->send(new \App\Mail\PasswordResetMail($testUser, 'test-token-preview-only')),
+                default => throw new \InvalidArgumentException("Unknown template: {$template}"),
+            };
+        } catch (\Throwable $e) {
+            return back()->with('flash_error', 'Failed to send test email: ' . $e->getMessage());
+        }
+
+        $label = match ($template) {
+            'order'   => 'Order Confirmation',
+            'welcome' => 'Welcome',
+            'reset'   => 'Password Reset',
+            default   => $template,
+        };
+
+        return back()->with('flash_success', "{$label} test email sent to " . self::EMAIL_TEST_ADDRESS . '.');
+    }
+
     public function updateEmailTemplates(Request $request): RedirectResponse
     {
         $request->validate([

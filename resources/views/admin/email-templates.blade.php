@@ -27,10 +27,22 @@
 
         {{-- Order Confirmation --}}
         <div class="settings-card settings-card--wide" style="margin-bottom:1.5rem;">
-            <h2 class="settings-card__title">Order Confirmation Email</h2>
-            <p class="settings-hint" style="margin-bottom:1.5rem;">Sent to the customer after they submit a Get Cash quote.</p>
+            <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:1rem; margin-bottom:0.25rem;">
+                <div>
+                    <h2 class="settings-card__title" style="margin-bottom:0.25rem;">Order Confirmation Email</h2>
+                    <p class="settings-hint">Sent to the customer after they submit a Get Cash quote.</p>
+                </div>
+                <form method="POST" action="{{ route('admin.email-templates.test') }}" style="flex-shrink:0; margin-top:2px;">
+                    @csrf
+                    <input type="hidden" name="template" value="order">
+                    <button type="submit" class="btn btn--outline btn--sm"
+                        data-confirm="Send a test Order Confirmation email to thomasthackeray0@gmail.com?">
+                        Send Test
+                    </button>
+                </form>
+            </div>
 
-            <div class="form-group">
+            <div class="form-group" style="margin-top:1.25rem;">
                 <label class="form-label">Intro Paragraph</label>
                 <p class="settings-hint">Shown directly below the "Thank you, {first_name}!" heading.</p>
                 <textarea name="email_order_intro" rows="4"
@@ -49,10 +61,22 @@
 
         {{-- Welcome Email --}}
         <div class="settings-card settings-card--wide" style="margin-bottom:1.5rem;">
-            <h2 class="settings-card__title">Welcome Email</h2>
-            <p class="settings-hint" style="margin-bottom:1.5rem;">Sent when a user creates a new account.</p>
+            <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:1rem; margin-bottom:0.25rem;">
+                <div>
+                    <h2 class="settings-card__title" style="margin-bottom:0.25rem;">Welcome Email</h2>
+                    <p class="settings-hint">Sent when a user creates a new account.</p>
+                </div>
+                <form method="POST" action="{{ route('admin.email-templates.test') }}" style="flex-shrink:0; margin-top:2px;">
+                    @csrf
+                    <input type="hidden" name="template" value="welcome">
+                    <button type="submit" class="btn btn--outline btn--sm"
+                        data-confirm="Send a test Welcome email to thomasthackeray0@gmail.com?">
+                        Send Test
+                    </button>
+                </form>
+            </div>
 
-            <div class="form-group">
+            <div class="form-group" style="margin-top:1.25rem;">
                 <label class="form-label">Intro Paragraph</label>
                 <p class="settings-hint">Shown directly below the "Welcome, {first_name}!" heading.</p>
                 <textarea name="email_welcome_intro" rows="4"
@@ -71,10 +95,22 @@
 
         {{-- Password Reset --}}
         <div class="settings-card settings-card--wide" style="margin-bottom:1.5rem;">
-            <h2 class="settings-card__title">Password Reset Email</h2>
-            <p class="settings-hint" style="margin-bottom:1.5rem;">Sent when a user requests a password reset link.</p>
+            <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:1rem; margin-bottom:0.25rem;">
+                <div>
+                    <h2 class="settings-card__title" style="margin-bottom:0.25rem;">Password Reset Email</h2>
+                    <p class="settings-hint">Sent when a user requests a password reset link.</p>
+                </div>
+                <form method="POST" action="{{ route('admin.email-templates.test') }}" style="flex-shrink:0; margin-top:2px;">
+                    @csrf
+                    <input type="hidden" name="template" value="reset">
+                    <button type="submit" class="btn btn--outline btn--sm"
+                        data-confirm="Send a test Password Reset email to thomasthackeray0@gmail.com?">
+                        Send Test
+                    </button>
+                </form>
+            </div>
 
-            <div class="form-group">
+            <div class="form-group" style="margin-top:1.25rem;">
                 <label class="form-label">Intro Paragraph</label>
                 <p class="settings-hint">Shown above the reset button. Use <code style="font-size:0.8rem;">{first_name}</code> for the recipient's name.</p>
                 <textarea name="email_reset_intro" rows="4"

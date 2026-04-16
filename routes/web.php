@@ -133,6 +133,7 @@ Route::middleware(['auth', 'track.active', 'admin'])->prefix('admin')->name('adm
     // Email templates
     Route::get('/email-templates', [AdminController::class, 'showEmailTemplates'])->name('email-templates');
     Route::post('/email-templates', [AdminController::class, 'updateEmailTemplates'])->name('email-templates.update');
+    Route::post('/email-templates/test', [AdminController::class, 'testEmailTemplate'])->name('email-templates.test');
 
     // Cash orders management
     Route::get('/orders', [AdminController::class, 'cashOrders'])->name('orders');
