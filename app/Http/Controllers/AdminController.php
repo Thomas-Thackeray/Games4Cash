@@ -331,6 +331,7 @@ class AdminController extends Controller
             'condition_new_pct'          => Setting::get('condition_new_pct', 20),
             'condition_complete_pct'     => Setting::get('condition_complete_pct', 0),
             'condition_disk_pct'         => Setting::get('condition_disk_pct', -50),
+            'low_price_boost_gbp'        => Setting::get('low_price_boost_gbp', 0.20),
             'high_price_reduction_pct'   => Setting::get('high_price_reduction_pct', 0),
             'bundle_price_increase_gbp'  => Setting::get('bundle_price_increase_gbp', 0),
         ];
@@ -402,6 +403,7 @@ class AdminController extends Controller
             'condition_new_pct'         => ['required', 'numeric', 'min:-100', 'max:100'],
             'condition_complete_pct'    => ['required', 'numeric', 'min:-100', 'max:100'],
             'condition_disk_pct'        => ['required', 'numeric', 'min:-100', 'max:100'],
+            'low_price_boost_gbp'       => ['required', 'numeric', 'min:0', 'max:99.99'],
             'high_price_reduction_pct'  => ['required', 'numeric', 'min:0', 'max:99'],
             'bundle_price_increase_gbp' => ['required', 'numeric', 'min:0', 'max:999.99'],
             'platform_modifier.*'       => ['nullable', 'numeric', 'min:-999.99', 'max:999.99'],
@@ -422,6 +424,7 @@ class AdminController extends Controller
         Setting::set('condition_new_pct', $request->input('condition_new_pct'));
         Setting::set('condition_complete_pct', $request->input('condition_complete_pct'));
         Setting::set('condition_disk_pct', $request->input('condition_disk_pct'));
+        Setting::set('low_price_boost_gbp', $request->input('low_price_boost_gbp'));
         Setting::set('high_price_reduction_pct', $request->input('high_price_reduction_pct'));
         Setting::set('bundle_price_increase_gbp', $request->input('bundle_price_increase_gbp'));
 

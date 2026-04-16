@@ -93,8 +93,9 @@ class GameController extends Controller
                             $computed = max(0.01, $computed - ($ageYears * $ageReductionGbp));
                         }
                     }
-                    if ($computed < 0.10) {
-                        $computed = round($computed + 0.20, 2);
+                    $lowPriceBoost = (float) Setting::get('low_price_boost_gbp', 0.20);
+                    if ($computed < 0.10 && $lowPriceBoost > 0) {
+                        $computed = round($computed + $lowPriceBoost, 2);
                     }
                     $highPricePct = (float) Setting::get('high_price_reduction_pct', 0);
                     if ($highPricePct > 0 && $computed > 10.00) {

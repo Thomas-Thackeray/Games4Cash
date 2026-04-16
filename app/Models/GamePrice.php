@@ -122,8 +122,9 @@ class GamePrice extends Model
 
         // 6. Floor and low-price boost
         $computed = max(0.01, round($computed, 2));
-        if ($computed < 0.10) {
-            $computed = round($computed + 0.20, 2);
+        $lowPriceBoost = (float) Setting::get('low_price_boost_gbp', 0.20);
+        if ($computed < 0.10 && $lowPriceBoost > 0) {
+            $computed = round($computed + $lowPriceBoost, 2);
         }
 
         // 7. Bundle bonus: if this is a game bundle, add flat £ amount
@@ -208,8 +209,9 @@ class GamePrice extends Model
 
         // 6. Floor and low-price boost
         $computed = max(0.01, round($computed, 2));
-        if ($computed < 0.10) {
-            $computed = round($computed + 0.20, 2);
+        $lowPriceBoost = (float) Setting::get('low_price_boost_gbp', 0.20);
+        if ($computed < 0.10 && $lowPriceBoost > 0) {
+            $computed = round($computed + $lowPriceBoost, 2);
         }
 
         // 7. Bundle bonus: if this is a game bundle, add flat £ amount

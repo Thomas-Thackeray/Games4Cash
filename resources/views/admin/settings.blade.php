@@ -76,8 +76,9 @@
                 <strong>Step 6 — Low-price boost</strong>
                 <p class="settings-hint" style="margin-top:0.25rem;">
                     If the price after all the above steps is still <strong>less than £0.10</strong>,
-                    <strong>£0.20 is automatically added</strong> to keep the offer meaningful.
+                    the <strong>Low-Price Boost (£)</strong> amount is added to keep the offer meaningful.
                     This most often affects very old games whose Steam/CheapShark price is extremely low.
+                    Set to 0 to disable this boost entirely.
                 </p>
             </div>
 
@@ -193,6 +194,18 @@
                             min="0" max="999.99" step="0.01" class="form-input settings-input--sm">
                     </div>
                     @error('bundle_price_increase_gbp')<p class="form-error">{{ $message }}</p>@enderror
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Low-Price Boost (£)</label>
+                    <p class="settings-hint">If the computed price is <strong>less than £0.10</strong>, add this amount to keep the offer meaningful. Set to <strong>0</strong> to disable.</p>
+                    <div class="settings-input-row">
+                        <span class="settings-unit">£</span>
+                        <input type="number" name="low_price_boost_gbp"
+                            value="{{ old('low_price_boost_gbp', $settings['low_price_boost_gbp']) }}"
+                            min="0" max="99.99" step="0.01" class="form-input settings-input--sm">
+                    </div>
+                    @error('low_price_boost_gbp')<p class="form-error">{{ $message }}</p>@enderror
                 </div>
 
                 <div class="form-group">
