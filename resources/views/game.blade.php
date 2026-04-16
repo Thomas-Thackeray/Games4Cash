@@ -5,9 +5,6 @@
         $name        = $game['name'] ?? 'Unknown';
         $summary     = $game['summary'] ?? '';
         $storyline   = $game['storyline'] ?? '';
-        $rating      = isset($game['rating']) ? round($game['rating']) : null;
-        $ratingCount = $game['rating_count'] ?? 0;
-        $rClass      = $rating ? rating_class($rating) : '';
         $releaseDate = isset($game['first_release_date']) ? format_date($game['first_release_date']) : 'TBA';
         $coverId     = $game['cover']['image_id'] ?? null;
         $coverUrl    = $coverId ? igdb_img($coverId, 'cover_big') : asset('img/placeholder.jpg');
@@ -58,20 +55,35 @@
 
 @push('head_meta')
 @if($game)
-<script type="application/ld+json">
-{
-    "@@context": "https://schema.org",
-    "@@type": "VideoGame",
-    "name": "{{ e($name) }}"
-    {!! $seoDesc      ? ', "description": "' . e($seoDesc) . '"'      : '' !!}
-    {!! $coverUrl     ? ', "image": "' . $coverUrl . '"'               : '' !!}
-    {!! ($releaseDate !== 'TBA' && isset($game['first_release_date'])) ? ', "datePublished": "' . date('Y-m-d', $game['first_release_date']) . '"' : '' !!}
-    {!! $seoGenres    ? ', "genre": "' . e($seoGenres) . '"'           : '' !!}
-    {!! $seoPlatforms ? ', "gamePlatform": "' . e($seoPlatforms) . '"' : '' !!}
-    {!! $developer    ? ', "author": {"@type":"Organization","name":"' . e($developer) . '"}' : '' !!}
-    {!! ($rating && $ratingCount > 0) ? ', "aggregateRating": {"@type":"AggregateRating","ratingValue":"' . $rating . '","ratingCount":"' . $ratingCount . '","bestRating":"100","worstRating":"0"}' : '' !!}
-}
-</script>
+@php
+    // VideoGame schema — built as a PHP array so json_encode handles all escaping
+    $videoGameSchema = [
+        '@context' => 'https://schema.org',
+        '@type'    => 'VideoGame',
+        'name'     => $name,
+    ];
+    if ($seoDesc)    $videoGameSchema['description']  = $seoDesc;
+    if ($coverUrl)   $videoGameSchema['image']         = $coverUrl;
+    if ($releaseDate !== 'TBA' && isset($game['first_release_date'])) {
+        $videoGameSchema['datePublished'] = date('Y-m-d', $game['first_release_date']);
+    }
+    if ($seoGenres)    $videoGameSchema['genre']        = $seoGenres;
+    if ($seoPlatforms) $videoGameSchema['gamePlatform'] = $seoPlatforms;
+    if ($developer)    $videoGameSchema['author']       = ['@type' => 'Organization', 'name' => $developer];
+
+    // BreadcrumbList schema — mirrors the visible breadcrumb nav
+    $breadcrumbSchema = [
+        '@context'        => 'https://schema.org',
+        '@type'           => 'BreadcrumbList',
+        'itemListElement' => [
+            ['@type' => 'ListItem', 'position' => 1, 'name' => 'Home',  'item' => route('home')],
+            ['@type' => 'ListItem', 'position' => 2, 'name' => 'Games', 'item' => route('search')],
+            ['@type' => 'ListItem', 'position' => 3, 'name' => $name],
+        ],
+    ];
+@endphp
+<script type="application/ld+json">{!! json_encode($videoGameSchema,  JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}</script>
+<script type="application/ld+json">{!! json_encode($breadcrumbSchema, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}</script>
 @endif
 @endpush
 
@@ -117,7 +129,7 @@
     <div class="container">
         <div class="gd-inner">
             <div class="gd-cover">
-                <img src="{{ $coverUrl }}" alt="{{ e($name) }} cover">
+                <img src="{{ $coverUrl }}" alt="{{ $name }} cover">
             </div>
 
             <div class="gd-info">
@@ -131,17 +143,6 @@
 
                 <h1 class="gd-title">{{ $name }}</h1>
 
-                @if($rating)
-                <div class="gd-rating-block">
-                    <span class="gd-score {{ $rClass }}">{{ $rating }}</span>
-                    <div>
-                        {!! star_rating($rating) !!}
-                        <div style="font-size:0.8rem; color:var(--text-muted); margin-top:4px">
-                            Based on {{ number_format($ratingCount) }} ratings
-                        </div>
-                    </div>
-                </div>
-                @endif
 
                 <!-- Meta grid -->
                 <div class="gd-meta-grid">
@@ -181,13 +182,13 @@
                 @php
                     $__pd   = [];
                     $__allP = config('igdb.all_platforms');
-                    $__base = $pricing['price_numeric'];
                     foreach ($platforms as $__p) {
                         $__pid = $__p['id'] ?? null;
-                        if (! $__pid || ! isset($__allP[$__pid])) continue;
-                        $__mod  = (float) \App\Models\Setting::get("platform_modifier_{$__pid}", 0);
-                        $__adj  = max(0.01, round($__base * (1 + $__mod / 100), 2));
-                        $__pd[] = ['id' => $__pid, 'name' => $__allP[$__pid], 'price' => number_format($__adj, 2)];
+                        if (! $__pid || ! isset($__allP[$__pid]) || ! $gamePrice) continue;
+                        $__pp = $gamePrice->getComputedPriceForPlatform((int) $__pid, $franchiseNames, $game['name'] ?? null);
+                        if ($__pp && ! $__pp['is_free']) {
+                            $__pd[] = ['id' => $__pid, 'name' => $__allP[$__pid], 'price' => number_format($__pp['price_numeric'], 2)];
+                        }
                     }
                 @endphp
                 @endif
@@ -206,8 +207,8 @@
                     <form method="POST" action="{{ route('wishlist.store') }}">
                         @csrf
                         <input type="hidden" name="igdb_game_id" value="{{ $game['id'] }}">
-                        <input type="hidden" name="game_title" value="{{ e($name) }}">
-                        <input type="hidden" name="cover_url" value="{{ e($coverUrl) }}">
+                        <input type="hidden" name="game_title" value="{{ $name }}">
+                        <input type="hidden" name="cover_url" value="{{ $coverUrl }}">
                         @if($steamAppId)
                         <input type="hidden" name="steam_app_id" value="{{ $steamAppId }}">
                         @endif
@@ -229,7 +230,7 @@
                             data-tpl="ctpl-gd-{{ $game['id'] }}">
                             💰 Get Cash
                         </button>
-                        <template id="ctpl-gd-{{ $game['id'] }}" data-title="{{ e($name) }}">
+                        <template id="ctpl-gd-{{ $game['id'] }}" data-title="{{ $name }}">
                             @foreach($__pd as $__item)
                             <div class="cash-dropdown__item">
                                 <div class="cash-dropdown__item-info">
@@ -240,8 +241,8 @@
                                     @csrf
                                     <input type="hidden" name="igdb_game_id" value="{{ $game['id'] }}">
                                     <input type="hidden" name="platform_id"  value="{{ $__item['id'] }}">
-                                    <input type="hidden" name="game_title"   value="{{ e($name) }}">
-                                    <input type="hidden" name="cover_url"    value="{{ e($coverUrl) }}">
+                                    <input type="hidden" name="game_title"   value="{{ $name }}">
+                                    <input type="hidden" name="cover_url"    value="{{ $coverUrl }}">
                                     @if($steamAppId)
                                     <input type="hidden" name="steam_app_id" value="{{ $steamAppId }}">
                                     @endif
@@ -258,8 +259,8 @@
                         <form method="POST" action="{{ route('cash-basket.store') }}">
                             @csrf
                             <input type="hidden" name="igdb_game_id" value="{{ $game['id'] }}">
-                            <input type="hidden" name="game_title" value="{{ e($name) }}">
-                            <input type="hidden" name="cover_url" value="{{ e($coverUrl) }}">
+                            <input type="hidden" name="game_title" value="{{ $name }}">
+                            <input type="hidden" name="cover_url" value="{{ $coverUrl }}">
                             @if($steamAppId)
                             <input type="hidden" name="steam_app_id" value="{{ $steamAppId }}">
                             @endif
@@ -283,7 +284,7 @@
                             data-tpl="ctpl-gd-{{ $game['id'] }}">
                             💰 Get Cash
                         </button>
-                        <template id="ctpl-gd-{{ $game['id'] }}" data-title="{{ e($name) }}">
+                        <template id="ctpl-gd-{{ $game['id'] }}" data-title="{{ $name }}">
                             @foreach($__pd as $__item)
                             <div class="cash-dropdown__item">
                                 <div class="cash-dropdown__item-info">
@@ -302,7 +303,7 @@
                 </div>
 
                 @if($summary)
-                <p class="gd-summary">{!! nl2br(e($summary)) !!}</p>
+                <p class="gd-summary" style="margin-top:1.5rem;">{!! nl2br(e($summary)) !!}</p>
                 @endif
 
             </div>

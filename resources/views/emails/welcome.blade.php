@@ -40,11 +40,7 @@
 
         <div class="body">
             <h1 class="greeting">Welcome, {{ $user->first_name }}!</h1>
-            <p class="intro">
-                Thank you for creating an account on <strong>{{ config('app.name') }}</strong>.
-                Your account is all set — you can now explore thousands of games, browse by
-                platform and genre, and discover your next favourite title.
-            </p>
+            <p class="intro">{!! nl2br(e($emailIntro)) !!}</p>
 
             <div class="details-box">
                 <p><strong>Your Account Details</strong></p>
@@ -59,9 +55,7 @@
 
             <hr class="divider">
 
-            <p class="body-note">
-                If you did not create this account, you can safely ignore this email — no action is required.
-            </p>
+            <p class="body-note">{!! nl2br(e($emailFooterNote)) !!}</p>
             <p class="body-note">
                 Need help? <a href="{{ url('/contact') }}" style="color:#e63946;">Contact our support team</a>.
             </p>

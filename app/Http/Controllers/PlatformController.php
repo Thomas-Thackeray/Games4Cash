@@ -19,7 +19,7 @@ class PlatformController extends Controller
         $games        = [];
         $platform     = null;
         $error        = null;
-        $platformName = urldecode($name);
+        $platformName = html_entity_decode($name, ENT_QUOTES | ENT_HTML5, 'UTF-8');
 
         // Find matching icon from config
         $platformIcon = '🎮';
@@ -30,7 +30,7 @@ class PlatformController extends Controller
             }
         }
 
-        if ($page === 1) {
+        if ($page === 1 && !$request->attributes->get('security_logged')) {
             ActivityLogger::filter('Browsed platform: ' . $platformName, $request);
         }
 

@@ -173,12 +173,12 @@
                     @foreach($orderItems as $item)
                     <div class="checkout-summary-item">
                         @if(!empty($item['cover_url']))
-                        <img src="{{ e($item['cover_url']) }}" alt="{{ e($item['game_title']) }}" class="checkout-summary-item__cover">
+                        <img src="{{ $item['cover_url'] }}" alt="{{ $item['game_title'] }}" class="checkout-summary-item__cover">
                         @else
                         <div class="checkout-summary-item__cover checkout-summary-item__cover--placeholder">🎮</div>
                         @endif
                         <div class="checkout-summary-item__body">
-                            <span class="checkout-summary-item__title">{{ e($item['game_title']) }}</span>
+                            <span class="checkout-summary-item__title">{{ $item['game_title'] }}</span>
                             @if(!empty($item['platform_name']))
                             <span class="checkout-summary-item__platform">{{ $item['platform_name'] }}</span>
                             @endif

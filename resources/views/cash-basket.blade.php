@@ -23,14 +23,14 @@
             <div class="cb-item" id="cb-item-{{ $item['id'] }}">
                 <a href="{{ route('game.show', $item['igdb_game_id']) }}" class="cb-item__cover-link">
                     @if($item['cover_url'])
-                    <img src="{{ e($item['cover_url']) }}" alt="{{ e($item['game_title']) }}" class="cb-item__cover">
+                    <img src="{{ $item['cover_url'] }}" alt="{{ $item['game_title'] }}" class="cb-item__cover">
                     @else
                     <div class="cb-item__cover cb-item__cover--placeholder">🎮</div>
                     @endif
                 </a>
                 <div class="cb-item__body">
                     <a href="{{ route('game.show', $item['igdb_game_id']) }}" class="cb-item__title">
-                        {{ e($item['game_title']) }}
+                        {{ $item['game_title'] }}
                     </a>
                     @if($item['platform_name'])
                     <span class="cb-item__platform">{{ $item['platform_name'] }}</span>
@@ -69,7 +69,7 @@
                     @csrf
                     @method('DELETE')
                     <button type="submit" class="wishlist-card__remove-btn" title="Remove from basket"
-                        data-confirm="Remove &quot;{{ e($item['game_title']) }}&quot; from your cash basket?">✕</button>
+                        data-confirm="Remove &quot;{{ $item['game_title'] }}&quot; from your cash basket?">✕</button>
                 </form>
             </div>
             @endforeach
@@ -92,14 +92,16 @@
                 </p>
                 @elseif($total == 0)
                 <p class="cb-summary__note">Add priced games to see your estimated cash value.</p>
-                @elseif($shortfall > 0)
-                <p class="cb-summary__note cb-summary__note--warn" id="cb-min-note">
-                    Minimum order is <strong>£{{ number_format($minOrder, 2) }}</strong>.
-                    Add £{{ number_format($shortfall, 2) }} more to proceed.
-                </p>
                 @else
                 <p class="cb-summary__note">Estimated cash you could receive for these games.</p>
                 @endif
+
+                {{-- Always in DOM so JS can show/hide it after AJAX condition changes --}}
+                <p class="cb-summary__note cb-summary__note--warn" id="cb-min-note"
+                   @if($shortfall == 0) style="display:none;" @endif>
+                    Minimum order is <strong>£{{ number_format($minOrder, 2) }}</strong>.
+                    Add £<span id="cb-min-shortfall">{{ number_format($shortfall, 2) }}</span> more to proceed.
+                </p>
 
                 <a href="{{ route('cash-orders.create') }}"
                    id="cb-checkout-btn"
@@ -183,10 +185,11 @@
 
                 // Update minimum order notice
                 var minNote = document.getElementById('cb-min-note');
+                var minShortfallEl = document.getElementById('cb-min-shortfall');
                 if (minNote && minOrder > 0) {
                     var shortfall = minOrder - raw;
-                    if (shortfall > 0) {
-                        minNote.innerHTML = 'Minimum order is <strong>£' + minOrder.toFixed(2) + '</strong>. Add £' + shortfall.toFixed(2) + ' more to proceed.';
+                    if (shortfall > 0 && data.all_have_condition) {
+                        if (minShortfallEl) minShortfallEl.textContent = shortfall.toFixed(2);
                         minNote.style.display = '';
                     } else {
                         minNote.style.display = 'none';

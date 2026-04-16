@@ -12,6 +12,118 @@
         <button type="submit" form="settings-form" class="btn btn--primary">Save Settings</button>
     </div>
 
+    {{-- Pricing Formula Explainer --}}
+    <div class="settings-card settings-card--wide" style="margin-bottom:1.5rem; border-left:3px solid var(--accent);">
+        <h2 class="settings-card__title">How Pricing Works</h2>
+        <p class="settings-hint" style="margin-bottom:1.25rem;">
+            This explains how the cash offer shown to customers is calculated, and what happens when you change each setting.
+        </p>
+
+        <div style="display:flex; flex-direction:column; gap:1rem; font-size:0.92rem; color:var(--text);">
+
+            <div>
+                <strong>Step 1 — Find the base price</strong>
+                <p class="settings-hint" style="margin-top:0.25rem;">
+                    The system first checks the current <strong>Steam GBP price</strong> for the game.
+                    If Steam has no data, it falls back to <strong>CheapShark</strong> (all-time historical lowest sale price, in USD —
+                    converted to GBP using the <strong>USD → GBP Exchange Rate</strong> setting).
+                    If neither source has data, it uses the <strong>Base Price (GBP)</strong> setting below as a last resort.
+                </p>
+            </div>
+
+            <div>
+                <strong>Step 2 — Apply the franchise adjustment</strong>
+                <p class="settings-hint" style="margin-top:0.25rem;">
+                    If the game belongs to a franchise with an adjustment set, that flat <strong>£ amount is added or subtracted
+                    from the base price</strong> before any discounting.
+                    For example: Call of Duty +£0.20 increases the base; a low-demand series −£1.00 reduces it.
+                    Manage franchise adjustments in the section at the bottom of this page.
+                </p>
+            </div>
+
+            <div>
+                <strong>Step 3 — Apply the discount</strong>
+                <p class="settings-hint" style="margin-top:0.25rem;">
+                    The (franchise-adjusted) base price is multiplied by <code>(100% − Discount%)</code>.
+                    At 85% discount, only <strong>15%</strong> of the base price remains.
+                    Increasing this setting makes all cash offers lower; decreasing it makes them higher.
+                </p>
+            </div>
+
+            <div>
+                <strong>Step 4 — Apply the platform modifier</strong>
+                <p class="settings-hint" style="margin-top:0.25rem;">
+                    An adjustment is applied based on the console — either a flat <strong>£ amount</strong> added
+                    or subtracted, or a <strong>% multiplier</strong> applied to the discounted price.
+                    A positive value increases the offer (e.g. PS5 games may be worth more);
+                    a negative value reduces it. Set to 0 to leave a platform's price unchanged.
+                    Each console is listed individually in the Get Cash dropdown with its own adjusted price —
+                    so Xbox, Xbox 360, and Xbox One will each show a different offer if their modifiers differ.
+                </p>
+            </div>
+
+            <div>
+                <strong>Step 5 — Apply the age-based reduction</strong>
+                <p class="settings-hint" style="margin-top:0.25rem;">
+                    For each full year since the game's release date, a flat <strong>£ amount is deducted</strong>
+                    from the price. At £0.50/year, a game released 10 years ago loses £5.00 from its computed price.
+                    The price is always floored at £0.01 so it never goes negative.
+                    Set this to 0 to disable age-based reductions entirely.
+                </p>
+            </div>
+
+            <div>
+                <strong>Step 6 — Low-price boost</strong>
+                <p class="settings-hint" style="margin-top:0.25rem;">
+                    If the price after all the above steps is still <strong>less than £0.10</strong>,
+                    the <strong>Low-Price Boost (£)</strong> amount is added to keep the offer meaningful.
+                    This most often affects very old games whose Steam/CheapShark price is extremely low.
+                    Set to 0 to disable this boost entirely.
+                </p>
+            </div>
+
+            <div>
+                <strong>Step 7 — Bundle bonus</strong>
+                <p class="settings-hint" style="margin-top:0.25rem;">
+                    If the game is flagged as a <strong>bundle</strong> in the IGDB database (i.e. it contains
+                    multiple games), a flat <strong>£ amount is added</strong> to the computed price.
+                    This reflects the extra value of a multi-game package.
+                    Set to 0 to leave bundle prices unchanged.
+                </p>
+            </div>
+
+            <div>
+                <strong>Step 8 — High-price reduction</strong>
+                <p class="settings-hint" style="margin-top:0.25rem;">
+                    If the price after step 6 is <strong>greater than £10.00</strong>, it is reduced by the
+                    <strong>High-Price Reduction %</strong>. This keeps offers on premium or recent titles
+                    from being too generous. Set to 0 to disable.
+                </p>
+            </div>
+
+            <div>
+                <strong>Step 9 — Condition modifier (applied at quote time)</strong>
+                <p class="settings-hint" style="margin-top:0.25rem;">
+                    When a customer selects the physical condition of their game in the cash basket,
+                    a final percentage adjustment is applied on top of the computed price.
+                    <em>Brand New</em> increases the offer; <em>Just Disk</em> reduces it.
+                    This is the last step and is shown live in the basket before the customer submits their quote.
+                </p>
+            </div>
+
+            <div style="background:rgba(255,255,255,0.04); border-radius:6px; padding:0.75rem 1rem; font-family:monospace; font-size:0.85rem; color:var(--text-muted);">
+                base = steam_gbp &nbsp;OR&nbsp; (cheapshark_usd ÷ rate) &nbsp;OR&nbsp; base_price_gbp
+                <br>base += franchise_adj
+                <br>offer = base × (1 − discount%) [× (1 + platform%) &nbsp;OR&nbsp; + platform_£] − (age_years × £age_reduction)
+                <br>if offer &lt; £0.10 → offer += £0.20
+                <br>if is_bundle → offer += £bundle_gbp
+                <br>if offer &gt; £10.00 → offer × (1 − high_price%)
+                <br>final = offer × (1 + condition%)
+            </div>
+
+        </div>
+    </div>
+
     <form method="POST" action="{{ route('admin.settings.update') }}" id="settings-form">
         @csrf
 
@@ -37,7 +149,7 @@
 
                 <div class="form-group">
                     <label class="form-label">Discount Applied to Prices (%)</label>
-                    <p class="settings-hint">The historical low (converted to GBP) is reduced by this percentage before display. Falls back to Steam price if unavailable.</p>
+                    <p class="settings-hint">The Steam price (or CheapShark historical low if no Steam data) is reduced by this percentage to produce the cash offer.</p>
                     <div class="settings-input-row">
                         <input type="number" name="pricing_discount_percent"
                             value="{{ old('pricing_discount_percent', $settings['pricing_discount_percent']) }}"
@@ -48,13 +160,14 @@
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label">Age-Based Reduction (% per year)</label>
-                    <p class="settings-hint">For each full year since release, reduce the price by this additional percentage. Max 20%.</p>
+                    <label class="form-label">Age-Based Reduction (£ per year)</label>
+                    <p class="settings-hint">For each full year since release, deduct this flat amount from the price. Set to 0 to disable.</p>
                     <div class="settings-input-row">
+                        <span class="settings-unit">£</span>
                         <input type="number" name="age_reduction_per_year"
                             value="{{ old('age_reduction_per_year', $settings['age_reduction_per_year']) }}"
-                            min="0" max="20" step="0.5" class="form-input settings-input--sm">
-                        <span class="settings-unit">% / year</span>
+                            min="0" max="9.99" step="0.01" class="form-input settings-input--sm">
+                        <span class="settings-unit">/ year</span>
                     </div>
                     @error('age_reduction_per_year')<p class="form-error">{{ $message }}</p>@enderror
                 </div>
@@ -69,6 +182,42 @@
                             min="0" max="999.99" step="0.01" class="form-input settings-input--sm">
                     </div>
                     @error('base_price_gbp')<p class="form-error">{{ $message }}</p>@enderror
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Bundle Price Increase (£)</label>
+                    <p class="settings-hint">If the game is a bundle (multiple games in one), add this flat amount to the computed price. Set to <strong>0</strong> to disable.</p>
+                    <div class="settings-input-row">
+                        <span class="settings-unit">£</span>
+                        <input type="number" name="bundle_price_increase_gbp"
+                            value="{{ old('bundle_price_increase_gbp', $settings['bundle_price_increase_gbp']) }}"
+                            min="0" max="999.99" step="0.01" class="form-input settings-input--sm">
+                    </div>
+                    @error('bundle_price_increase_gbp')<p class="form-error">{{ $message }}</p>@enderror
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Low-Price Boost (£)</label>
+                    <p class="settings-hint">If the computed price is <strong>less than £0.10</strong>, add this amount to keep the offer meaningful. Set to <strong>0</strong> to disable.</p>
+                    <div class="settings-input-row">
+                        <span class="settings-unit">£</span>
+                        <input type="number" name="low_price_boost_gbp"
+                            value="{{ old('low_price_boost_gbp', $settings['low_price_boost_gbp']) }}"
+                            min="0" max="99.99" step="0.01" class="form-input settings-input--sm">
+                    </div>
+                    @error('low_price_boost_gbp')<p class="form-error">{{ $message }}</p>@enderror
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">High-Price Reduction (%)</label>
+                    <p class="settings-hint">If the computed price exceeds <strong>£10.00</strong>, reduce it by this percentage. Set to <strong>0</strong> to disable.</p>
+                    <div class="settings-input-row">
+                        <input type="number" name="high_price_reduction_pct"
+                            value="{{ old('high_price_reduction_pct', $settings['high_price_reduction_pct']) }}"
+                            min="0" max="99" step="1" class="form-input settings-input--sm">
+                        <span class="settings-unit">%</span>
+                    </div>
+                    @error('high_price_reduction_pct')<p class="form-error">{{ $message }}</p>@enderror
                 </div>
 
                 <div class="form-group">
@@ -119,19 +268,35 @@
         <div class="settings-card settings-card--wide" style="margin-top:1.5rem;">
             <h2 class="settings-card__title">Console Price Modifiers</h2>
             <p class="settings-hint" style="margin-bottom:1.5rem;">
-                Adjust the final price up or down based on the console. Positive % increases the price; negative % reduces it.
-                For multi-platform games the most favourable modifier is applied.
+                Each console has its own modifier. Positive % increases the cash offer; negative % reduces it.
+                In the Get Cash dropdown, every console is listed separately with its own adjusted price —
+                Xbox, Xbox 360, and Xbox One will each show a different offer if their modifiers differ.
             </p>
             <div class="settings-platforms-grid">
                 @foreach($platforms as $platform)
+                @php $isGbp = old('platform_modifier_type.' . $platform['id'], $platform['modifier_type']) === 'gbp'; @endphp
                 <div class="settings-platform-row">
-                    <label class="form-label" style="margin:0;">{{ $platform['name'] }}</label>
-                    <div class="settings-input-row">
+                    <label class="form-label">{{ $platform['name'] }}</label>
+                    <div class="platform-modifier-control">
+                        <select name="platform_modifier_type[{{ $platform['id'] }}]"
+                                onchange="
+                                    var inp = this.nextElementSibling;
+                                    if (this.value === 'gbp') {
+                                        inp.min = -999.99; inp.max = 999.99; inp.step = 0.01;
+                                    } else {
+                                        inp.min = -99; inp.max = 99; inp.step = 1;
+                                    }
+                                ">
+                            <option value="percent" @selected(!$isGbp)>%</option>
+                            <option value="gbp"     @selected($isGbp)>£</option>
+                        </select>
                         <input type="number"
                             name="platform_modifier[{{ $platform['id'] }}]"
                             value="{{ old('platform_modifier.' . $platform['id'], $platform['modifier']) }}"
-                            min="-99" max="99" step="1" class="form-input settings-input--sm">
-                        <span class="settings-unit">%</span>
+                            min="{{ $isGbp ? -999.99 : -99 }}"
+                            max="{{ $isGbp ? 999.99 : 99 }}"
+                            step="{{ $isGbp ? '0.01' : '1' }}"
+                            class="form-input">
                     </div>
                 </div>
                 @endforeach
@@ -139,6 +304,145 @@
         </div>
 
     </form>
+
+    {{-- Franchise Price Adjustments --}}
+    <div class="settings-card settings-card--wide" style="margin-top:1.5rem;">
+        <h2 class="settings-card__title">Franchise Price Adjustments</h2>
+        <p class="settings-hint" style="margin-bottom:1.5rem;">
+            Add or deduct a flat £ amount from games belonging to a specific franchise.
+            Positive values increase the cash offer; negative values reduce it.
+        </p>
+
+        {{-- Existing adjustments --}}
+        @if($franchiseAdjustments->isNotEmpty())
+        <div style="display:flex; flex-direction:column; gap:0.5rem; margin-bottom:1.5rem;">
+            @foreach($franchiseAdjustments as $fa)
+            <form method="POST" action="{{ route('admin.franchise-adjustments.update', $fa->id) }}"
+                  style="display:flex; align-items:center; gap:0.75rem; flex-wrap:wrap;">
+                @csrf
+                @method('PATCH')
+                <span style="flex:1; min-width:160px; font-weight:500; color:var(--text);">{{ $fa->franchise_name }}</span>
+                <div class="settings-input-row">
+                    <span class="settings-unit">£</span>
+                    <input type="number" name="adjustment_gbp"
+                           value="{{ $fa->adjustment_gbp }}"
+                           min="-999.99" max="999.99" step="0.01"
+                           class="form-input settings-input--sm"
+                           style="width:90px;">
+                </div>
+                <button type="submit" class="btn btn--outline btn--sm">Save</button>
+                <button type="button"
+                    class="btn btn--sm" style="background:rgba(230,57,70,0.12); color:var(--accent); border:1px solid rgba(230,57,70,0.3);"
+                    data-confirm="Remove franchise adjustment for &quot;{{ e($fa->franchise_name) }}&quot;?"
+                    onclick="this.closest('form').querySelector('[name=_method]').value='DELETE'; this.closest('form').action='{{ route('admin.franchise-adjustments.destroy', $fa->id) }}'; this.closest('form').submit();">
+                    Remove
+                </button>
+            </form>
+            @endforeach
+        </div>
+        @endif
+
+        {{-- Add new --}}
+        @php
+            $usedFranchises = $franchiseAdjustments->pluck('franchise_name')->toArray();
+            $availableFranchises = array_diff(config('igdb.franchises'), $usedFranchises);
+        @endphp
+        <form method="POST" action="{{ route('admin.franchise-adjustments.store') }}"
+              style="display:flex; align-items:flex-end; gap:0.75rem; flex-wrap:wrap;">
+            @csrf
+            <div class="form-group" style="flex:1; min-width:180px; margin:0;">
+                <label class="form-label">Franchise</label>
+                <input type="text" name="franchise_name" value="{{ old('franchise_name') }}"
+                       class="form-input" placeholder="e.g. Call of Duty"
+                       list="franchise-suggestions" autocomplete="off">
+                <datalist id="franchise-suggestions">
+                    @foreach($availableFranchises as $fname)
+                    <option value="{{ $fname }}">
+                    @endforeach
+                </datalist>
+                @error('franchise_name')<p class="form-error">{{ $message }}</p>@enderror
+            </div>
+            <div class="form-group" style="margin:0;">
+                <label class="form-label">Adjustment (£)</label>
+                <div class="settings-input-row">
+                    <span class="settings-unit">£</span>
+                    <input type="number" name="adjustment_gbp" value="{{ old('adjustment_gbp', '0.00') }}"
+                           min="-999.99" max="999.99" step="0.01"
+                           class="form-input settings-input--sm" style="width:90px;">
+                </div>
+                @error('adjustment_gbp')<p class="form-error">{{ $message }}</p>@enderror
+            </div>
+            <button type="submit" class="btn btn--primary btn--sm" style="margin-bottom:1px;">Add Franchise</button>
+        </form>
+    </div>
+
+    {{-- Game Name Price Adjustments --}}
+    <div class="settings-card settings-card--wide" style="margin-top:1.5rem;">
+        <h2 class="settings-card__title">Game Name Price Adjustments</h2>
+        <p class="settings-hint" style="margin-bottom:1.5rem;">
+            Add or deduct a flat £ amount from any game whose title contains the keyword (case-insensitive).
+            For example, keyword <em>Elden Ring</em> matches "Elden Ring" and "Elden Ring: Shadow of the Erdtree".
+            Positive values increase the cash offer; negative values reduce it.
+        </p>
+
+        {{-- Existing adjustments --}}
+        @if($gameNameAdjustments->isNotEmpty())
+        <div style="display:flex; flex-direction:column; gap:0.5rem; margin-bottom:1.5rem;">
+            @foreach($gameNameAdjustments as $gna)
+            <form method="POST" action="{{ route('admin.game-name-adjustments.update', $gna->id) }}"
+                  style="display:flex; align-items:center; gap:0.75rem; flex-wrap:wrap;">
+                @csrf
+                @method('PATCH')
+                <span style="flex:1; min-width:160px; font-weight:500; color:var(--text);">{{ $gna->keyword }}</span>
+                <div class="settings-input-row">
+                    <span class="settings-unit">£</span>
+                    <input type="number" name="adjustment_gbp"
+                           value="{{ $gna->adjustment_gbp }}"
+                           min="-999.99" max="999.99" step="0.01"
+                           class="form-input settings-input--sm"
+                           style="width:90px;">
+                </div>
+                <button type="submit" class="btn btn--outline btn--sm">Save</button>
+                <button type="button"
+                    class="btn btn--sm" style="background:rgba(230,57,70,0.12); color:var(--accent); border:1px solid rgba(230,57,70,0.3);"
+                    data-confirm="Remove game name adjustment for &quot;{{ e($gna->keyword) }}&quot;?"
+                    form="gna-destroy-{{ $gna->id }}">
+                    Remove
+                </button>
+            </form>
+            <form id="gna-destroy-{{ $gna->id }}" method="POST"
+                  action="{{ route('admin.game-name-adjustments.destroy', $gna->id) }}" style="display:none;">
+                @csrf
+                @method('DELETE')
+            </form>
+            @endforeach
+        </div>
+        @endif
+
+        {{-- Add new --}}
+        <form method="POST" action="{{ route('admin.game-name-adjustments.store') }}"
+              style="display:flex; align-items:flex-end; gap:0.75rem; flex-wrap:wrap;">
+            @csrf
+            <div class="form-group" style="flex:1; min-width:180px; margin:0;">
+                <label class="form-label">Game Name / Keyword</label>
+                <input type="text" name="keyword" value="{{ old('keyword') }}"
+                       class="form-input" placeholder="e.g. Elden Ring"
+                       autocomplete="off">
+                @error('keyword')<p class="form-error">{{ $message }}</p>@enderror
+            </div>
+            <div class="form-group" style="margin:0;">
+                <label class="form-label">Adjustment (£)</label>
+                <div class="settings-input-row">
+                    <span class="settings-unit">£</span>
+                    <input type="number" name="adjustment_gbp" value="{{ old('adjustment_gbp', '0.00') }}"
+                           min="-999.99" max="999.99" step="0.01"
+                           class="form-input settings-input--sm" style="width:90px;">
+                </div>
+                @error('adjustment_gbp')<p class="form-error">{{ $message }}</p>@enderror
+            </div>
+            <button type="submit" class="btn btn--primary btn--sm" style="margin-bottom:1px;">Add Keyword</button>
+        </form>
+    </div>
 
 </div>
 @endsection

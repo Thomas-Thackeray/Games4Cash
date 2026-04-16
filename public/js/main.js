@@ -206,7 +206,8 @@ document.addEventListener('DOMContentLoaded', () => {
         document.querySelectorAll('[data-confirm]').forEach(btn => {
             btn.type = 'button';
             btn.addEventListener('click', () => {
-                openModal(btn.dataset.confirm, btn.closest('form'));
+                // btn.form respects the form= attribute; fall back to closest ancestor form
+                openModal(btn.dataset.confirm, btn.form || btn.closest('form'));
             });
         });
 

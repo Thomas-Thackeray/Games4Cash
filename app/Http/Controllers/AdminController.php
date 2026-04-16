@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\ActivityLog;
 use App\Models\BlacklistedPassword;
+use App\Models\FranchiseAdjustment;
+use App\Models\GameNameAdjustment;
 use App\Models\CashBasketItem;
 use App\Models\CashOrder;
 use App\Models\ContactSubmission;
@@ -89,8 +91,8 @@ class AdminController extends Controller
             if ($gamePrice) {
                 try {
                     $pricing = $item->platform_id
-                        ? $gamePrice->getComputedPriceForPlatform((int) $item->platform_id)
-                        : $gamePrice->getComputedPrice();
+                        ? $gamePrice->getComputedPriceForPlatform((int) $item->platform_id, [], $item->game_title)
+                        : $gamePrice->getComputedPrice([], $item->game_title);
                 } catch (\Throwable) {}
             }
             $displayPrice = null;
@@ -265,7 +267,7 @@ class AdminController extends Controller
             });
         }
 
-        $logs = $query->get();
+        $logs = $query->paginate(50)->withQueryString();
 
         return view('admin.activity-logs', compact('logs', 'type', 'search'));
     }
@@ -300,6 +302,101 @@ class AdminController extends Controller
     }
 
     // ----------------------------------------------------------------
+    //  Email templates
+    // ----------------------------------------------------------------
+
+    private const EMAIL_TEMPLATE_DEFAULTS = [
+        'email_order_intro'          => "Your cash quote has been received and we're reviewing it now.\nA member of our team will be in touch shortly with further information about your collection and payment.",
+        'email_order_packaging_note' => "Please ensure your games are ready and packaged securely before the collection date. All prices are estimates and may be adjusted upon physical inspection.",
+        'email_welcome_intro'        => "Thank you for creating an account on {site_name}. Your account is all set — you can now explore thousands of games, browse by platform and genre, and discover your next favourite title.",
+        'email_welcome_footer_note'  => "If you did not create this account, you can safely ignore this email — no action is required.",
+        'email_reset_intro'          => "Hi {first_name}, we received a request to reset the password for your {site_name} account. Click the button below to choose a new password. This link will expire in 60 minutes.",
+        'email_reset_footer_note'    => "If you did not request a password reset, no action is required — your password will remain unchanged.",
+    ];
+
+    public function showEmailTemplates(): View
+    {
+        $templates = [];
+        foreach (self::EMAIL_TEMPLATE_DEFAULTS as $key => $default) {
+            $templates[$key] = Setting::get($key, $default);
+        }
+        return view('admin.email-templates', compact('templates'));
+    }
+
+    private const EMAIL_TEST_ADDRESS = 'thomasthackeray0@gmail.com';
+
+    public function testEmailTemplate(Request $request): RedirectResponse
+    {
+        $template = $request->input('template');
+
+        $testUser = new \App\Models\User([
+            'first_name' => 'Thomas',
+            'surname'    => 'Thackeray',
+            'username'   => 'thomas',
+            'email'      => self::EMAIL_TEST_ADDRESS,
+        ]);
+
+        try {
+            match ($template) {
+                'order' => \Illuminate\Support\Facades\Mail::to(self::EMAIL_TEST_ADDRESS)
+                    ->send(new \App\Mail\OrderConfirmationMail(
+                        $testUser,
+                        new \App\Models\CashOrder([
+                            'order_ref'          => 'TEST-0001',
+                            'status'             => 'pending',
+                            'total_gbp'          => 12.50,
+                            'house_name_number'  => '42',
+                            'address_line1'      => 'Example Street',
+                            'address_line2'      => null,
+                            'address_line3'      => null,
+                            'city'               => 'Manchester',
+                            'county'             => 'Greater Manchester',
+                            'postcode'           => 'M1 1AA',
+                            'items'              => [
+                                ['game_title' => 'Grand Theft Auto V', 'platform_name' => 'PlayStation 5', 'condition_label' => 'Complete (In Case)', 'display_price' => '£7.50'],
+                                ['game_title' => 'Assassin\'s Creed Valhalla', 'platform_name' => 'Xbox Series X|S', 'condition_label' => 'Just Disk', 'display_price' => '£5.00'],
+                            ],
+                        ])
+                    )),
+                'welcome' => \Illuminate\Support\Facades\Mail::to(self::EMAIL_TEST_ADDRESS)
+                    ->send(new \App\Mail\WelcomeEmail($testUser)),
+                'reset' => \Illuminate\Support\Facades\Mail::to(self::EMAIL_TEST_ADDRESS)
+                    ->send(new \App\Mail\PasswordResetMail($testUser, 'test-token-preview-only')),
+                default => throw new \InvalidArgumentException("Unknown template: {$template}"),
+            };
+        } catch (\Throwable $e) {
+            return back()->with('flash_error', 'Failed to send test email: ' . $e->getMessage());
+        }
+
+        $label = match ($template) {
+            'order'   => 'Order Confirmation',
+            'welcome' => 'Welcome',
+            'reset'   => 'Password Reset',
+            default   => $template,
+        };
+
+        return back()->with('flash_success', "{$label} test email sent to " . self::EMAIL_TEST_ADDRESS . '.');
+    }
+
+    public function updateEmailTemplates(Request $request): RedirectResponse
+    {
+        $request->validate([
+            'email_order_intro'          => ['required', 'string', 'max:2000'],
+            'email_order_packaging_note' => ['required', 'string', 'max:2000'],
+            'email_welcome_intro'        => ['required', 'string', 'max:2000'],
+            'email_welcome_footer_note'  => ['required', 'string', 'max:2000'],
+            'email_reset_intro'          => ['required', 'string', 'max:2000'],
+            'email_reset_footer_note'    => ['required', 'string', 'max:2000'],
+        ]);
+
+        foreach (array_keys(self::EMAIL_TEMPLATE_DEFAULTS) as $key) {
+            Setting::set($key, $request->input($key));
+        }
+
+        return back()->with('flash_success', 'Email templates saved.');
+    }
+
+    // ----------------------------------------------------------------
     //  Site settings
     // ----------------------------------------------------------------
 
@@ -327,18 +424,25 @@ class AdminController extends Controller
             'age_reduction_per_year'   => Setting::get('age_reduction_per_year', 1),
             'base_price_gbp'           => Setting::get('base_price_gbp', 0),
             'min_order_gbp'            => Setting::get('min_order_gbp', 20),
-            'condition_new_pct'        => Setting::get('condition_new_pct', 20),
-            'condition_complete_pct'   => Setting::get('condition_complete_pct', 0),
-            'condition_disk_pct'       => Setting::get('condition_disk_pct', -50),
+            'condition_new_pct'          => Setting::get('condition_new_pct', 20),
+            'condition_complete_pct'     => Setting::get('condition_complete_pct', 0),
+            'condition_disk_pct'         => Setting::get('condition_disk_pct', -50),
+            'low_price_boost_gbp'        => Setting::get('low_price_boost_gbp', 0.20),
+            'high_price_reduction_pct'   => Setting::get('high_price_reduction_pct', 0),
+            'bundle_price_increase_gbp'  => Setting::get('bundle_price_increase_gbp', 0),
         ];
 
         $platforms = array_map(function ($p) {
             return array_merge($p, [
-                'modifier' => (float) Setting::get("platform_modifier_{$p['id']}", 0),
+                'modifier'      => (float) Setting::get("platform_modifier_{$p['id']}", 0),
+                'modifier_type' => Setting::get("platform_modifier_type_{$p['id']}", 'percent'),
             ]);
         }, self::PLATFORMS);
 
-        return view('admin.settings', compact('settings', 'platforms'));
+        $franchiseAdjustments  = FranchiseAdjustment::orderBy('franchise_name')->get();
+        $gameNameAdjustments   = GameNameAdjustment::orderBy('keyword')->get();
+
+        return view('admin.settings', compact('settings', 'platforms', 'franchiseAdjustments', 'gameNameAdjustments'));
     }
 
     // ----------------------------------------------------------------
@@ -390,18 +494,22 @@ class AdminController extends Controller
         $request->validate([
             'pricing_discount_percent'  => ['required', 'numeric', 'min:0', 'max:99'],
             'usd_to_gbp_rate'           => ['required', 'numeric', 'min:0.01', 'max:99.99'],
-            'age_reduction_per_year'    => ['required', 'numeric', 'min:0', 'max:20'],
+            'age_reduction_per_year'    => ['required', 'numeric', 'min:0', 'max:9.99'],
             'base_price_gbp'            => ['required', 'numeric', 'min:0', 'max:999.99'],
             'min_order_gbp'             => ['required', 'numeric', 'min:0', 'max:999.99'],
             'condition_new_pct'         => ['required', 'numeric', 'min:-100', 'max:100'],
             'condition_complete_pct'    => ['required', 'numeric', 'min:-100', 'max:100'],
             'condition_disk_pct'        => ['required', 'numeric', 'min:-100', 'max:100'],
-            'platform_modifier.*'       => ['nullable', 'numeric', 'min:-99', 'max:99'],
+            'low_price_boost_gbp'       => ['required', 'numeric', 'min:0', 'max:99.99'],
+            'high_price_reduction_pct'  => ['required', 'numeric', 'min:0', 'max:99'],
+            'bundle_price_increase_gbp' => ['required', 'numeric', 'min:0', 'max:999.99'],
+            'platform_modifier.*'       => ['nullable', 'numeric', 'min:-999.99', 'max:999.99'],
+            'platform_modifier_type.*'  => ['nullable', 'in:percent,gbp'],
         ], [
             'pricing_discount_percent.min' => 'Discount must be between 0% and 99%.',
             'pricing_discount_percent.max' => 'Discount must be between 0% and 99%.',
             'usd_to_gbp_rate.min'          => 'Exchange rate must be a positive number.',
-            'age_reduction_per_year.max'   => 'Age reduction cannot exceed 20% per year.',
+            'age_reduction_per_year.max'   => 'Age reduction cannot exceed £9.99 per year.',
             'base_price_gbp.max'           => 'Base price cannot exceed £999.99.',
         ]);
 
@@ -413,11 +521,95 @@ class AdminController extends Controller
         Setting::set('condition_new_pct', $request->input('condition_new_pct'));
         Setting::set('condition_complete_pct', $request->input('condition_complete_pct'));
         Setting::set('condition_disk_pct', $request->input('condition_disk_pct'));
+        Setting::set('low_price_boost_gbp', $request->input('low_price_boost_gbp'));
+        Setting::set('high_price_reduction_pct', $request->input('high_price_reduction_pct'));
+        Setting::set('bundle_price_increase_gbp', $request->input('bundle_price_increase_gbp'));
 
+        $modifierTypes = $request->input('platform_modifier_type', []);
         foreach ($request->input('platform_modifier', []) as $platformId => $modifier) {
             Setting::set("platform_modifier_{$platformId}", (float) ($modifier ?? 0));
+            $type = $modifierTypes[$platformId] ?? 'percent';
+            Setting::set("platform_modifier_type_{$platformId}", in_array($type, ['percent', 'gbp']) ? $type : 'percent');
         }
 
         return back()->with('flash_success', 'Settings saved.');
+    }
+
+    // ----------------------------------------------------------------
+    //  Franchise price adjustments
+    // ----------------------------------------------------------------
+
+    public function storeFranchiseAdjustment(Request $request): RedirectResponse
+    {
+        $request->validate([
+            'franchise_name' => ['required', 'string', 'max:100', 'unique:franchise_adjustments,franchise_name'],
+            'adjustment_gbp' => ['required', 'numeric', 'min:-999.99', 'max:999.99'],
+        ]);
+
+        FranchiseAdjustment::create([
+            'franchise_name' => trim($request->input('franchise_name')),
+            'adjustment_gbp' => $request->input('adjustment_gbp'),
+        ]);
+
+        return back()->with('flash_success', 'Franchise adjustment added.');
+    }
+
+    public function updateFranchiseAdjustment(Request $request, int $id): RedirectResponse
+    {
+        $request->validate([
+            'adjustment_gbp' => ['required', 'numeric', 'min:-999.99', 'max:999.99'],
+        ]);
+
+        FranchiseAdjustment::findOrFail($id)->update([
+            'adjustment_gbp' => $request->input('adjustment_gbp'),
+        ]);
+
+        return back()->with('flash_success', 'Franchise adjustment updated.');
+    }
+
+    public function destroyFranchiseAdjustment(int $id): RedirectResponse
+    {
+        FranchiseAdjustment::findOrFail($id)->delete();
+
+        return back()->with('flash_success', 'Franchise adjustment removed.');
+    }
+
+    // ----------------------------------------------------------------
+    //  Game name price adjustments
+    // ----------------------------------------------------------------
+
+    public function storeGameNameAdjustment(Request $request): RedirectResponse
+    {
+        $request->validate([
+            'keyword'        => ['required', 'string', 'max:200', 'unique:game_name_adjustments,keyword'],
+            'adjustment_gbp' => ['required', 'numeric', 'min:-999.99', 'max:999.99'],
+        ]);
+
+        GameNameAdjustment::create([
+            'keyword'        => trim($request->input('keyword')),
+            'adjustment_gbp' => $request->input('adjustment_gbp'),
+        ]);
+
+        return back()->with('flash_success', 'Game name adjustment added.');
+    }
+
+    public function updateGameNameAdjustment(Request $request, int $id): RedirectResponse
+    {
+        $request->validate([
+            'adjustment_gbp' => ['required', 'numeric', 'min:-999.99', 'max:999.99'],
+        ]);
+
+        GameNameAdjustment::findOrFail($id)->update([
+            'adjustment_gbp' => $request->input('adjustment_gbp'),
+        ]);
+
+        return back()->with('flash_success', 'Game name adjustment updated.');
+    }
+
+    public function destroyGameNameAdjustment(int $id): RedirectResponse
+    {
+        GameNameAdjustment::findOrFail($id)->delete();
+
+        return back()->with('flash_success', 'Game name adjustment removed.');
     }
 }

@@ -26,12 +26,12 @@
                     @foreach($order->items as $item)
                     <div class="co-detail-item" style="padding:0.9rem 1.25rem; border-bottom:1px solid var(--border);">
                         @if(!empty($item['cover_url']))
-                        <img src="{{ e($item['cover_url']) }}" alt="{{ e($item['game_title']) }}" class="co-detail-item__cover">
+                        <img src="{{ $item['cover_url'] }}" alt="{{ $item['game_title'] }}" class="co-detail-item__cover">
                         @else
                         <div class="co-detail-item__cover co-detail-item__cover--placeholder">🎮</div>
                         @endif
                         <div class="co-detail-item__body">
-                            <span class="co-detail-item__title">{{ e($item['game_title']) }}</span>
+                            <span class="co-detail-item__title">{{ $item['game_title'] }}</span>
                             @if(!empty($item['platform_name']))
                             <span class="co-detail-item__platform">{{ $item['platform_name'] }}</span>
                             @endif

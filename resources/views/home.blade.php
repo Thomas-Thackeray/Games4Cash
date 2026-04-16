@@ -49,4 +49,22 @@
 
 
 
+
+<!-- ===== RECENTLY VIEWED / DISCOVER ===== -->
+@if(!empty($games))
+<section class="section">
+    <div class="container">
+        <div class="section-header fade-up">
+            <h2 class="section-title">{{ $sectionTitle }}</h2>
+            <a href="{{ route('search') }}" class="section-link">Browse All →</a>
+        </div>
+        <div class="games-grid games-grid--large fade-up">
+            @foreach($games as $game)
+            <x-game-card :game="$game" />
+            @endforeach
+        </div>
+    </div>
+</section>
+@endif
+
 @endsection

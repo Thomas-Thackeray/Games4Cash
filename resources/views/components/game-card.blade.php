@@ -5,13 +5,13 @@
     $name    = $game['name'] ?? 'Unknown';
     $imgId   = $game['cover']['image_id'] ?? null;
     $imgUrl  = $imgId ? igdb_img($imgId, 'cover_big') : asset('img/placeholder.jpg');
-    $rating  = isset($game['rating']) ? round($game['rating']) : null;
-    $rClass  = $rating ? rating_class($rating) : '';
     $genre   = $game['genres'][0]['name'] ?? '';
     $year    = isset($game['first_release_date']) ? date('Y', $game['first_release_date']) : '';
 
+    $franchiseNames = array_column($game['franchises'] ?? [], 'name');
+
     $gamePrice = \App\Models\GamePrice::where('igdb_game_id', $cardId)->first();
-    $pricing   = $gamePrice?->getComputedPrice();
+    $pricing   = $gamePrice?->getComputedPrice($franchiseNames, $name);
 
     // Don't show free-to-play games in the actions bar
     if ($pricing && $pricing['is_free']) {
@@ -27,7 +27,7 @@
             if (! isset($allPlatforms[$pid])) {
                 continue;
             }
-            $p = $gamePrice->getComputedPriceForPlatform((int) $pid);
+            $p = $gamePrice->getComputedPriceForPlatform((int) $pid, $franchiseNames, $name);
             if ($p && ! $p['is_free']) {
                 $platformsData[] = [
                     'id'           => (int) $pid,
@@ -44,15 +44,12 @@
 <div class="game-card">
     <a href="{{ route('game.show', $cardId) }}" class="game-card__link">
         <div class="game-card__img-wrap">
-            <img src="{{ $imgUrl }}" alt="{{ e($name) }}" loading="lazy" class="game-card__img">
-            @if($rating)
-            <span class="game-card__rating {{ $rClass }}">{{ $rating }}</span>
-            @endif
+            <img src="{{ $imgUrl }}" alt="{{ $name }}" loading="lazy" class="game-card__img">
         </div>
         <div class="game-card__info">
             <h3 class="game-card__title">{{ $name }}</h3>
             <div class="game-card__meta">
-                @if($genre)<span class="tag">{{ e($genre) }}</span>@endif
+                @if($genre)<span class="tag">{{ $genre }}</span>@endif
                 @if($year)<span class="year">{{ $year }}</span>@endif
             </div>
         </div>
@@ -67,7 +64,7 @@
                 data-tpl="ctpl-{{ $cardId }}">
                 Get Cash
             </button>
-            <template id="ctpl-{{ $cardId }}" data-title="{{ e($name) }}">
+            <template id="ctpl-{{ $cardId }}" data-title="{{ $name }}">
                 @foreach($platformsData as $pd)
                 <div class="cash-dropdown__item">
                     <div class="cash-dropdown__item-info">
@@ -78,7 +75,7 @@
                         @csrf
                         <input type="hidden" name="igdb_game_id"  value="{{ $cardId }}">
                         <input type="hidden" name="platform_id"   value="{{ $pd['id'] }}">
-                        <input type="hidden" name="game_title"    value="{{ e($name) }}">
+                        <input type="hidden" name="game_title"    value="{{ $name }}">
                         <input type="hidden" name="cover_url"     value="{{ $imgUrl }}">
                         <input type="hidden" name="steam_app_id"  value="{{ $pd['steam_app_id'] }}">
                         <input type="hidden" name="release_date"  value="{{ $pd['release_date'] }}">
@@ -92,7 +89,7 @@
             <form method="POST" action="{{ route('cash-basket.store') }}">
                 @csrf
                 <input type="hidden" name="igdb_game_id" value="{{ $cardId }}">
-                <input type="hidden" name="game_title"   value="{{ e($name) }}">
+                <input type="hidden" name="game_title"   value="{{ $name }}">
                 <input type="hidden" name="cover_url"    value="{{ $imgUrl }}">
                 <input type="hidden" name="steam_app_id" value="{{ $gamePrice->steam_app_id }}">
                 <input type="hidden" name="release_date" value="{{ $gamePrice->release_date }}">
@@ -106,7 +103,7 @@
                 data-tpl="ctpl-{{ $cardId }}">
                 Get Cash
             </button>
-            <template id="ctpl-{{ $cardId }}" data-title="{{ e($name) }}">
+            <template id="ctpl-{{ $cardId }}" data-title="{{ $name }}">
                 @foreach($platformsData as $pd)
                 <div class="cash-dropdown__item">
                     <div class="cash-dropdown__item-info">

@@ -20,6 +20,9 @@ return Application::configure(basePath: dirname(__DIR__))
         // Security headers on every web response
         $middleware->appendToGroup('web', \App\Http\Middleware\SecurityHeaders::class);
 
+        // Log suspicious inputs (SQLi, XSS, path traversal, etc.)
+        $middleware->appendToGroup('web', \App\Http\Middleware\DetectSuspiciousInput::class);
+
         // Run force-reset check on every web request so no page is bypassed
         $middleware->appendToGroup('web', \App\Http\Middleware\CheckForcePasswordReset::class);
     })

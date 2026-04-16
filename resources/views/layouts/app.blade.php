@@ -114,6 +114,7 @@
                     <div class="user-menu__divider"></div>
                     @endif
                     <a href="{{ route('profile') }}" class="user-menu__item" role="menuitem">👤 Profile</a>
+                    <a href="{{ route('recently-viewed') }}" class="user-menu__item" role="menuitem">🕹️ Recently Viewed</a>
                     <a href="{{ route('wishlist.index') }}" class="user-menu__item" role="menuitem">♡ Wishlist</a>
                     <a href="{{ route('cash-basket.index') }}" class="user-menu__item" role="menuitem">💰 Cash Basket</a>
                     <a href="{{ route('cash-orders.index') }}" class="user-menu__item" role="menuitem">📋 My Quotes</a>
@@ -211,6 +212,7 @@
     <a href="{{ route('admin.dashboard') }}" style="color:var(--accent);">⚙ Admin Dashboard</a>
     @endif
     <a href="{{ route('profile') }}">👤 Profile</a>
+    <a href="{{ route('recently-viewed') }}">🕹️ Recently Viewed</a>
     <a href="{{ route('wishlist.index') }}">♡ Wishlist</a>
     <a href="{{ route('cash-basket.index') }}">💰 Cash Basket</a>
     <a href="{{ route('cash-orders.index') }}">📋 My Quotes</a>

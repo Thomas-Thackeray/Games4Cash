@@ -95,6 +95,15 @@
             </div>
 
             <div class="admin-action-card">
+                <div class="admin-action-card__icon">📧</div>
+                <div class="admin-action-card__body">
+                    <h3>Email Templates</h3>
+                    <p>Edit the text content of order confirmation, welcome, and password reset emails.</p>
+                </div>
+                <a href="{{ route('admin.email-templates') }}" class="btn btn--outline btn--sm">Open</a>
+            </div>
+
+            <div class="admin-action-card">
                 <div class="admin-action-card__icon">❓</div>
                 <div class="admin-action-card__body">
                     <h3>FAQs</h3>

@@ -22,14 +22,14 @@
         <div class="wishlist-card">
             <a href="{{ route('game.show', $item->igdb_game_id) }}" class="wishlist-card__cover-link">
                 @if($item->cover_url)
-                <img src="{{ e($item->cover_url) }}" alt="{{ e($item->game_title) }}" class="wishlist-card__cover">
+                <img src="{{ $item->cover_url }}" alt="{{ $item->game_title }}" class="wishlist-card__cover">
                 @else
                 <div class="wishlist-card__cover wishlist-card__cover--placeholder">🎮</div>
                 @endif
             </a>
             <div class="wishlist-card__body">
                 <a href="{{ route('game.show', $item->igdb_game_id) }}" class="wishlist-card__title">
-                    {{ e($item->game_title) }}
+                    {{ $item->game_title }}
                 </a>
                 <span class="wishlist-card__date">Added {{ $item->created_at->diffForHumans() }}</span>
             </div>
@@ -37,7 +37,7 @@
                 @csrf
                 @method('DELETE')
                 <button type="submit" class="wishlist-card__remove-btn" title="Remove from wishlist"
-                    data-confirm="Remove &quot;{{ e($item->game_title) }}&quot; from your wishlist?">
+                    data-confirm="Remove &quot;{{ $item->game_title }}&quot; from your wishlist?">
                     ✕
                 </button>
             </form>

@@ -6,6 +6,9 @@ use RuntimeException;
 
 class IgdbService
 {
+    /** Platform IDs that are mobile-only (Android, iOS, iPad, generic Mobile). */
+    private const MOBILE_PLATFORM_IDS = [34, 39, 55, 122];
+
     private string $clientId;
     private string $clientSecret;
     private string $accessToken;
@@ -97,68 +100,88 @@ class IgdbService
     }
 
     // ----------------------------------------------------------
+    //  Helpers
+    // ----------------------------------------------------------
+
+    /**
+     * Remove games whose entire platform list consists only of mobile platforms
+     * (Android, iOS, iPad, generic Mobile). Games with no platform data are kept.
+     */
+    private function filterMobileOnly(array $games): array
+    {
+        return array_values(array_filter($games, function (array $game): bool {
+            $platformIds = array_column($game['platforms'] ?? [], 'id');
+            if (empty($platformIds)) {
+                return true; // no platform data — keep it
+            }
+            // Keep the game if it has at least one non-mobile platform
+            return count(array_diff($platformIds, self::MOBILE_PLATFORM_IDS)) > 0;
+        }));
+    }
+
+    // ----------------------------------------------------------
     //  Convenience methods
     // ----------------------------------------------------------
 
     public function getTrendingGames(int $limit = 12): array
     {
-        $body = "fields id,name,cover.image_id,rating,genres.name,platforms.id,first_release_date;
+        $body = "fields id,name,cover.image_id,genres.name,platforms.id,franchises.name,first_release_date;
                  where rating != null & cover != null & version_parent = null & themes != (42);
                  sort rating_count desc;
                  limit {$limit};";
-        return $this->query('games', $body);
+        return $this->filterMobileOnly($this->query('games', $body));
     }
 
     public function getTopRated(int $limit = 8): array
     {
-        $body = "fields id,name,cover.image_id,rating,rating_count,genres.name,platforms.id,first_release_date;
+        $body = "fields id,name,cover.image_id,genres.name,platforms.id,franchises.name,first_release_date;
                  where rating > 85 & rating_count > 200 & cover != null & version_parent = null & themes != (42);
-                 sort rating desc;
+                 sort rating_count desc;
                  limit {$limit};";
-        return $this->query('games', $body);
+        return $this->filterMobileOnly($this->query('games', $body));
     }
 
     public function getRecentGames(int $limit = 8): array
     {
         $now         = time();
         $sixMonthsAgo = $now - (60 * 60 * 24 * 180);
-        $body = "fields id,name,cover.image_id,rating,genres.name,platforms.id,first_release_date;
+        $body = "fields id,name,cover.image_id,genres.name,platforms.id,franchises.name,first_release_date;
                  where first_release_date > {$sixMonthsAgo} & first_release_date < {$now} & cover != null & version_parent = null;
                  sort first_release_date desc;
                  limit {$limit};";
-        return $this->query('games', $body);
+        return $this->filterMobileOnly($this->query('games', $body));
     }
 
     public function getUpcomingGames(int $limit = 8): array
     {
         $now  = time();
-        $body = "fields id,name,cover.image_id,genres.name,platforms.id,first_release_date;
+        $body = "fields id,name,cover.image_id,genres.name,platforms.id,franchises.name,first_release_date;
                  where first_release_date > {$now} & cover != null & version_parent = null;
                  sort first_release_date asc;
                  limit {$limit};";
-        return $this->query('games', $body);
+        return $this->filterMobileOnly($this->query('games', $body));
     }
 
     public function searchGames(string $term, int $limit = 20, int $offset = 0): array
     {
         $safe = addslashes($term);
-        $body = "fields id,name,cover.image_id,rating,genres.name,platforms.id,first_release_date;
+        $body = "fields id,name,cover.image_id,genres.name,platforms.id,franchises.name,first_release_date;
                  search \"{$safe}\";
                  where version_parent = null & cover != null;
                  limit {$limit};
                  offset {$offset};";
-        return $this->query('games', $body);
+        return $this->filterMobileOnly($this->query('games', $body));
     }
 
     public function getGame(int $id): ?array
     {
-        $body = "fields id,name,summary,storyline,cover.image_id,rating,rating_count,
-                 genres.name,platforms.name,platforms.id,
+        $body = "fields id,name,summary,storyline,cover.image_id,
+                 genres.name,platforms.name,platforms.id,franchises.name,
                  screenshots.image_id,artworks.image_id,
                  involved_companies.company.name,involved_companies.developer,involved_companies.publisher,
-                 game_modes.name,themes.name,
+                 game_modes.name,themes.name,category,
                  first_release_date,websites.url,websites.category,
-                 similar_games.name,similar_games.cover.image_id,similar_games.rating,similar_games.first_release_date,
+                 similar_games.name,similar_games.cover.image_id,similar_games.first_release_date,
                  videos.video_id,videos.name;
                  where id = {$id};
                  limit 1;";
@@ -168,23 +191,23 @@ class IgdbService
 
     public function getGamesByPlatform(int $platformId, int $limit = 24, int $offset = 0): array
     {
-        $body = "fields id,name,cover.image_id,rating,genres.name,platforms.id,first_release_date;
+        $body = "fields id,name,cover.image_id,genres.name,platforms.id,franchises.name,first_release_date;
                  where platforms = ({$platformId}) & cover != null & version_parent = null & themes != (42) & rating != null;
                  sort rating_count desc;
                  limit {$limit};
                  offset {$offset};";
-        return $this->query('games', $body);
+        return $this->filterMobileOnly($this->query('games', $body));
     }
 
     public function getGamesByFranchise(string $franchiseName, int $limit = 24, int $offset = 0): array
     {
         $safe = addslashes($franchiseName);
-        $body = "fields id,name,cover.image_id,rating,genres.name,platforms.id,first_release_date;
+        $body = "fields id,name,cover.image_id,genres.name,platforms.id,franchises.name,first_release_date;
                  search \"{$safe}\";
                  where cover != null & version_parent = null;
                  limit {$limit};
                  offset {$offset};";
-        return $this->query('games', $body);
+        return $this->filterMobileOnly($this->query('games', $body));
     }
 
     public function getGamesByIds(array $ids, int $limit = 24, int $offset = 0): array
@@ -197,7 +220,7 @@ class IgdbService
         if (empty($idList)) {
             return [];
         }
-        $body = "fields id,name,cover.image_id,rating,genres.name,platforms.id,first_release_date;
+        $body = "fields id,name,cover.image_id,genres.name,platforms.id,franchises.name,first_release_date;
                  where id = ({$idList}) & cover != null & version_parent = null;
                  sort rating_count desc;
                  limit {$limit};";
@@ -206,12 +229,23 @@ class IgdbService
 
     public function getGamesByGenre(int $genreId, int $limit = 24, int $offset = 0): array
     {
-        $body = "fields id,name,cover.image_id,rating,genres.name,platforms.id,first_release_date;
+        $body = "fields id,name,cover.image_id,genres.name,platforms.id,franchises.name,first_release_date;
                  where genres = ({$genreId}) & cover != null & version_parent = null & themes != (42) & rating > 70;
                  sort rating_count desc;
                  limit {$limit};
                  offset {$offset};";
-        return $this->query('games', $body);
+        return $this->filterMobileOnly($this->query('games', $body));
+    }
+
+    public function getRandomGames(int $limit = 20): array
+    {
+        $offset = rand(0, 150);
+        $body = "fields id,name,cover.image_id,genres.name,platforms.id,franchises.name,first_release_date;
+                 where rating != null & cover != null & version_parent = null & themes != (42) & rating_count > 50;
+                 sort rating_count desc;
+                 limit {$limit};
+                 offset {$offset};";
+        return $this->filterMobileOnly($this->query('games', $body));
     }
 
     public function getPlatform(int $id): ?array

@@ -2,6 +2,24 @@
 @section('title', 'FAQ')
 @section('meta_description', 'Frequently asked questions about selling your games for cash — how it works, what we accept, and how to get a free collection quote.')
 @section('canonical', route('faq'))
+
+@if($faqs->isNotEmpty())
+@push('head_meta')
+@php
+    $faqSchema = [
+        '@context'   => 'https://schema.org',
+        '@type'      => 'FAQPage',
+        'mainEntity' => $faqs->map(fn($faq) => [
+            '@type'          => 'Question',
+            'name'           => $faq->title,
+            'acceptedAnswer' => ['@type' => 'Answer', 'text' => $faq->description],
+        ])->values()->all(),
+    ];
+@endphp
+<script type="application/ld+json">{!! json_encode($faqSchema, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}</script>
+@endpush
+@endif
+
 @section('content')
 <div class="container" style="max-width:800px; padding:4rem 1rem 5rem;">
     <h1 style="font-size:2.5rem; margin-bottom:0.5rem;">Frequently Asked Questions</h1>

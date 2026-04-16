@@ -15,7 +15,7 @@
                 <p style="font-size:0.8rem; letter-spacing:0.15em; text-transform:uppercase; color:var(--accent); font-weight:700; margin-bottom:0.5rem;">
                     Genre
                 </p>
-                <h1 class="section-title">{{ e($genreName) }}</h1>
+                <h1 class="section-title">{{ $genreName }}</h1>
             </div>
         </div>
 
@@ -43,7 +43,7 @@
         </div>
         @else
         <div class="section-header fade-up">
-            <h2 class="section-title">{{ e($genreName) }} Games</h2>
+            <h2 class="section-title">{{ $genreName }} Games</h2>
             <span style="color:var(--text-muted); font-size:0.875rem;">Page {{ $page }}</span>
         </div>
 

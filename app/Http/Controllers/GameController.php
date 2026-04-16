@@ -27,14 +27,24 @@ class GameController extends Controller
             abort(404);
         }
 
-        $steamAppId = null;
+        $steamAppId     = null;
+        $franchiseNames = [];
+        $gamePrice      = null;
+
+        if ($game) {
+            $franchiseNames = array_values(array_filter(
+                array_column($game['franchises'] ?? [], 'name')
+            ));
+        }
 
         if ($game) {
             try {
                 $steamAppId = $igdb->getSteamAppId($id);
                 if ($steamAppId) {
                     $releaseTimestamp = $game['first_release_date'] ?? null;
-                    $pricing = PricingService::getForSteamApp($steamAppId, $releaseTimestamp);
+
+                    // Populate the raw-price cache (6-hour TTL)
+                    PricingService::getForSteamApp($steamAppId, $releaseTimestamp);
 
                     // Persist raw prices so game cards can display them without API calls
                     $raw = PricingService::getRawCached($steamAppId);
@@ -42,6 +52,8 @@ class GameController extends Controller
                         $platformIds = array_values(array_filter(
                             array_column($game['platforms'] ?? [], 'id')
                         ));
+                        // IGDB category 3 = bundle
+                        $isBundle = ($game['category'] ?? 0) === 3;
                         GamePrice::record(
                             $id,
                             $steamAppId,
@@ -50,6 +62,8 @@ class GameController extends Controller
                             $raw['steam_gbp'] ?? null,
                             $raw['cheapshark_usd'] ?? null,
                             $platformIds,
+                            $franchiseNames,
+                            $isBundle,
                         );
                     }
                 }
@@ -58,29 +72,35 @@ class GameController extends Controller
             }
         }
 
-        // Fallback: if the live API returned no price, try the DB record.
-        // getComputedPrice() now uses base_price_gbp when no raw price is stored.
-        if ($pricing === null && $game) {
+        // Always compute display pricing from the DB record so the game detail page,
+        // game cards, and the cash basket all use the same formula and data.
+        if ($game) {
             $gamePrice = GamePrice::where('igdb_game_id', $id)->first();
             if ($gamePrice) {
-                $pricing = $gamePrice->getComputedPrice();
+                $pricing = $gamePrice->getComputedPrice($franchiseNames, $game['name'] ?? null);
             } else {
                 // No DB record yet — compute from base price setting directly
                 $basePriceGbp = (float) Setting::get('base_price_gbp', 0);
                 if ($basePriceGbp > 0) {
                     $discountPct        = (float) Setting::get('pricing_discount_percent', 85);
                     $discountMultiplier = 1 - ($discountPct / 100);
-                    $ageMultiplier      = 1.0;
-                    $releaseTs          = $game['first_release_date'] ?? null;
+                    $releaseTs = $game['first_release_date'] ?? null;
+                    $computed  = max(0.01, round($basePriceGbp * $discountMultiplier, 2));
                     if ($releaseTs !== null) {
-                        $ageReductionPerYear = (float) Setting::get('age_reduction_per_year', 1);
-                        if ($ageReductionPerYear > 0) {
-                            $ageYears      = max(0, (int) floor((time() - $releaseTs) / (365.25 * 86400)));
-                            $agePct        = min($ageReductionPerYear * $ageYears, 99.0);
-                            $ageMultiplier = 1 - ($agePct / 100);
+                        $ageReductionGbp = (float) Setting::get('age_reduction_per_year', 0);
+                        if ($ageReductionGbp > 0) {
+                            $ageYears = max(0, (int) floor((time() - $releaseTs) / (365.25 * 86400)));
+                            $computed = max(0.01, $computed - ($ageYears * $ageReductionGbp));
                         }
                     }
-                    $computed = max(0.01, round($basePriceGbp * $discountMultiplier * $ageMultiplier, 2));
+                    $lowPriceBoost = (float) Setting::get('low_price_boost_gbp', 0.20);
+                    if ($computed < 0.10 && $lowPriceBoost > 0) {
+                        $computed = round($computed + $lowPriceBoost, 2);
+                    }
+                    $highPricePct = (float) Setting::get('high_price_reduction_pct', 0);
+                    if ($highPricePct > 0 && $computed > 10.00) {
+                        $computed = round($computed * (1 - ($highPricePct / 100)), 2);
+                    }
                     $pricing  = [
                         'is_free'       => false,
                         'display_price' => '£' . number_format($computed, 2),
@@ -98,6 +118,14 @@ class GameController extends Controller
             $inCashBasket = $user->cashBasketItems()->where('igdb_game_id', $id)->exists();
         }
 
-        return view('game', compact('game', 'error', 'pricing', 'steamAppId', 'inWishlist', 'inCashBasket'));
+        // Track recently viewed (session array of IDs, most recent first, max 20)
+        if ($game) {
+            $viewed = session('recently_viewed', []);
+            $viewed = array_values(array_filter($viewed, fn($v) => $v !== $id));
+            array_unshift($viewed, $id);
+            session(['recently_viewed' => array_slice($viewed, 0, 20)]);
+        }
+
+        return view('game', compact('game', 'error', 'pricing', 'steamAppId', 'inWishlist', 'inCashBasket', 'gamePrice', 'franchiseNames'));
     }
 }

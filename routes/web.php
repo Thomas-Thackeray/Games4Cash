@@ -17,6 +17,7 @@ use App\Http\Controllers\PlatformController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SearchController;
 use App\Http\Controllers\SecurityController;
+use App\Http\Controllers\RecentlyViewedController;
 use App\Http\Controllers\WishlistController;
 use Illuminate\Support\Facades\Route;
 
@@ -64,6 +65,9 @@ Route::middleware(['auth', 'track.active', 'force.reset'])->group(function () {
 
     Route::get('/security', [SecurityController::class, 'show'])->name('security');
     Route::put('/security/password', [SecurityController::class, 'updatePassword'])->name('security.password');
+
+    // Recently viewed
+    Route::get('/recently-viewed', [RecentlyViewedController::class, 'index'])->name('recently-viewed');
 
     // Wishlist
     Route::get('/wishlist', [WishlistController::class, 'index'])->name('wishlist.index');
@@ -120,6 +124,21 @@ Route::middleware(['auth', 'track.active', 'admin'])->prefix('admin')->name('adm
     // Settings
     Route::get('/settings', [AdminController::class, 'showSettings'])->name('settings');
     Route::post('/settings', [AdminController::class, 'updateSettings'])->name('settings.update');
+
+    // Franchise adjustments
+    Route::post('/settings/franchise-adjustments', [AdminController::class, 'storeFranchiseAdjustment'])->name('franchise-adjustments.store');
+    Route::patch('/settings/franchise-adjustments/{id}', [AdminController::class, 'updateFranchiseAdjustment'])->name('franchise-adjustments.update')->where('id', '[0-9]+');
+    Route::delete('/settings/franchise-adjustments/{id}', [AdminController::class, 'destroyFranchiseAdjustment'])->name('franchise-adjustments.destroy')->where('id', '[0-9]+');
+
+    // Game name adjustments
+    Route::post('/settings/game-name-adjustments', [AdminController::class, 'storeGameNameAdjustment'])->name('game-name-adjustments.store');
+    Route::patch('/settings/game-name-adjustments/{id}', [AdminController::class, 'updateGameNameAdjustment'])->name('game-name-adjustments.update')->where('id', '[0-9]+');
+    Route::delete('/settings/game-name-adjustments/{id}', [AdminController::class, 'destroyGameNameAdjustment'])->name('game-name-adjustments.destroy')->where('id', '[0-9]+');
+
+    // Email templates
+    Route::get('/email-templates', [AdminController::class, 'showEmailTemplates'])->name('email-templates');
+    Route::post('/email-templates', [AdminController::class, 'updateEmailTemplates'])->name('email-templates.update');
+    Route::post('/email-templates/test', [AdminController::class, 'testEmailTemplate'])->name('email-templates.test');
 
     // Cash orders management
     Route::get('/orders', [AdminController::class, 'cashOrders'])->name('orders');

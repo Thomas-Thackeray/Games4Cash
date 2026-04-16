@@ -37,11 +37,7 @@
 
         <div class="body">
             <h1 class="greeting">Reset your password</h1>
-            <p class="intro">
-                Hi {{ $user->first_name }}, we received a request to reset the password for your
-                <strong>{{ config('app.name') }}</strong> account. Click the button below to choose a new password.
-                This link will expire in <strong>60 minutes</strong>.
-            </p>
+            <p class="intro">{!! nl2br(e($emailIntro)) !!}</p>
 
             @php
                 $resetUrl = url(route('password.reset', [
@@ -61,9 +57,7 @@
 
             <hr class="divider">
 
-            <p class="body-note">
-                If you did not request a password reset, no action is required — your password will remain unchanged.
-            </p>
+            <p class="body-note">{!! nl2br(e($emailFooterNote)) !!}</p>
             <p class="body-note">
                 For security, this link can only be used once and expires after 60 minutes.
             </p>

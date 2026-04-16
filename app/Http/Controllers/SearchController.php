@@ -18,8 +18,8 @@ class SearchController extends Controller
         $limit     = 24;
         $offset    = ($page - 1) * $limit;
 
-        // Log only on page 1 to avoid pagination noise
-        if ($page === 1) {
+        // Log only on page 1, and skip if already logged as security
+        if ($page === 1 && !$request->attributes->get('security_logged')) {
             if ($query !== '') {
                 ActivityLogger::search('Searched for "' . $query . '"', $request);
             } elseif ($franchise !== '') {

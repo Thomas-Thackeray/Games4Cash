@@ -48,11 +48,7 @@
 
         <div class="body">
             <h1 class="greeting">Thank you, {{ $user->first_name }}!</h1>
-            <p class="intro">
-                Your cash quote has been received and we're reviewing it now.
-                A member of our team will be in touch shortly with further information
-                about your collection and payment.
-            </p>
+            <p class="intro">{!! nl2br(e($emailIntro)) !!}</p>
 
             <p class="section-title">Your Order Reference</p>
             <div><span class="ref-badge">{{ $order->order_ref }}</span></div>
@@ -85,7 +81,7 @@
                     @endforeach
                     <tr class="total-row">
                         <td>Total Estimated Value</td>
-                        <td class="price">£{{ number_format($order->total_gbp, 2) }}</td>
+                        <td class="price">£{{ number_format((float) $order->total_gbp, 2) }}</td>
                     </tr>
                 </tbody>
             </table>
@@ -106,10 +102,7 @@
 
             <hr class="divider">
 
-            <p class="body-note">
-                Please ensure your games are ready and packaged securely before the collection date.
-                All prices are estimates and may be adjusted upon physical inspection.
-            </p>
+            <p class="body-note">{!! nl2br(e($emailPackagingNote)) !!}</p>
             <p class="body-note">
                 Questions? <a href="{{ url('/contact') }}" style="color:#e63946;">Contact our support team</a> quoting your order reference <strong>{{ $order->order_ref }}</strong>.
             </p>
