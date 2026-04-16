@@ -122,6 +122,13 @@ class GamePrice extends Model
             $computed = round($computed + 0.20, 2);
         }
 
+        // 7. High-price reduction: if price > £10, deduct X%
+        $highPriceThreshold = 10.00;
+        $highPricePct = (float) Setting::get('high_price_reduction_pct', 0);
+        if ($highPricePct > 0 && $computed > $highPriceThreshold) {
+            $computed = round($computed * (1 - ($highPricePct / 100)), 2);
+        }
+
         return [
             'is_free'       => false,
             'display_price' => '£' . number_format($computed, 2),
@@ -192,6 +199,13 @@ class GamePrice extends Model
         $computed = max(0.01, round($computed, 2));
         if ($computed < 0.10) {
             $computed = round($computed + 0.20, 2);
+        }
+
+        // 7. High-price reduction: if price > £10, deduct X%
+        $highPriceThreshold = 10.00;
+        $highPricePct = (float) Setting::get('high_price_reduction_pct', 0);
+        if ($highPricePct > 0 && $computed > $highPriceThreshold) {
+            $computed = round($computed * (1 - ($highPricePct / 100)), 2);
         }
 
         return [

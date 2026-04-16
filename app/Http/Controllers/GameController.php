@@ -93,6 +93,10 @@ class GameController extends Controller
                     if ($computed < 0.10) {
                         $computed = round($computed + 0.20, 2);
                     }
+                    $highPricePct = (float) Setting::get('high_price_reduction_pct', 0);
+                    if ($highPricePct > 0 && $computed > 10.00) {
+                        $computed = round($computed * (1 - ($highPricePct / 100)), 2);
+                    }
                     $pricing  = [
                         'is_free'       => false,
                         'display_price' => '£' . number_format($computed, 2),

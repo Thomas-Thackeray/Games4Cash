@@ -82,7 +82,16 @@
             </div>
 
             <div>
-                <strong>Step 7 — Condition modifier (applied at quote time)</strong>
+                <strong>Step 7 — High-price reduction</strong>
+                <p class="settings-hint" style="margin-top:0.25rem;">
+                    If the price after step 6 is <strong>greater than £10.00</strong>, it is reduced by the
+                    <strong>High-Price Reduction %</strong>. This keeps offers on premium or recent titles
+                    from being too generous. Set to 0 to disable.
+                </p>
+            </div>
+
+            <div>
+                <strong>Step 8 — Condition modifier (applied at quote time)</strong>
                 <p class="settings-hint" style="margin-top:0.25rem;">
                     When a customer selects the physical condition of their game in the cash basket,
                     a final percentage adjustment is applied on top of the computed price.
@@ -96,6 +105,7 @@
                 <br>base += franchise_adj
                 <br>offer = base × (1 − discount%) [× (1 + platform%) &nbsp;OR&nbsp; + platform_£] − (age_years × £age_reduction)
                 <br>if offer &lt; £0.10 → offer += £0.20
+                <br>if offer &gt; £10.00 → offer × (1 − high_price%)
                 <br>final = offer × (1 + condition%)
             </div>
 
@@ -160,6 +170,18 @@
                             min="0" max="999.99" step="0.01" class="form-input settings-input--sm">
                     </div>
                     @error('base_price_gbp')<p class="form-error">{{ $message }}</p>@enderror
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">High-Price Reduction (%)</label>
+                    <p class="settings-hint">If the computed price exceeds <strong>£10.00</strong>, reduce it by this percentage. Set to <strong>0</strong> to disable.</p>
+                    <div class="settings-input-row">
+                        <input type="number" name="high_price_reduction_pct"
+                            value="{{ old('high_price_reduction_pct', $settings['high_price_reduction_pct']) }}"
+                            min="0" max="99" step="1" class="form-input settings-input--sm">
+                        <span class="settings-unit">%</span>
+                    </div>
+                    @error('high_price_reduction_pct')<p class="form-error">{{ $message }}</p>@enderror
                 </div>
 
                 <div class="form-group">

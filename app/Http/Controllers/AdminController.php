@@ -328,9 +328,10 @@ class AdminController extends Controller
             'age_reduction_per_year'   => Setting::get('age_reduction_per_year', 1),
             'base_price_gbp'           => Setting::get('base_price_gbp', 0),
             'min_order_gbp'            => Setting::get('min_order_gbp', 20),
-            'condition_new_pct'        => Setting::get('condition_new_pct', 20),
-            'condition_complete_pct'   => Setting::get('condition_complete_pct', 0),
-            'condition_disk_pct'       => Setting::get('condition_disk_pct', -50),
+            'condition_new_pct'          => Setting::get('condition_new_pct', 20),
+            'condition_complete_pct'     => Setting::get('condition_complete_pct', 0),
+            'condition_disk_pct'         => Setting::get('condition_disk_pct', -50),
+            'high_price_reduction_pct'   => Setting::get('high_price_reduction_pct', 0),
         ];
 
         $platforms = array_map(function ($p) {
@@ -400,6 +401,7 @@ class AdminController extends Controller
             'condition_new_pct'         => ['required', 'numeric', 'min:-100', 'max:100'],
             'condition_complete_pct'    => ['required', 'numeric', 'min:-100', 'max:100'],
             'condition_disk_pct'        => ['required', 'numeric', 'min:-100', 'max:100'],
+            'high_price_reduction_pct'  => ['required', 'numeric', 'min:0', 'max:99'],
             'platform_modifier.*'       => ['nullable', 'numeric', 'min:-999.99', 'max:999.99'],
             'platform_modifier_type.*'  => ['nullable', 'in:percent,gbp'],
         ], [
@@ -418,6 +420,7 @@ class AdminController extends Controller
         Setting::set('condition_new_pct', $request->input('condition_new_pct'));
         Setting::set('condition_complete_pct', $request->input('condition_complete_pct'));
         Setting::set('condition_disk_pct', $request->input('condition_disk_pct'));
+        Setting::set('high_price_reduction_pct', $request->input('high_price_reduction_pct'));
 
         $modifierTypes = $request->input('platform_modifier_type', []);
         foreach ($request->input('platform_modifier', []) as $platformId => $modifier) {
