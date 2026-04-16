@@ -2072,6 +2072,38 @@ h1,h2,h3,h4,h5,h6 { line-height: 1.2; }
     border: 1px solid rgba(230,57,70,0.35);
     font-weight: 700;
 }
+.admin-badge--suspicious {
+    background: rgba(255,100,0,0.13);
+    color: #ff7a30;
+    border: 1px solid rgba(255,100,0,0.35);
+    font-weight: 700;
+}
+
+/* Activity log — mobile card layout */
+.log-cards { display: none; flex-direction: column; gap: 0.75rem; }
+.log-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 0.9rem 1rem;
+}
+.log-card__header {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 0.5rem; margin-bottom: 0.5rem; flex-wrap: wrap;
+}
+.log-card__meta {
+    font-size: 0.78rem; color: var(--text-muted);
+    display: flex; flex-wrap: wrap; gap: 0.4rem 1rem;
+    margin-top: 0.4rem;
+}
+.log-card__desc {
+    font-size: 0.875rem; color: var(--text);
+    word-break: break-word; margin-top: 0.35rem;
+}
+@media (max-width: 720px) {
+    .admin-table-wrap { display: none; }
+    .log-cards { display: flex; }
+}
 
 /* Extra small button */
 .btn--xs { padding: 0.35rem 0.8rem; font-size: 0.78rem; }

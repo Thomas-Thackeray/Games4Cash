@@ -29,14 +29,14 @@
 
     {{-- Filter tabs --}}
     <div style="display:flex; gap:0.5rem; margin-bottom:1.25rem; flex-wrap:wrap; align-items:center;">
-        @foreach(['all' => 'All', 'search' => 'Search', 'login' => 'Login', 'filter' => 'Filter', 'quote' => 'Quote', 'security' => 'Security'] as $key => $label)
+        @foreach(['all' => 'All', 'search' => '🔍 Search', 'login' => '🔑 Login', 'filter' => '🎮 Filter', 'quote' => '💰 Quote', 'security' => '🚨 Security', 'suspicious' => '⚠️ Suspicious'] as $key => $label)
         <a href="{{ route('admin.activity-logs', array_filter(['type' => $key === 'all' ? null : $key, 'search' => $search ?: null])) }}"
             class="btn btn--sm {{ $type === $key ? 'btn--primary' : 'btn--outline' }}">
             {{ $label }}
         </a>
         @endforeach
 
-        <form method="GET" action="{{ route('admin.activity-logs') }}" style="display:flex; gap:0.5rem; margin-left:auto;">
+        <form method="GET" action="{{ route('admin.activity-logs') }}" style="display:flex; gap:0.5rem; margin-left:auto; flex-wrap:wrap;">
             @if($type !== 'all')
                 <input type="hidden" name="type" value="{{ $type }}">
             @endif
@@ -51,7 +51,7 @@
         </form>
     </div>
 
-    {{-- Table --}}
+    {{-- Desktop table --}}
     <div class="admin-table-wrap">
         <table class="admin-table">
             <thead>
@@ -72,17 +72,9 @@
                         <span style="font-size:0.8rem;">{{ $log->created_at->format('H:i:s') }}</span>
                     </td>
                     <td>
-                        <span class="admin-badge admin-badge--{{ $log->type }}">
-                            @if($log->type === 'search') 🔍
-                            @elseif($log->type === 'login') 🔑
-                            @elseif($log->type === 'quote') 💰
-                            @elseif($log->type === 'security') 🚨
-                            @else 🎮
-                            @endif
-                            {{ ucfirst($log->type) }}
-                        </span>
+                        @include('admin._log-badge', ['log' => $log])
                     </td>
-                    <td style="max-width:320px;">{{ $log->description }}</td>
+                    <td style="max-width:320px; word-break:break-word;">{{ $log->description }}</td>
                     <td class="admin-td-muted">
                         @if($log->user)
                             <a href="{{ route('admin.users.detail', $log->user->id) }}" style="color:var(--accent);">{{ $log->user->username }}</a>
@@ -111,6 +103,37 @@
                 @endforelse
             </tbody>
         </table>
+    </div>
+
+    {{-- Mobile cards --}}
+    <div class="log-cards">
+        @forelse($logs as $log)
+        <div class="log-card">
+            <div class="log-card__header">
+                @include('admin._log-badge', ['log' => $log])
+                <form method="POST" action="{{ route('admin.activity-logs.delete', $log->id) }}">
+                    @csrf
+                    @method('DELETE')
+                    <button type="button" class="btn btn--danger btn--xs"
+                        data-confirm="Delete this log entry?">Delete</button>
+                </form>
+            </div>
+            <div class="log-card__desc">{{ $log->description }}</div>
+            <div class="log-card__meta">
+                <span>{{ $log->created_at->format('d M Y, H:i:s') }}</span>
+                @if($log->user)
+                    <a href="{{ route('admin.users.detail', $log->user->id) }}" style="color:var(--accent);">{{ $log->user->username }}</a>
+                @else
+                    <span>Guest</span>
+                @endif
+                @if($log->ip_address)
+                    <span class="attempt-ip">{{ $log->ip_address }}</span>
+                @endif
+            </div>
+        </div>
+        @empty
+        <p style="text-align:center; color:var(--text-dim); padding:2rem 0;">No activity logs found.</p>
+        @endforelse
     </div>
 
     <p style="color:var(--text-muted); font-size:0.85rem; margin-top:1rem;">
