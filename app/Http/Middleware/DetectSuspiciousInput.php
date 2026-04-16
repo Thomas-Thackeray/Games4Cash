@@ -20,8 +20,10 @@ class DetectSuspiciousInput
      */
     private const PATTERNS = [
         ['SQL injection',      '/(\bunion\b.{0,30}\bselect\b|\bselect\b.{0,30}\bfrom\b|\bdrop\b.{0,20}\b(table|database)\b|\binsert\b.{0,20}\binto\b|\bdelete\b.{0,20}\bfrom\b|\bupdate\b.{0,20}\bset\b|\'[\s]*or[\s]+[\'"0-9]|--[\s]*$|;\s*--)/i'],
+        ['time-based injection', '/\b(sleep|waitfor\s+delay|pg_sleep|benchmark)\s*\(|\btime\.sleep\s*\(/i'],
+        ['code injection',     '/\beval\s*\(|\bexec\s*\(|\bcompile\s*\(|\bassert\s*\(|\bsystem\s*\(|\bpassthru\s*\(|\bproc_open\s*\(/i'],
         ['XSS attempt',        '/<\s*(script|iframe|object|embed|svg|img|body|link|meta|style)[^>]*>|javascript\s*:|on(load|error|click|mouse\w+|focus|blur|key\w+|submit|input|change|ready)\s*=/i'],
-        ['path traversal',     '/(\.\.[\/\\\\]){2,}|(\/|\\\\)(etc\/passwd|proc\/self|windows\/system32|boot\.ini)/i'],
+        ['path traversal',     '/\.\.[\/\\\\]|(\/|\\\\)(etc\/passwd|proc\/self|windows\/system32|boot\.ini)/i'],
         ['command injection',  '/[`|;&]\s*(ls|cat|rm|wget|curl|bash|sh|python|perl|php|nc|ncat|nmap|whoami|id|uname|pwd)\b/i'],
         ['template injection', '/\{\{.{0,30}\}\}|\$\{.{0,30}\}|<%=?.{0,30}%>/'],
         ['SSRF attempt',       '/\b(file|dict|gopher|ldap|ftp):\/\//i'],
