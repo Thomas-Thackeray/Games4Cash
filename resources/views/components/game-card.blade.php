@@ -2,6 +2,7 @@
 
 @php
     $cardId  = $game['id'];
+    $cardUrl = !empty($game['slug']) ? route('game.show', ['slug' => $game['slug']]) : url('/game/' . $cardId);
     $name    = $game['name'] ?? 'Unknown';
     $imgId   = $game['cover']['image_id'] ?? null;
     $imgUrl  = $imgId ? igdb_img($imgId, 'cover_big') : asset('img/placeholder.jpg');
@@ -42,7 +43,7 @@
 @endphp
 
 <div class="game-card">
-    <a href="{{ route('game.show', $cardId) }}" class="game-card__link">
+    <a href="{{ $cardUrl }}" class="game-card__link">
         <div class="game-card__img-wrap">
             <img src="{{ $imgUrl }}" alt="{{ $name }}" loading="lazy" class="game-card__img">
         </div>

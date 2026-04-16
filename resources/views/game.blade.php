@@ -48,7 +48,7 @@
 
 @if($game)
 @section('meta_description', $seoDesc)
-@section('canonical', route('game.show', $game['id']))
+@section('canonical', !empty($game['slug']) ? route('game.show', ['slug' => $game['slug']]) : url('/game/' . $game['id']))
 @section('og_type', 'game')
 @section('og_image', $coverUrl)
 @endif

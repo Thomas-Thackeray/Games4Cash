@@ -16,6 +16,7 @@ class GamePrice extends Model
 
     protected $fillable = [
         'igdb_game_id',
+        'slug',
         'steam_app_id',
         'release_date',
         'platform_ids',
@@ -48,21 +49,38 @@ class GamePrice extends Model
         array  $platformIds = [],
         array  $franchiseNames = [],
         bool   $isBundle = false,
+        ?string $slug = null,
     ): void {
-        self::updateOrCreate(
-            ['igdb_game_id' => $igdbGameId],
-            [
-                'steam_app_id'    => $steamAppId,
-                'release_date'    => $releaseDate,
-                'platform_ids'    => empty($platformIds) ? null : json_encode(array_values($platformIds)),
-                'franchise_names' => empty($franchiseNames) ? null : json_encode(array_values($franchiseNames)),
-                'is_free'         => $isFree,
-                'is_bundle'       => $isBundle,
-                'steam_gbp'       => $steamGbp,
-                'cheapshark_usd'  => $cheapsharkUsd,
-                'updated_at'      => now(),
-            ]
-        );
+        $values = [
+            'steam_app_id'    => $steamAppId,
+            'release_date'    => $releaseDate,
+            'platform_ids'    => empty($platformIds) ? null : json_encode(array_values($platformIds)),
+            'franchise_names' => empty($franchiseNames) ? null : json_encode(array_values($franchiseNames)),
+            'is_free'         => $isFree,
+            'is_bundle'       => $isBundle,
+            'steam_gbp'       => $steamGbp,
+            'cheapshark_usd'  => $cheapsharkUsd,
+            'updated_at'      => now(),
+        ];
+
+        // Only write slug when we have one — never overwrite with null
+        if ($slug !== null) {
+            $values['slug'] = $slug;
+        }
+
+        self::updateOrCreate(['igdb_game_id' => $igdbGameId], $values);
+    }
+
+    /**
+     * Return the canonical public URL for a game given its IGDB ID.
+     * Uses the stored slug when available, falls back to the numeric ID route.
+     */
+    public static function urlForId(int $igdbId): string
+    {
+        $slug = static::where('igdb_game_id', $igdbId)->value('slug');
+        return $slug
+            ? route('game.show', ['slug' => $slug])
+            : url('/game/' . $igdbId);
     }
 
     /**

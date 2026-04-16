@@ -29,8 +29,13 @@ Route::get('/img/{encoded}', [ImageProxyController::class, 'show'])
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
 
-Route::get('/game/{id}', [GameController::class, 'show'])
+// Canonical slug URL — /game/elden-ring
+Route::get('/game/{slug}', [GameController::class, 'showBySlug'])
     ->name('game.show')
+    ->where('slug', '[a-z][a-z0-9\-]*');
+
+// Legacy numeric ID — 301 redirects to slug URL
+Route::get('/game/{id}', [GameController::class, 'show'])
     ->where('id', '[0-9]+');
 
 Route::get('/search', [SearchController::class, 'index'])->name('search');

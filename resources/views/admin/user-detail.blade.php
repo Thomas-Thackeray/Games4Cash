@@ -62,7 +62,7 @@
         @else
         <div class="admin-wishlist-grid">
             @foreach($wishlistItems as $item)
-            <a href="{{ route('game.show', $item->igdb_game_id) }}" class="admin-wishlist-item">
+            <a href="{{ \App\Models\GamePrice::urlForId($item->igdb_game_id) }}" class="admin-wishlist-item">
                 @if($item->cover_url)
                 <img src="{{ $item->cover_url }}" alt="{{ $item->game_title }}" class="admin-wishlist-item__cover">
                 @else
@@ -91,7 +91,7 @@
                 <div class="co-detail-item__cover co-detail-item__cover--placeholder">🎮</div>
                 @endif
                 <div class="co-detail-item__body">
-                    <a href="{{ route('game.show', $item['igdb_game_id']) }}" class="co-detail-item__title" style="text-decoration:none; color:inherit;">
+                    <a href="{{ \App\Models\GamePrice::urlForId($item['igdb_game_id']) }}" class="co-detail-item__title" style="text-decoration:none; color:inherit;">
                         {{ $item['game_title'] }}
                     </a>
                     @if($item['platform_name'])
