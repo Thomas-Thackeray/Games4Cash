@@ -287,7 +287,7 @@
                 </div>
 
                 @if($summary)
-                <p class="gd-summary">{!! nl2br(e($summary)) !!}</p>
+                <p class="gd-summary" style="margin-top:1.5rem;">{!! nl2br(e($summary)) !!}</p>
                 @endif
 
             </div>
