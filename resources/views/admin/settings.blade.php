@@ -178,13 +178,22 @@
         @endif
 
         {{-- Add new --}}
+        @php
+            $usedFranchises = $franchiseAdjustments->pluck('franchise_name')->toArray();
+            $availableFranchises = array_diff(config('igdb.franchises'), $usedFranchises);
+        @endphp
+        @if(!empty($availableFranchises))
         <form method="POST" action="{{ route('admin.franchise-adjustments.store') }}"
               style="display:flex; align-items:flex-end; gap:0.75rem; flex-wrap:wrap;">
             @csrf
             <div class="form-group" style="flex:1; min-width:180px; margin:0;">
-                <label class="form-label">Franchise Name</label>
-                <input type="text" name="franchise_name" value="{{ old('franchise_name') }}"
-                       class="form-input" placeholder="e.g. Call of Duty">
+                <label class="form-label">Franchise</label>
+                <select name="franchise_name" class="form-input">
+                    <option value="" disabled selected>— Select franchise —</option>
+                    @foreach($availableFranchises as $fname)
+                    <option value="{{ $fname }}" {{ old('franchise_name') === $fname ? 'selected' : '' }}>{{ $fname }}</option>
+                    @endforeach
+                </select>
                 @error('franchise_name')<p class="form-error">{{ $message }}</p>@enderror
             </div>
             <div class="form-group" style="margin:0;">
@@ -199,6 +208,9 @@
             </div>
             <button type="submit" class="btn btn--primary btn--sm" style="margin-bottom:1px;">Add Franchise</button>
         </form>
+        @else
+        <p style="color:var(--text-muted); font-size:0.875rem;">All configured franchises already have an adjustment.</p>
+        @endif
     </div>
 
 </div>
