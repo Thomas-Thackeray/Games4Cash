@@ -39,8 +39,11 @@ class GameController extends Controller
                     // Persist raw prices so game cards can display them without API calls
                     $raw = PricingService::getRawCached($steamAppId);
                     if ($raw !== null) {
-                        $platformIds = array_values(array_filter(
+                        $platformIds    = array_values(array_filter(
                             array_column($game['platforms'] ?? [], 'id')
+                        ));
+                        $franchiseNames = array_values(array_filter(
+                            array_column($game['franchises'] ?? [], 'name')
                         ));
                         GamePrice::record(
                             $id,
@@ -50,6 +53,7 @@ class GameController extends Controller
                             $raw['steam_gbp'] ?? null,
                             $raw['cheapshark_usd'] ?? null,
                             $platformIds,
+                            $franchiseNames,
                         );
                     }
                 }

@@ -18,6 +18,7 @@ class GamePrice extends Model
         'steam_app_id',
         'release_date',
         'platform_ids',
+        'franchise_names',
         'is_free',
         'steam_gbp',
         'cheapshark_usd',
@@ -25,9 +26,10 @@ class GamePrice extends Model
     ];
 
     protected $casts = [
-        'is_free'        => 'boolean',
-        'steam_gbp'      => 'float',
-        'cheapshark_usd' => 'float',
+        'is_free'         => 'boolean',
+        'steam_gbp'       => 'float',
+        'cheapshark_usd'  => 'float',
+        'franchise_names' => 'array',
     ];
 
     /**
@@ -41,17 +43,19 @@ class GamePrice extends Model
         ?float $steamGbp,
         ?float $cheapsharkUsd,
         array  $platformIds = [],
+        array  $franchiseNames = [],
     ): void {
         self::updateOrCreate(
             ['igdb_game_id' => $igdbGameId],
             [
-                'steam_app_id'   => $steamAppId,
-                'release_date'   => $releaseDate,
-                'platform_ids'   => empty($platformIds) ? null : json_encode(array_values($platformIds)),
-                'is_free'        => $isFree,
-                'steam_gbp'      => $steamGbp,
-                'cheapshark_usd' => $cheapsharkUsd,
-                'updated_at'     => now(),
+                'steam_app_id'    => $steamAppId,
+                'release_date'    => $releaseDate,
+                'platform_ids'    => empty($platformIds) ? null : json_encode(array_values($platformIds)),
+                'franchise_names' => empty($franchiseNames) ? null : json_encode(array_values($franchiseNames)),
+                'is_free'         => $isFree,
+                'steam_gbp'       => $steamGbp,
+                'cheapshark_usd'  => $cheapsharkUsd,
+                'updated_at'      => now(),
             ]
         );
     }
@@ -111,7 +115,8 @@ class GamePrice extends Model
             }
         }
 
-        $franchiseAdj = FranchiseAdjustment::getAdjustment($franchiseNames);
+        $resolvedNames = !empty($franchiseNames) ? $franchiseNames : ($this->franchise_names ?? []);
+        $franchiseAdj  = FranchiseAdjustment::getAdjustment($resolvedNames);
         $computed = max(0.01, round($baseGbp * $discountMultiplier * $ageMultiplier * $platformMultiplier + $franchiseAdj, 2));
 
         return [
@@ -169,7 +174,8 @@ class GamePrice extends Model
             $platformMultiplier = 1 + ($adjustment / 100);
         }
 
-        $franchiseAdj = FranchiseAdjustment::getAdjustment($franchiseNames);
+        $resolvedNames = !empty($franchiseNames) ? $franchiseNames : ($this->franchise_names ?? []);
+        $franchiseAdj  = FranchiseAdjustment::getAdjustment($resolvedNames);
         $computed = max(0.01, round($baseGbp * $discountMultiplier * $ageMultiplier * $platformMultiplier + $franchiseAdj, 2));
 
         return [
