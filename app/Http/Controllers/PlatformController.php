@@ -30,7 +30,7 @@ class PlatformController extends Controller
             }
         }
 
-        if ($page === 1) {
+        if ($page === 1 && !$request->attributes->get('security_logged')) {
             ActivityLogger::filter('Browsed platform: ' . $platformName, $request);
         }
 

@@ -47,6 +47,8 @@ class DetectSuspiciousInput
                         sprintf('Suspicious input (%s) in field "%s": %s', $label, $field, $truncated),
                         $request
                     );
+                    // Flag the request so controllers skip their own logging
+                    $request->attributes->set('security_logged', true);
                     break; // one log per field is enough
                 }
             }

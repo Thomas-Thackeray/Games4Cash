@@ -17,7 +17,7 @@ class GenreController extends Controller
         $offset    = ($page - 1) * $limit;
         $genreName = html_entity_decode($name, ENT_QUOTES | ENT_HTML5, 'UTF-8');
 
-        if ($page === 1) {
+        if ($page === 1 && !$request->attributes->get('security_logged')) {
             ActivityLogger::filter('Browsed genre: ' . $genreName, $request);
         }
 
