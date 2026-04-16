@@ -55,19 +55,35 @@
 
 @push('head_meta')
 @if($game)
-<script type="application/ld+json">
-{
-    "@@context": "https://schema.org",
-    "@@type": "VideoGame",
-    "name": "{{ $name }}"
-    {!! $seoDesc      ? ', "description": "' . e($seoDesc) . '"'      : '' !!}
-    {!! $coverUrl     ? ', "image": "' . $coverUrl . '"'               : '' !!}
-    {!! ($releaseDate !== 'TBA' && isset($game['first_release_date'])) ? ', "datePublished": "' . date('Y-m-d', $game['first_release_date']) . '"' : '' !!}
-    {!! $seoGenres    ? ', "genre": "' . e($seoGenres) . '"'           : '' !!}
-    {!! $seoPlatforms ? ', "gamePlatform": "' . e($seoPlatforms) . '"' : '' !!}
-    {!! $developer    ? ', "author": {"@type":"Organization","name":"' . e($developer) . '"}' : '' !!}
-}
-</script>
+@php
+    // VideoGame schema — built as a PHP array so json_encode handles all escaping
+    $videoGameSchema = [
+        '@context' => 'https://schema.org',
+        '@type'    => 'VideoGame',
+        'name'     => $name,
+    ];
+    if ($seoDesc)    $videoGameSchema['description']  = $seoDesc;
+    if ($coverUrl)   $videoGameSchema['image']         = $coverUrl;
+    if ($releaseDate !== 'TBA' && isset($game['first_release_date'])) {
+        $videoGameSchema['datePublished'] = date('Y-m-d', $game['first_release_date']);
+    }
+    if ($seoGenres)    $videoGameSchema['genre']        = $seoGenres;
+    if ($seoPlatforms) $videoGameSchema['gamePlatform'] = $seoPlatforms;
+    if ($developer)    $videoGameSchema['author']       = ['@type' => 'Organization', 'name' => $developer];
+
+    // BreadcrumbList schema — mirrors the visible breadcrumb nav
+    $breadcrumbSchema = [
+        '@context'        => 'https://schema.org',
+        '@type'           => 'BreadcrumbList',
+        'itemListElement' => [
+            ['@type' => 'ListItem', 'position' => 1, 'name' => 'Home',  'item' => route('home')],
+            ['@type' => 'ListItem', 'position' => 2, 'name' => 'Games', 'item' => route('search')],
+            ['@type' => 'ListItem', 'position' => 3, 'name' => $name],
+        ],
+    ];
+@endphp
+<script type="application/ld+json">{!! json_encode($videoGameSchema,  JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}</script>
+<script type="application/ld+json">{!! json_encode($breadcrumbSchema, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}</script>
 @endif
 @endpush
 
