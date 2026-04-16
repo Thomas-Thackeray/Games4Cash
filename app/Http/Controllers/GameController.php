@@ -98,6 +98,14 @@ class GameController extends Controller
             $inCashBasket = $user->cashBasketItems()->where('igdb_game_id', $id)->exists();
         }
 
+        // Track recently viewed (session array of IDs, most recent first, max 20)
+        if ($game) {
+            $viewed = session('recently_viewed', []);
+            $viewed = array_values(array_filter($viewed, fn($v) => $v !== $id));
+            array_unshift($viewed, $id);
+            session(['recently_viewed' => array_slice($viewed, 0, 20)]);
+        }
+
         return view('game', compact('game', 'error', 'pricing', 'steamAppId', 'inWishlist', 'inCashBasket'));
     }
 }

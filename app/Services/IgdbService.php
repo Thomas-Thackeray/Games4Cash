@@ -214,6 +214,17 @@ class IgdbService
         return $this->query('games', $body);
     }
 
+    public function getRandomGames(int $limit = 20): array
+    {
+        $offset = rand(0, 150);
+        $body = "fields id,name,cover.image_id,rating,genres.name,platforms.id,first_release_date;
+                 where rating != null & cover != null & version_parent = null & themes != (42) & rating_count > 50;
+                 sort rating_count desc;
+                 limit {$limit};
+                 offset {$offset};";
+        return $this->query('games', $body);
+    }
+
     public function getPlatform(int $id): ?array
     {
         $body = "fields id,name,abbreviation,summary,logo.image_id;
