@@ -130,6 +130,10 @@ Route::middleware(['auth', 'track.active', 'admin'])->prefix('admin')->name('adm
     Route::patch('/settings/franchise-adjustments/{id}', [AdminController::class, 'updateFranchiseAdjustment'])->name('franchise-adjustments.update')->where('id', '[0-9]+');
     Route::delete('/settings/franchise-adjustments/{id}', [AdminController::class, 'destroyFranchiseAdjustment'])->name('franchise-adjustments.destroy')->where('id', '[0-9]+');
 
+    // Email templates
+    Route::get('/email-templates', [AdminController::class, 'showEmailTemplates'])->name('email-templates');
+    Route::post('/email-templates', [AdminController::class, 'updateEmailTemplates'])->name('email-templates.update');
+
     // Cash orders management
     Route::get('/orders', [AdminController::class, 'cashOrders'])->name('orders');
     Route::get('/orders/{id}', [AdminController::class, 'cashOrderDetail'])->name('orders.detail')->where('id', '[0-9]+');

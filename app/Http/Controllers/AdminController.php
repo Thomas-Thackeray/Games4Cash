@@ -301,6 +301,46 @@ class AdminController extends Controller
     }
 
     // ----------------------------------------------------------------
+    //  Email templates
+    // ----------------------------------------------------------------
+
+    private const EMAIL_TEMPLATE_DEFAULTS = [
+        'email_order_intro'          => "Your cash quote has been received and we're reviewing it now.\nA member of our team will be in touch shortly with further information about your collection and payment.",
+        'email_order_packaging_note' => "Please ensure your games are ready and packaged securely before the collection date. All prices are estimates and may be adjusted upon physical inspection.",
+        'email_welcome_intro'        => "Thank you for creating an account on {site_name}. Your account is all set — you can now explore thousands of games, browse by platform and genre, and discover your next favourite title.",
+        'email_welcome_footer_note'  => "If you did not create this account, you can safely ignore this email — no action is required.",
+        'email_reset_intro'          => "Hi {first_name}, we received a request to reset the password for your {site_name} account. Click the button below to choose a new password. This link will expire in 60 minutes.",
+        'email_reset_footer_note'    => "If you did not request a password reset, no action is required — your password will remain unchanged.",
+    ];
+
+    public function showEmailTemplates(): View
+    {
+        $templates = [];
+        foreach (self::EMAIL_TEMPLATE_DEFAULTS as $key => $default) {
+            $templates[$key] = Setting::get($key, $default);
+        }
+        return view('admin.email-templates', compact('templates'));
+    }
+
+    public function updateEmailTemplates(Request $request): RedirectResponse
+    {
+        $request->validate([
+            'email_order_intro'          => ['required', 'string', 'max:2000'],
+            'email_order_packaging_note' => ['required', 'string', 'max:2000'],
+            'email_welcome_intro'        => ['required', 'string', 'max:2000'],
+            'email_welcome_footer_note'  => ['required', 'string', 'max:2000'],
+            'email_reset_intro'          => ['required', 'string', 'max:2000'],
+            'email_reset_footer_note'    => ['required', 'string', 'max:2000'],
+        ]);
+
+        foreach (array_keys(self::EMAIL_TEMPLATE_DEFAULTS) as $key) {
+            Setting::set($key, $request->input($key));
+        }
+
+        return back()->with('flash_success', 'Email templates saved.');
+    }
+
+    // ----------------------------------------------------------------
     //  Site settings
     // ----------------------------------------------------------------
 
