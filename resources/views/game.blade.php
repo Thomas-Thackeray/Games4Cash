@@ -166,13 +166,13 @@
                 @php
                     $__pd   = [];
                     $__allP = config('igdb.all_platforms');
-                    $__base = $pricing['price_numeric'];
                     foreach ($platforms as $__p) {
                         $__pid = $__p['id'] ?? null;
-                        if (! $__pid || ! isset($__allP[$__pid])) continue;
-                        $__mod  = (float) \App\Models\Setting::get("platform_modifier_{$__pid}", 0);
-                        $__adj  = max(0.01, round($__base * (1 + $__mod / 100), 2));
-                        $__pd[] = ['id' => $__pid, 'name' => $__allP[$__pid], 'price' => number_format($__adj, 2)];
+                        if (! $__pid || ! isset($__allP[$__pid]) || ! $gamePrice) continue;
+                        $__pp = $gamePrice->getComputedPriceForPlatform((int) $__pid, $franchiseNames);
+                        if ($__pp && ! $__pp['is_free']) {
+                            $__pd[] = ['id' => $__pid, 'name' => $__allP[$__pid], 'price' => number_format($__pp['price_numeric'], 2)];
+                        }
                     }
                 @endphp
                 @endif

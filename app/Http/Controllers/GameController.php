@@ -27,23 +27,30 @@ class GameController extends Controller
             abort(404);
         }
 
-        $steamAppId = null;
+        $steamAppId     = null;
+        $franchiseNames = [];
+        $gamePrice      = null;
+
+        if ($game) {
+            $franchiseNames = array_values(array_filter(
+                array_column($game['franchises'] ?? [], 'name')
+            ));
+        }
 
         if ($game) {
             try {
                 $steamAppId = $igdb->getSteamAppId($id);
                 if ($steamAppId) {
                     $releaseTimestamp = $game['first_release_date'] ?? null;
-                    $pricing = PricingService::getForSteamApp($steamAppId, $releaseTimestamp);
+
+                    // Populate the raw-price cache (6-hour TTL)
+                    PricingService::getForSteamApp($steamAppId, $releaseTimestamp);
 
                     // Persist raw prices so game cards can display them without API calls
                     $raw = PricingService::getRawCached($steamAppId);
                     if ($raw !== null) {
-                        $platformIds    = array_values(array_filter(
+                        $platformIds = array_values(array_filter(
                             array_column($game['platforms'] ?? [], 'id')
-                        ));
-                        $franchiseNames = array_values(array_filter(
-                            array_column($game['franchises'] ?? [], 'name')
                         ));
                         GamePrice::record(
                             $id,
@@ -62,12 +69,12 @@ class GameController extends Controller
             }
         }
 
-        // Fallback: if the live API returned no price, try the DB record.
-        // getComputedPrice() now uses base_price_gbp when no raw price is stored.
-        if ($pricing === null && $game) {
+        // Always compute display pricing from the DB record so the game detail page,
+        // game cards, and the cash basket all use the same formula and data.
+        if ($game) {
             $gamePrice = GamePrice::where('igdb_game_id', $id)->first();
             if ($gamePrice) {
-                $pricing = $gamePrice->getComputedPrice();
+                $pricing = $gamePrice->getComputedPrice($franchiseNames);
             } else {
                 // No DB record yet — compute from base price setting directly
                 $basePriceGbp = (float) Setting::get('base_price_gbp', 0);
@@ -110,6 +117,6 @@ class GameController extends Controller
             session(['recently_viewed' => array_slice($viewed, 0, 20)]);
         }
 
-        return view('game', compact('game', 'error', 'pricing', 'steamAppId', 'inWishlist', 'inCashBasket'));
+        return view('game', compact('game', 'error', 'pricing', 'steamAppId', 'inWishlist', 'inCashBasket', 'gamePrice', 'franchiseNames'));
     }
 }
