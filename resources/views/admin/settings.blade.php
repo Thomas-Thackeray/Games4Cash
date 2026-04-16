@@ -218,18 +218,15 @@
                 @foreach($platforms as $platform)
                 @php $isGbp = old('platform_modifier_type.' . $platform['id'], $platform['modifier_type']) === 'gbp'; @endphp
                 <div class="settings-platform-row">
-                    <label class="form-label" style="margin:0;">{{ $platform['name'] }}</label>
-                    <div class="settings-input-row" style="gap:0.4rem;">
+                    <label class="form-label">{{ $platform['name'] }}</label>
+                    <div class="platform-modifier-control">
                         <select name="platform_modifier_type[{{ $platform['id'] }}]"
-                                class="form-input settings-input--sm"
-                                style="width:56px; padding-left:0.4rem; padding-right:0.2rem;"
                                 onchange="
-                                    var inp = this.closest('.settings-input-row').querySelector('input');
-                                    var unit = this.closest('.settings-input-row').querySelector('.settings-unit');
+                                    var inp = this.nextElementSibling;
                                     if (this.value === 'gbp') {
-                                        inp.min = -999.99; inp.max = 999.99; inp.step = 0.01; unit.textContent = '£';
+                                        inp.min = -999.99; inp.max = 999.99; inp.step = 0.01;
                                     } else {
-                                        inp.min = -99; inp.max = 99; inp.step = 1; unit.textContent = '%';
+                                        inp.min = -99; inp.max = 99; inp.step = 1;
                                     }
                                 ">
                             <option value="percent" @selected(!$isGbp)>%</option>
@@ -241,8 +238,7 @@
                             min="{{ $isGbp ? -999.99 : -99 }}"
                             max="{{ $isGbp ? 999.99 : 99 }}"
                             step="{{ $isGbp ? '0.01' : '1' }}"
-                            class="form-input settings-input--sm">
-                        <span class="settings-unit">{{ $isGbp ? '£' : '%' }}</span>
+                            class="form-input">
                     </div>
                 </div>
                 @endforeach
