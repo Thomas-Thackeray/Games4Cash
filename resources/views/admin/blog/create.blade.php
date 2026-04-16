@@ -141,7 +141,9 @@
     </form>
 
 </div>
+@endsection
 
+@push('scripts')
 <script src="https://cdn.quilljs.com/1.3.7/quill.min.js"></script>
 <script>
 (function () {
@@ -177,4 +179,4 @@
     toggleScheduled();
 })();
 </script>
-@endsection
+@endpush

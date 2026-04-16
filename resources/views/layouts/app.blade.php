@@ -278,6 +278,7 @@
 <div id="cash-dropdown-backdrop" class="cash-dropdown-backdrop" hidden></div>
 
 <script src="{{ asset('js/main.js') }}?v={{ filemtime(public_path('js/main.js')) }}"></script>
+@stack('scripts')
 <script>
 (function () {
     if (!localStorage.getItem('cookies_accepted')) {
