@@ -15,7 +15,7 @@
                 <p style="font-size:0.8rem; letter-spacing:0.15em; text-transform:uppercase; color:var(--accent); font-weight:700; margin-bottom:0.5rem;">
                     Platform
                 </p>
-                <h1 class="section-title">{{ e($platformName) }}</h1>
+                <h1 class="section-title">{{ $platformName }}</h1>
                 @if(!empty($platform['summary']))
                 <p style="color:var(--text-muted); max-width:600px; margin-top:0.75rem; font-size:0.95rem; line-height:1.7;">
                     {{ e(truncate_text($platform['summary'], 200)) }}
@@ -49,7 +49,7 @@
         </div>
         @else
         <div class="section-header fade-up">
-            <h2 class="section-title">{{ e($platformName) }} Games</h2>
+            <h2 class="section-title">{{ $platformName }} Games</h2>
             <span style="color:var(--text-muted); font-size:0.875rem;">Page {{ $page }}</span>
         </div>
 
