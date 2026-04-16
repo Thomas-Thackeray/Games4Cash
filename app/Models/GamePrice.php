@@ -109,7 +109,7 @@ class GamePrice extends Model
                 fn($pid) => (float) Setting::get("platform_modifier_{$pid}", 0),
                 $platformIds
             );
-            $bestAdjustment = max($adjustments); // Most favourable for the seller
+            $bestAdjustment = max($adjustments);
             if ($bestAdjustment !== 0.0) {
                 $platformMultiplier = 1 + ($bestAdjustment / 100);
             }
@@ -117,11 +117,19 @@ class GamePrice extends Model
 
         $resolvedNames = !empty($franchiseNames) ? $franchiseNames : ($this->franchise_names ?? []);
         $franchiseAdj  = FranchiseAdjustment::getAdjustment($resolvedNames);
-        $computed = max(0.01, round($baseGbp * $discountMultiplier * $ageMultiplier * $platformMultiplier + $franchiseAdj, 2));
 
-        // Low-price boost: if the result is under £0.10, add £0.20 to keep offers meaningful
+        // Base price before platform modifier
+        $computed = max(0.01, round($baseGbp * $discountMultiplier * $ageMultiplier + $franchiseAdj, 2));
+
+        // Low-price boost applied before platform modifier so the modifier always has
+        // a meaningful effect even on very cheap games
         if ($computed < 0.10) {
             $computed = round($computed + 0.20, 2);
+        }
+
+        // Apply platform modifier to the (potentially boosted) base
+        if ($platformMultiplier !== 1.0) {
+            $computed = max(0.01, round($computed * $platformMultiplier, 2));
         }
 
         return [
@@ -181,11 +189,19 @@ class GamePrice extends Model
 
         $resolvedNames = !empty($franchiseNames) ? $franchiseNames : ($this->franchise_names ?? []);
         $franchiseAdj  = FranchiseAdjustment::getAdjustment($resolvedNames);
-        $computed = max(0.01, round($baseGbp * $discountMultiplier * $ageMultiplier * $platformMultiplier + $franchiseAdj, 2));
 
-        // Low-price boost: if the result is under £0.10, add £0.20 to keep offers meaningful
+        // Base price before platform modifier
+        $computed = max(0.01, round($baseGbp * $discountMultiplier * $ageMultiplier + $franchiseAdj, 2));
+
+        // Low-price boost applied before platform modifier so the modifier always has
+        // a meaningful effect even on very cheap games
         if ($computed < 0.10) {
             $computed = round($computed + 0.20, 2);
+        }
+
+        // Apply platform modifier to the (potentially boosted) base
+        if ($platformMultiplier !== 1.0) {
+            $computed = max(0.01, round($computed * $platformMultiplier, 2));
         }
 
         return [

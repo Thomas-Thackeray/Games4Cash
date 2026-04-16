@@ -51,31 +51,34 @@
             </div>
 
             <div>
-                <strong>Step 4 — Apply the platform modifier</strong>
-                <p class="settings-hint" style="margin-top:0.25rem;">
-                    If a game is available on multiple platforms, the <strong>most favourable modifier</strong> is chosen.
-                    A positive % increases the offer (e.g. PS5 games may be worth more);
-                    a negative % reduces it. Set to 0 to leave a platform's price unchanged.
-                    On the game detail page each platform shows its own adjusted price in the Get Cash dropdown.
-                </p>
-            </div>
-
-            <div>
-                <strong>Step 5 — Apply the franchise adjustment</strong>
+                <strong>Step 4 — Apply the franchise adjustment</strong>
                 <p class="settings-hint" style="margin-top:0.25rem;">
                     A flat <strong>£ amount</strong> is added or subtracted for games belonging to a specific franchise
                     (e.g. add £1.00 for Call of Duty, deduct £0.50 for a low-demand series).
-                    This is applied after all percentage multipliers so it has a predictable absolute effect.
+                    This is applied before the low-price boost so it can influence whether the boost fires.
                     Manage franchise adjustments in the section below.
                 </p>
             </div>
 
             <div>
-                <strong>Step 6 — Low-price boost</strong>
+                <strong>Step 5 — Low-price boost</strong>
                 <p class="settings-hint" style="margin-top:0.25rem;">
-                    If the calculated price after all the above steps would be <strong>less than £0.10</strong>,
+                    If the price at this point is <strong>less than £0.10</strong>,
                     <strong>£0.20 is automatically added</strong> to keep the offer meaningful.
                     This most often affects very old games whose historical sale price was extremely cheap.
+                    The boost is applied <em>before</em> the platform modifier so that console modifiers
+                    always have a visible effect.
+                </p>
+            </div>
+
+            <div>
+                <strong>Step 6 — Apply the platform modifier</strong>
+                <p class="settings-hint" style="margin-top:0.25rem;">
+                    A percentage is applied to the (already boosted) price based on the console.
+                    A positive % increases the offer (e.g. PS5 games may be worth more);
+                    a negative % reduces it. Set to 0 to leave a platform's price unchanged.
+                    On the game detail page each platform shows its own adjusted price in the Get Cash dropdown.
+                    For multi-platform games on cards the most favourable modifier is used.
                 </p>
             </div>
 
@@ -90,8 +93,9 @@
             </div>
 
             <div style="background:rgba(255,255,255,0.04); border-radius:6px; padding:0.75rem 1rem; font-family:monospace; font-size:0.85rem; color:var(--text-muted);">
-                Final offer = ( base_price × (1 − discount%) × (1 − age_years × age%/yr) × (1 + platform%) + franchise_adj ) × (1 + condition%)
-                <br><em style="font-family:inherit;">If result &lt; £0.10 → add £0.20</em>
+                base = raw_price × (1 − discount%) × (1 − age_years × age%/yr) + franchise_adj
+                <br>if base &lt; £0.10 → base += £0.20
+                <br>offer = base × (1 + platform%) × (1 + condition%)
             </div>
 
         </div>
