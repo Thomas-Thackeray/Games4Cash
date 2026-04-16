@@ -230,6 +230,12 @@
     <a href="{{ route('login') }}">🔑 Log In</a>
     <a href="{{ route('register') }}">📝 Register</a>
     @endauth
+    <span class="m-section-title">EXPLORE</span>
+    <a href="{{ route('search') }}">🎮 Browse Games</a>
+    @if(\App\Models\Setting::get('blog_visible', true))
+    <a href="{{ route('blog.index') }}">📝 Blog</a>
+    @endif
+    <a href="{{ route('contact') }}">✉️ Contact Us</a>
     <span class="m-section-title">PLATFORMS</span>
     @foreach(config('igdb.platforms') as $pName => $pData)
     <a href="{{ route('platform.show', ['id' => $pData['id'], 'name' => $pData['slug'] ?? $pName]) }}">{{ $pData['icon'] }} {{ $pName }}</a>
