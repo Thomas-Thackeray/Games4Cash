@@ -53,9 +53,10 @@
             <div>
                 <strong>Step 4 — Apply the platform modifier</strong>
                 <p class="settings-hint" style="margin-top:0.25rem;">
-                    A percentage adjustment is applied based on the console.
-                    A positive % increases the offer (e.g. PS5 games may be worth more);
-                    a negative % reduces it. Set to 0 to leave a platform's price unchanged.
+                    An adjustment is applied based on the console — either a flat <strong>£ amount</strong> added
+                    or subtracted, or a <strong>% multiplier</strong> applied to the discounted price.
+                    A positive value increases the offer (e.g. PS5 games may be worth more);
+                    a negative value reduces it. Set to 0 to leave a platform's price unchanged.
                     Each console is listed individually in the Get Cash dropdown with its own adjusted price —
                     so Xbox, Xbox 360, and Xbox One will each show a different offer if their modifiers differ.
                 </p>
@@ -93,7 +94,7 @@
             <div style="background:rgba(255,255,255,0.04); border-radius:6px; padding:0.75rem 1rem; font-family:monospace; font-size:0.85rem; color:var(--text-muted);">
                 base = steam_gbp &nbsp;OR&nbsp; (cheapshark_usd ÷ rate) &nbsp;OR&nbsp; base_price_gbp
                 <br>base += franchise_adj
-                <br>offer = base × (1 − discount%) × (1 + platform%) − (age_years × £age_reduction)
+                <br>offer = base × (1 − discount%) [× (1 + platform%) &nbsp;OR&nbsp; + platform_£] − (age_years × £age_reduction)
                 <br>if offer &lt; £0.10 → offer += £0.20
                 <br>final = offer × (1 + condition%)
             </div>
@@ -215,14 +216,33 @@
             </p>
             <div class="settings-platforms-grid">
                 @foreach($platforms as $platform)
+                @php $isGbp = old('platform_modifier_type.' . $platform['id'], $platform['modifier_type']) === 'gbp'; @endphp
                 <div class="settings-platform-row">
                     <label class="form-label" style="margin:0;">{{ $platform['name'] }}</label>
-                    <div class="settings-input-row">
+                    <div class="settings-input-row" style="gap:0.4rem;">
+                        <select name="platform_modifier_type[{{ $platform['id'] }}]"
+                                class="form-input settings-input--sm"
+                                style="width:56px; padding-left:0.4rem; padding-right:0.2rem;"
+                                onchange="
+                                    var inp = this.closest('.settings-input-row').querySelector('input');
+                                    var unit = this.closest('.settings-input-row').querySelector('.settings-unit');
+                                    if (this.value === 'gbp') {
+                                        inp.min = -999.99; inp.max = 999.99; inp.step = 0.01; unit.textContent = '£';
+                                    } else {
+                                        inp.min = -99; inp.max = 99; inp.step = 1; unit.textContent = '%';
+                                    }
+                                ">
+                            <option value="percent" @selected(!$isGbp)>%</option>
+                            <option value="gbp"     @selected($isGbp)>£</option>
+                        </select>
                         <input type="number"
                             name="platform_modifier[{{ $platform['id'] }}]"
                             value="{{ old('platform_modifier.' . $platform['id'], $platform['modifier']) }}"
-                            min="-99" max="99" step="1" class="form-input settings-input--sm">
-                        <span class="settings-unit">%</span>
+                            min="{{ $isGbp ? -999.99 : -99 }}"
+                            max="{{ $isGbp ? 999.99 : 99 }}"
+                            step="{{ $isGbp ? '0.01' : '1' }}"
+                            class="form-input settings-input--sm">
+                        <span class="settings-unit">{{ $isGbp ? '£' : '%' }}</span>
                     </div>
                 </div>
                 @endforeach

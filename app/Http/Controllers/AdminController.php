@@ -335,7 +335,8 @@ class AdminController extends Controller
 
         $platforms = array_map(function ($p) {
             return array_merge($p, [
-                'modifier' => (float) Setting::get("platform_modifier_{$p['id']}", 0),
+                'modifier'      => (float) Setting::get("platform_modifier_{$p['id']}", 0),
+                'modifier_type' => Setting::get("platform_modifier_type_{$p['id']}", 'percent'),
             ]);
         }, self::PLATFORMS);
 
@@ -393,18 +394,19 @@ class AdminController extends Controller
         $request->validate([
             'pricing_discount_percent'  => ['required', 'numeric', 'min:0', 'max:99'],
             'usd_to_gbp_rate'           => ['required', 'numeric', 'min:0.01', 'max:99.99'],
-            'age_reduction_per_year'    => ['required', 'numeric', 'min:0', 'max:20'],
+            'age_reduction_per_year'    => ['required', 'numeric', 'min:0', 'max:9.99'],
             'base_price_gbp'            => ['required', 'numeric', 'min:0', 'max:999.99'],
             'min_order_gbp'             => ['required', 'numeric', 'min:0', 'max:999.99'],
             'condition_new_pct'         => ['required', 'numeric', 'min:-100', 'max:100'],
             'condition_complete_pct'    => ['required', 'numeric', 'min:-100', 'max:100'],
             'condition_disk_pct'        => ['required', 'numeric', 'min:-100', 'max:100'],
-            'platform_modifier.*'       => ['nullable', 'numeric', 'min:-99', 'max:99'],
+            'platform_modifier.*'       => ['nullable', 'numeric', 'min:-999.99', 'max:999.99'],
+            'platform_modifier_type.*'  => ['nullable', 'in:percent,gbp'],
         ], [
             'pricing_discount_percent.min' => 'Discount must be between 0% and 99%.',
             'pricing_discount_percent.max' => 'Discount must be between 0% and 99%.',
             'usd_to_gbp_rate.min'          => 'Exchange rate must be a positive number.',
-            'age_reduction_per_year.max'   => 'Age reduction cannot exceed 20% per year.',
+            'age_reduction_per_year.max'   => 'Age reduction cannot exceed £9.99 per year.',
             'base_price_gbp.max'           => 'Base price cannot exceed £999.99.',
         ]);
 
@@ -417,8 +419,11 @@ class AdminController extends Controller
         Setting::set('condition_complete_pct', $request->input('condition_complete_pct'));
         Setting::set('condition_disk_pct', $request->input('condition_disk_pct'));
 
+        $modifierTypes = $request->input('platform_modifier_type', []);
         foreach ($request->input('platform_modifier', []) as $platformId => $modifier) {
             Setting::set("platform_modifier_{$platformId}", (float) ($modifier ?? 0));
+            $type = $modifierTypes[$platformId] ?? 'percent';
+            Setting::set("platform_modifier_type_{$platformId}", in_array($type, ['percent', 'gbp']) ? $type : 'percent');
         }
 
         return back()->with('flash_success', 'Settings saved.');

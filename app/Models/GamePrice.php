@@ -168,10 +168,15 @@ class GamePrice extends Model
         $discountPct = (float) Setting::get('pricing_discount_percent', 85);
         $computed    = $baseGbp * (1 - ($discountPct / 100));
 
-        // 4. This platform's modifier
-        $adjustment = (float) Setting::get("platform_modifier_{$platformId}", 0);
+        // 4. This platform's modifier (% or flat £)
+        $adjustment     = (float) Setting::get("platform_modifier_{$platformId}", 0);
+        $adjustmentType = Setting::get("platform_modifier_type_{$platformId}", 'percent');
         if ($adjustment !== 0.0) {
-            $computed *= 1 + ($adjustment / 100);
+            if ($adjustmentType === 'gbp') {
+                $computed += $adjustment;
+            } else {
+                $computed *= 1 + ($adjustment / 100);
+            }
         }
 
         // 5. Age-based reduction (flat £ per year deducted from the computed price)
