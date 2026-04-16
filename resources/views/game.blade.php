@@ -59,7 +59,7 @@
 {
     "@@context": "https://schema.org",
     "@@type": "VideoGame",
-    "name": "{{ e($name) }}"
+    "name": "{{ $name }}"
     {!! $seoDesc      ? ', "description": "' . e($seoDesc) . '"'      : '' !!}
     {!! $coverUrl     ? ', "image": "' . $coverUrl . '"'               : '' !!}
     {!! ($releaseDate !== 'TBA' && isset($game['first_release_date'])) ? ', "datePublished": "' . date('Y-m-d', $game['first_release_date']) . '"' : '' !!}
@@ -113,7 +113,7 @@
     <div class="container">
         <div class="gd-inner">
             <div class="gd-cover">
-                <img src="{{ $coverUrl }}" alt="{{ e($name) }} cover">
+                <img src="{{ $coverUrl }}" alt="{{ $name }} cover">
             </div>
 
             <div class="gd-info">
@@ -191,8 +191,8 @@
                     <form method="POST" action="{{ route('wishlist.store') }}">
                         @csrf
                         <input type="hidden" name="igdb_game_id" value="{{ $game['id'] }}">
-                        <input type="hidden" name="game_title" value="{{ e($name) }}">
-                        <input type="hidden" name="cover_url" value="{{ e($coverUrl) }}">
+                        <input type="hidden" name="game_title" value="{{ $name }}">
+                        <input type="hidden" name="cover_url" value="{{ $coverUrl }}">
                         @if($steamAppId)
                         <input type="hidden" name="steam_app_id" value="{{ $steamAppId }}">
                         @endif
@@ -214,7 +214,7 @@
                             data-tpl="ctpl-gd-{{ $game['id'] }}">
                             💰 Get Cash
                         </button>
-                        <template id="ctpl-gd-{{ $game['id'] }}" data-title="{{ e($name) }}">
+                        <template id="ctpl-gd-{{ $game['id'] }}" data-title="{{ $name }}">
                             @foreach($__pd as $__item)
                             <div class="cash-dropdown__item">
                                 <div class="cash-dropdown__item-info">
@@ -225,8 +225,8 @@
                                     @csrf
                                     <input type="hidden" name="igdb_game_id" value="{{ $game['id'] }}">
                                     <input type="hidden" name="platform_id"  value="{{ $__item['id'] }}">
-                                    <input type="hidden" name="game_title"   value="{{ e($name) }}">
-                                    <input type="hidden" name="cover_url"    value="{{ e($coverUrl) }}">
+                                    <input type="hidden" name="game_title"   value="{{ $name }}">
+                                    <input type="hidden" name="cover_url"    value="{{ $coverUrl }}">
                                     @if($steamAppId)
                                     <input type="hidden" name="steam_app_id" value="{{ $steamAppId }}">
                                     @endif
@@ -243,8 +243,8 @@
                         <form method="POST" action="{{ route('cash-basket.store') }}">
                             @csrf
                             <input type="hidden" name="igdb_game_id" value="{{ $game['id'] }}">
-                            <input type="hidden" name="game_title" value="{{ e($name) }}">
-                            <input type="hidden" name="cover_url" value="{{ e($coverUrl) }}">
+                            <input type="hidden" name="game_title" value="{{ $name }}">
+                            <input type="hidden" name="cover_url" value="{{ $coverUrl }}">
                             @if($steamAppId)
                             <input type="hidden" name="steam_app_id" value="{{ $steamAppId }}">
                             @endif
@@ -268,7 +268,7 @@
                             data-tpl="ctpl-gd-{{ $game['id'] }}">
                             💰 Get Cash
                         </button>
-                        <template id="ctpl-gd-{{ $game['id'] }}" data-title="{{ e($name) }}">
+                        <template id="ctpl-gd-{{ $game['id'] }}" data-title="{{ $name }}">
                             @foreach($__pd as $__item)
                             <div class="cash-dropdown__item">
                                 <div class="cash-dropdown__item-info">

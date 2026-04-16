@@ -23,14 +23,14 @@
             <div class="cb-item" id="cb-item-{{ $item['id'] }}">
                 <a href="{{ route('game.show', $item['igdb_game_id']) }}" class="cb-item__cover-link">
                     @if($item['cover_url'])
-                    <img src="{{ e($item['cover_url']) }}" alt="{{ e($item['game_title']) }}" class="cb-item__cover">
+                    <img src="{{ $item['cover_url'] }}" alt="{{ $item['game_title'] }}" class="cb-item__cover">
                     @else
                     <div class="cb-item__cover cb-item__cover--placeholder">🎮</div>
                     @endif
                 </a>
                 <div class="cb-item__body">
                     <a href="{{ route('game.show', $item['igdb_game_id']) }}" class="cb-item__title">
-                        {{ e($item['game_title']) }}
+                        {{ $item['game_title'] }}
                     </a>
                     @if($item['platform_name'])
                     <span class="cb-item__platform">{{ $item['platform_name'] }}</span>
@@ -69,7 +69,7 @@
                     @csrf
                     @method('DELETE')
                     <button type="submit" class="wishlist-card__remove-btn" title="Remove from basket"
-                        data-confirm="Remove &quot;{{ e($item['game_title']) }}&quot; from your cash basket?">✕</button>
+                        data-confirm="Remove &quot;{{ $item['game_title'] }}&quot; from your cash basket?">✕</button>
                 </form>
             </div>
             @endforeach

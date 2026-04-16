@@ -64,11 +64,11 @@
             @foreach($wishlistItems as $item)
             <a href="{{ route('game.show', $item->igdb_game_id) }}" class="admin-wishlist-item">
                 @if($item->cover_url)
-                <img src="{{ e($item->cover_url) }}" alt="{{ e($item->game_title) }}" class="admin-wishlist-item__cover">
+                <img src="{{ $item->cover_url }}" alt="{{ $item->game_title }}" class="admin-wishlist-item__cover">
                 @else
                 <div class="admin-wishlist-item__cover admin-wishlist-item__cover--placeholder">🎮</div>
                 @endif
-                <span class="admin-wishlist-item__title">{{ e($item->game_title) }}</span>
+                <span class="admin-wishlist-item__title">{{ $item->game_title }}</span>
             </a>
             @endforeach
         </div>
@@ -86,13 +86,13 @@
             @foreach($basketItems as $item)
             <div class="co-detail-item" style="padding:0.75rem 1.25rem; border-bottom:1px solid var(--border);">
                 @if(!empty($item['cover_url']))
-                <img src="{{ e($item['cover_url']) }}" alt="{{ e($item['game_title']) }}" class="co-detail-item__cover">
+                <img src="{{ $item['cover_url'] }}" alt="{{ $item['game_title'] }}" class="co-detail-item__cover">
                 @else
                 <div class="co-detail-item__cover co-detail-item__cover--placeholder">🎮</div>
                 @endif
                 <div class="co-detail-item__body">
                     <a href="{{ route('game.show', $item['igdb_game_id']) }}" class="co-detail-item__title" style="text-decoration:none; color:inherit;">
-                        {{ e($item['game_title']) }}
+                        {{ $item['game_title'] }}
                     </a>
                     @if($item['platform_name'])
                     <span class="co-detail-item__platform">{{ $item['platform_name'] }}</span>

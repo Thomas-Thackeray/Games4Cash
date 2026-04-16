@@ -90,7 +90,7 @@
                 <form method="POST" action="{{ route('wishlist.store') }}">
                     @csrf
                     <input type="hidden" name="igdb_game_id" value="{{ $gameId }}">
-                    <input type="hidden" name="game_title"   value="{{ e($name) }}">
+                    <input type="hidden" name="game_title"   value="{{ $name }}">
                     <input type="hidden" name="cover_url"    value="{{ $imgUrl }}">
                     <button type="submit" class="btn btn--outline btn--sm rv-wishlist-btn" title="Add to wishlist">
                         ♡ Wishlist
@@ -106,7 +106,7 @@
                         data-tpl="ctpl-{{ $gameId }}">
                         💰 Get Cash
                     </button>
-                    <template id="ctpl-{{ $gameId }}" data-title="{{ e($name) }}">
+                    <template id="ctpl-{{ $gameId }}" data-title="{{ $name }}">
                         @foreach($platformsData as $pd)
                         <div class="cash-dropdown__item">
                             <div class="cash-dropdown__item-info">
@@ -117,7 +117,7 @@
                                 @csrf
                                 <input type="hidden" name="igdb_game_id"  value="{{ $gameId }}">
                                 <input type="hidden" name="platform_id"   value="{{ $pd['id'] }}">
-                                <input type="hidden" name="game_title"    value="{{ e($name) }}">
+                                <input type="hidden" name="game_title"    value="{{ $name }}">
                                 <input type="hidden" name="cover_url"     value="{{ $imgUrl }}">
                                 <input type="hidden" name="steam_app_id"  value="{{ $pd['steam_app_id'] }}">
                                 <input type="hidden" name="release_date"  value="{{ $pd['release_date'] }}">
@@ -130,7 +130,7 @@
                     <form method="POST" action="{{ route('cash-basket.store') }}">
                         @csrf
                         <input type="hidden" name="igdb_game_id" value="{{ $gameId }}">
-                        <input type="hidden" name="game_title"   value="{{ e($name) }}">
+                        <input type="hidden" name="game_title"   value="{{ $name }}">
                         <input type="hidden" name="cover_url"    value="{{ $imgUrl }}">
                         @if($gamePrice)
                         <input type="hidden" name="steam_app_id" value="{{ $gamePrice->steam_app_id }}">
