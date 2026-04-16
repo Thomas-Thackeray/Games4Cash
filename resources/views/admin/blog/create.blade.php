@@ -2,19 +2,7 @@
 @section('title', 'New Blog Post')
 
 @push('head_meta')
-{{-- Quill rich text editor --}}
-<link href="https://cdn.quilljs.com/1.3.7/quill.snow.css" rel="stylesheet">
 <style>
-.ql-toolbar.ql-snow { background: var(--bg-2); border-color: var(--border); border-radius: var(--radius) var(--radius) 0 0; }
-.ql-container.ql-snow { background: var(--bg-1); border-color: var(--border); border-radius: 0 0 var(--radius) var(--radius); min-height: 320px; font-size: 0.95rem; color: var(--text); }
-.ql-editor { min-height: 300px; color: var(--text); }
-.ql-toolbar .ql-stroke { stroke: var(--text-muted); }
-.ql-toolbar .ql-fill { fill: var(--text-muted); }
-.ql-toolbar .ql-picker { color: var(--text-muted); }
-.ql-toolbar button:hover .ql-stroke, .ql-toolbar button.ql-active .ql-stroke { stroke: var(--accent); }
-.ql-toolbar button:hover .ql-fill, .ql-toolbar button.ql-active .ql-fill { fill: var(--accent); }
-.ql-toolbar .ql-picker-label:hover, .ql-toolbar .ql-picker-label.ql-active { color: var(--accent); }
-.ql-toolbar .ql-picker-options { background: var(--bg-2); border-color: var(--border); }
 .blog-image-option { cursor:pointer; display:flex; flex-direction:column; align-items:center; gap:0.5rem; }
 .blog-image-option input[type=radio] { display:none; }
 .blog-image-option img { width:100%; height:90px; object-fit:cover; border-radius:var(--radius); border:2px solid var(--border); transition:border-color 0.2s, box-shadow 0.2s; }
@@ -63,7 +51,7 @@
                     {{-- Rich text editor --}}
                     <div class="form-group" style="margin-bottom:1.25rem;">
                         <label class="form-label">Content <span style="color:var(--accent);">*</span></label>
-                        <div id="quill-editor">{!! old('content') !!}</div>
+                        <div id="blog-editor" data-placeholder="Write your post here…">{!! old('content') !!}</div>
                         <input type="hidden" name="content" id="content-input">
                         @error('content')<p class="form-error">{{ $message }}</p>@enderror
                     </div>
@@ -144,32 +132,12 @@
 @endsection
 
 @push('scripts')
-<script src="https://cdn.quilljs.com/1.3.7/quill.min.js"></script>
+<script src="{{ asset('js/rich-editor.js') }}?v={{ filemtime(public_path('js/rich-editor.js')) }}"></script>
 <script>
+initRichEditor({ editorId: 'blog-editor', inputId: 'content-input', formId: 'blog-form' });
+
 (function () {
-    var quill = new Quill('#quill-editor', {
-        theme: 'snow',
-        placeholder: 'Write your post here…',
-        modules: {
-            toolbar: [
-                [{ header: [2, 3, 4, false] }],
-                ['bold', 'italic', 'underline', 'strike'],
-                [{ list: 'ordered' }, { list: 'bullet' }],
-                ['blockquote', 'code-block'],
-                ['link'],
-                [{ align: [] }],
-                ['clean']
-            ]
-        }
-    });
-
-    // Sync to hidden input on submit
-    document.getElementById('blog-form').addEventListener('submit', function () {
-        document.getElementById('content-input').value = quill.root.innerHTML;
-    });
-
-    // Toggle scheduled date visibility
-    var publishNow = document.getElementById('publish-now-check');
+    var publishNow   = document.getElementById('publish-now-check');
     var scheduledWrap = document.getElementById('scheduled-date-wrap');
     function toggleScheduled() {
         scheduledWrap.style.opacity = publishNow.checked ? '0.4' : '1';
