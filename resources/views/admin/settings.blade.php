@@ -140,5 +140,66 @@
 
     </form>
 
+    {{-- Franchise Price Adjustments --}}
+    <div class="settings-card settings-card--wide" style="margin-top:1.5rem;">
+        <h2 class="settings-card__title">Franchise Price Adjustments</h2>
+        <p class="settings-hint" style="margin-bottom:1.5rem;">
+            Add or deduct a flat £ amount from games belonging to a specific franchise.
+            Positive values increase the cash offer; negative values reduce it.
+        </p>
+
+        {{-- Existing adjustments --}}
+        @if($franchiseAdjustments->isNotEmpty())
+        <div style="display:flex; flex-direction:column; gap:0.5rem; margin-bottom:1.5rem;">
+            @foreach($franchiseAdjustments as $fa)
+            <form method="POST" action="{{ route('admin.franchise-adjustments.update', $fa->id) }}"
+                  style="display:flex; align-items:center; gap:0.75rem; flex-wrap:wrap;">
+                @csrf
+                @method('PATCH')
+                <span style="flex:1; min-width:160px; font-weight:500; color:var(--text);">{{ $fa->franchise_name }}</span>
+                <div class="settings-input-row">
+                    <span class="settings-unit">£</span>
+                    <input type="number" name="adjustment_gbp"
+                           value="{{ $fa->adjustment_gbp }}"
+                           min="-999.99" max="999.99" step="0.01"
+                           class="form-input settings-input--sm"
+                           style="width:90px;">
+                </div>
+                <button type="submit" class="btn btn--outline btn--sm">Save</button>
+                <button type="button"
+                    class="btn btn--sm" style="background:rgba(230,57,70,0.12); color:var(--accent); border:1px solid rgba(230,57,70,0.3);"
+                    data-confirm="Remove franchise adjustment for &quot;{{ e($fa->franchise_name) }}&quot;?"
+                    onclick="this.closest('form').querySelector('[name=_method]').value='DELETE'; this.closest('form').action='{{ route('admin.franchise-adjustments.destroy', $fa->id) }}'; this.closest('form').submit();">
+                    Remove
+                </button>
+            </form>
+            @endforeach
+        </div>
+        @endif
+
+        {{-- Add new --}}
+        <form method="POST" action="{{ route('admin.franchise-adjustments.store') }}"
+              style="display:flex; align-items:flex-end; gap:0.75rem; flex-wrap:wrap;">
+            @csrf
+            <div class="form-group" style="flex:1; min-width:180px; margin:0;">
+                <label class="form-label">Franchise Name</label>
+                <input type="text" name="franchise_name" value="{{ old('franchise_name') }}"
+                       class="form-input" placeholder="e.g. Call of Duty">
+                @error('franchise_name')<p class="form-error">{{ $message }}</p>@enderror
+            </div>
+            <div class="form-group" style="margin:0;">
+                <label class="form-label">Adjustment (£)</label>
+                <div class="settings-input-row">
+                    <span class="settings-unit">£</span>
+                    <input type="number" name="adjustment_gbp" value="{{ old('adjustment_gbp', '0.00') }}"
+                           min="-999.99" max="999.99" step="0.01"
+                           class="form-input settings-input--sm" style="width:90px;">
+                </div>
+                @error('adjustment_gbp')<p class="form-error">{{ $message }}</p>@enderror
+            </div>
+            <button type="submit" class="btn btn--primary btn--sm" style="margin-bottom:1px;">Add Franchise</button>
+        </form>
+    </div>
+
 </div>
 @endsection

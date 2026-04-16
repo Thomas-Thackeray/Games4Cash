@@ -3,6 +3,8 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Models\FranchiseAdjustment;
+use App\Models\Setting;
 
 class GamePrice extends Model
 {
@@ -58,7 +60,7 @@ class GamePrice extends Model
      * Compute the display price from stored raw values and current admin settings.
      * Returns null if there is no usable price data.
      */
-    public function getComputedPrice(): ?array
+    public function getComputedPrice(array $franchiseNames = []): ?array
     {
         if ($this->is_free) {
             return [
@@ -109,7 +111,8 @@ class GamePrice extends Model
             }
         }
 
-        $computed = max(0.01, round($baseGbp * $discountMultiplier * $ageMultiplier * $platformMultiplier, 2));
+        $franchiseAdj = FranchiseAdjustment::getAdjustment($franchiseNames);
+        $computed = max(0.01, round($baseGbp * $discountMultiplier * $ageMultiplier * $platformMultiplier + $franchiseAdj, 2));
 
         return [
             'is_free'       => false,
@@ -122,7 +125,7 @@ class GamePrice extends Model
      * Compute the display price for a specific platform (uses that platform's modifier only).
      * Returns null if there is no usable price data.
      */
-    public function getComputedPriceForPlatform(int $platformId): ?array
+    public function getComputedPriceForPlatform(int $platformId, array $franchiseNames = []): ?array
     {
         if ($this->is_free) {
             return [
@@ -166,7 +169,8 @@ class GamePrice extends Model
             $platformMultiplier = 1 + ($adjustment / 100);
         }
 
-        $computed = max(0.01, round($baseGbp * $discountMultiplier * $ageMultiplier * $platformMultiplier, 2));
+        $franchiseAdj = FranchiseAdjustment::getAdjustment($franchiseNames);
+        $computed = max(0.01, round($baseGbp * $discountMultiplier * $ageMultiplier * $platformMultiplier + $franchiseAdj, 2));
 
         return [
             'is_free'       => false,

@@ -25,7 +25,8 @@
             $name        = $game['name'] ?? 'Unknown';
             $imgId       = $game['cover']['image_id'] ?? null;
             $imgUrl      = $imgId ? igdb_img($imgId, 'cover_big') : asset('img/placeholder.jpg');
-            $allPlatforms = config('igdb.all_platforms');
+            $allPlatforms   = config('igdb.all_platforms');
+            $franchiseNames = array_column($game['franchises'] ?? [], 'name');
 
             // Platform names from IGDB data
             $platformNames = collect($game['platforms'] ?? [])
@@ -37,7 +38,7 @@
 
             // Pricing & cash dropdown data from DB
             $gamePrice   = \App\Models\GamePrice::where('igdb_game_id', $gameId)->first();
-            $pricing     = $gamePrice?->getComputedPrice();
+            $pricing     = $gamePrice?->getComputedPrice($franchiseNames);
             if ($pricing && $pricing['is_free']) { $pricing = null; }
 
             $platformsData = [];
@@ -45,7 +46,7 @@
                 $platformIds = json_decode($gamePrice->platform_ids ?? '[]', true);
                 foreach ($platformIds as $pid) {
                     if (!isset($allPlatforms[$pid])) continue;
-                    $p = $gamePrice->getComputedPriceForPlatform((int) $pid);
+                    $p = $gamePrice->getComputedPriceForPlatform((int) $pid, $franchiseNames);
                     if ($p && !$p['is_free']) {
                         $platformsData[] = [
                             'id'           => (int) $pid,

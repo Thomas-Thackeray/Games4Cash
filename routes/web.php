@@ -125,6 +125,11 @@ Route::middleware(['auth', 'track.active', 'admin'])->prefix('admin')->name('adm
     Route::get('/settings', [AdminController::class, 'showSettings'])->name('settings');
     Route::post('/settings', [AdminController::class, 'updateSettings'])->name('settings.update');
 
+    // Franchise adjustments
+    Route::post('/settings/franchise-adjustments', [AdminController::class, 'storeFranchiseAdjustment'])->name('franchise-adjustments.store');
+    Route::patch('/settings/franchise-adjustments/{id}', [AdminController::class, 'updateFranchiseAdjustment'])->name('franchise-adjustments.update')->where('id', '[0-9]+');
+    Route::delete('/settings/franchise-adjustments/{id}', [AdminController::class, 'destroyFranchiseAdjustment'])->name('franchise-adjustments.destroy')->where('id', '[0-9]+');
+
     // Cash orders management
     Route::get('/orders', [AdminController::class, 'cashOrders'])->name('orders');
     Route::get('/orders/{id}', [AdminController::class, 'cashOrderDetail'])->name('orders.detail')->where('id', '[0-9]+');

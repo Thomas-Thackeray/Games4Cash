@@ -8,8 +8,10 @@
     $genre   = $game['genres'][0]['name'] ?? '';
     $year    = isset($game['first_release_date']) ? date('Y', $game['first_release_date']) : '';
 
+    $franchiseNames = array_column($game['franchises'] ?? [], 'name');
+
     $gamePrice = \App\Models\GamePrice::where('igdb_game_id', $cardId)->first();
-    $pricing   = $gamePrice?->getComputedPrice();
+    $pricing   = $gamePrice?->getComputedPrice($franchiseNames);
 
     // Don't show free-to-play games in the actions bar
     if ($pricing && $pricing['is_free']) {
@@ -25,7 +27,7 @@
             if (! isset($allPlatforms[$pid])) {
                 continue;
             }
-            $p = $gamePrice->getComputedPriceForPlatform((int) $pid);
+            $p = $gamePrice->getComputedPriceForPlatform((int) $pid, $franchiseNames);
             if ($p && ! $p['is_free']) {
                 $platformsData[] = [
                     'id'           => (int) $pid,

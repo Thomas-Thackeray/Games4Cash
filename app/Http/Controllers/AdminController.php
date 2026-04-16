@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\ActivityLog;
 use App\Models\BlacklistedPassword;
+use App\Models\FranchiseAdjustment;
 use App\Models\CashBasketItem;
 use App\Models\CashOrder;
 use App\Models\ContactSubmission;
@@ -338,7 +339,9 @@ class AdminController extends Controller
             ]);
         }, self::PLATFORMS);
 
-        return view('admin.settings', compact('settings', 'platforms'));
+        $franchiseAdjustments = FranchiseAdjustment::orderBy('franchise_name')->get();
+
+        return view('admin.settings', compact('settings', 'platforms', 'franchiseAdjustments'));
     }
 
     // ----------------------------------------------------------------
@@ -419,5 +422,44 @@ class AdminController extends Controller
         }
 
         return back()->with('flash_success', 'Settings saved.');
+    }
+
+    // ----------------------------------------------------------------
+    //  Franchise price adjustments
+    // ----------------------------------------------------------------
+
+    public function storeFranchiseAdjustment(Request $request): RedirectResponse
+    {
+        $request->validate([
+            'franchise_name' => ['required', 'string', 'max:100', 'unique:franchise_adjustments,franchise_name'],
+            'adjustment_gbp' => ['required', 'numeric', 'min:-999.99', 'max:999.99'],
+        ]);
+
+        FranchiseAdjustment::create([
+            'franchise_name' => trim($request->input('franchise_name')),
+            'adjustment_gbp' => $request->input('adjustment_gbp'),
+        ]);
+
+        return back()->with('flash_success', 'Franchise adjustment added.');
+    }
+
+    public function updateFranchiseAdjustment(Request $request, int $id): RedirectResponse
+    {
+        $request->validate([
+            'adjustment_gbp' => ['required', 'numeric', 'min:-999.99', 'max:999.99'],
+        ]);
+
+        FranchiseAdjustment::findOrFail($id)->update([
+            'adjustment_gbp' => $request->input('adjustment_gbp'),
+        ]);
+
+        return back()->with('flash_success', 'Franchise adjustment updated.');
+    }
+
+    public function destroyFranchiseAdjustment(int $id): RedirectResponse
+    {
+        FranchiseAdjustment::findOrFail($id)->delete();
+
+        return back()->with('flash_success', 'Franchise adjustment removed.');
     }
 }
