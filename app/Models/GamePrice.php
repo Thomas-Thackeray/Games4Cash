@@ -126,11 +126,11 @@ class GamePrice extends Model
             $computed = round($computed + 0.20, 2);
         }
 
-        // 7. Bundle bonus: if this is a game bundle, increase by X%
+        // 7. Bundle bonus: if this is a game bundle, add flat £ amount
         if ($this->is_bundle) {
-            $bundlePct = (float) Setting::get('bundle_price_increase_pct', 0);
-            if ($bundlePct > 0) {
-                $computed = round($computed * (1 + ($bundlePct / 100)), 2);
+            $bundleGbp = (float) Setting::get('bundle_price_increase_gbp', 0);
+            if ($bundleGbp > 0) {
+                $computed = round($computed + $bundleGbp, 2);
             }
         }
 
@@ -212,11 +212,11 @@ class GamePrice extends Model
             $computed = round($computed + 0.20, 2);
         }
 
-        // 7. Bundle bonus: if this is a game bundle, increase by X%
+        // 7. Bundle bonus: if this is a game bundle, add flat £ amount
         if ($this->is_bundle) {
-            $bundlePct = (float) Setting::get('bundle_price_increase_pct', 0);
-            if ($bundlePct > 0) {
-                $computed = round($computed * (1 + ($bundlePct / 100)), 2);
+            $bundleGbp = (float) Setting::get('bundle_price_increase_gbp', 0);
+            if ($bundleGbp > 0) {
+                $computed = round($computed + $bundleGbp, 2);
             }
         }
 

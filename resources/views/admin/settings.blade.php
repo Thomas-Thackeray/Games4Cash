@@ -85,7 +85,7 @@
                 <strong>Step 7 — Bundle bonus</strong>
                 <p class="settings-hint" style="margin-top:0.25rem;">
                     If the game is flagged as a <strong>bundle</strong> in the IGDB database (i.e. it contains
-                    multiple games), the price is increased by the <strong>Bundle Price Increase %</strong>.
+                    multiple games), a flat <strong>£ amount is added</strong> to the computed price.
                     This reflects the extra value of a multi-game package.
                     Set to 0 to leave bundle prices unchanged.
                 </p>
@@ -115,7 +115,7 @@
                 <br>base += franchise_adj
                 <br>offer = base × (1 − discount%) [× (1 + platform%) &nbsp;OR&nbsp; + platform_£] − (age_years × £age_reduction)
                 <br>if offer &lt; £0.10 → offer += £0.20
-                <br>if is_bundle → offer × (1 + bundle%)
+                <br>if is_bundle → offer += £bundle_gbp
                 <br>if offer &gt; £10.00 → offer × (1 − high_price%)
                 <br>final = offer × (1 + condition%)
             </div>
@@ -184,15 +184,15 @@
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label">Bundle Price Increase (%)</label>
-                    <p class="settings-hint">If the game is a bundle (multiple games in one), increase the computed price by this percentage. Set to <strong>0</strong> to disable.</p>
+                    <label class="form-label">Bundle Price Increase (£)</label>
+                    <p class="settings-hint">If the game is a bundle (multiple games in one), add this flat amount to the computed price. Set to <strong>0</strong> to disable.</p>
                     <div class="settings-input-row">
-                        <input type="number" name="bundle_price_increase_pct"
-                            value="{{ old('bundle_price_increase_pct', $settings['bundle_price_increase_pct']) }}"
-                            min="0" max="999" step="1" class="form-input settings-input--sm">
-                        <span class="settings-unit">%</span>
+                        <span class="settings-unit">£</span>
+                        <input type="number" name="bundle_price_increase_gbp"
+                            value="{{ old('bundle_price_increase_gbp', $settings['bundle_price_increase_gbp']) }}"
+                            min="0" max="999.99" step="0.01" class="form-input settings-input--sm">
                     </div>
-                    @error('bundle_price_increase_pct')<p class="form-error">{{ $message }}</p>@enderror
+                    @error('bundle_price_increase_gbp')<p class="form-error">{{ $message }}</p>@enderror
                 </div>
 
                 <div class="form-group">
