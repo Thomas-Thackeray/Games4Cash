@@ -64,10 +64,9 @@
             <div>
                 <strong>Step 5 — Apply the age-based reduction</strong>
                 <p class="settings-hint" style="margin-top:0.25rem;">
-                    For each full year since the game's release date, the price is reduced by an additional
-                    <strong>Age Reduction % per year</strong>.
-                    A 2004 game at 1%/year loses 22%, leaving 78% of the price after steps 1–4.
-                    The age reduction is capped at 99% so the price never reaches zero from age alone.
+                    For each full year since the game's release date, a flat <strong>£ amount is deducted</strong>
+                    from the price. At £0.50/year, a game released 10 years ago loses £5.00 from its computed price.
+                    The price is always floored at £0.01 so it never goes negative.
                     Set this to 0 to disable age-based reductions entirely.
                 </p>
             </div>
@@ -94,7 +93,7 @@
             <div style="background:rgba(255,255,255,0.04); border-radius:6px; padding:0.75rem 1rem; font-family:monospace; font-size:0.85rem; color:var(--text-muted);">
                 base = steam_gbp &nbsp;OR&nbsp; (cheapshark_usd ÷ rate) &nbsp;OR&nbsp; base_price_gbp
                 <br>base += franchise_adj
-                <br>offer = base × (1 − discount%) × (1 + platform%) × (1 − age%)
+                <br>offer = base × (1 − discount%) × (1 + platform%) − (age_years × £age_reduction)
                 <br>if offer &lt; £0.10 → offer += £0.20
                 <br>final = offer × (1 + condition%)
             </div>
@@ -138,13 +137,14 @@
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label">Age-Based Reduction (% per year)</label>
-                    <p class="settings-hint">For each full year since release, reduce the price by this additional percentage. Max 20%.</p>
+                    <label class="form-label">Age-Based Reduction (£ per year)</label>
+                    <p class="settings-hint">For each full year since release, deduct this flat amount from the price. Set to 0 to disable.</p>
                     <div class="settings-input-row">
+                        <span class="settings-unit">£</span>
                         <input type="number" name="age_reduction_per_year"
                             value="{{ old('age_reduction_per_year', $settings['age_reduction_per_year']) }}"
-                            min="0" max="20" step="0.5" class="form-input settings-input--sm">
-                        <span class="settings-unit">% / year</span>
+                            min="0" max="9.99" step="0.01" class="form-input settings-input--sm">
+                        <span class="settings-unit">/ year</span>
                     </div>
                     @error('age_reduction_per_year')<p class="form-error">{{ $message }}</p>@enderror
                 </div>

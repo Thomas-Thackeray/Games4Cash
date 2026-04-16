@@ -81,17 +81,15 @@ class GameController extends Controller
                 if ($basePriceGbp > 0) {
                     $discountPct        = (float) Setting::get('pricing_discount_percent', 85);
                     $discountMultiplier = 1 - ($discountPct / 100);
-                    $ageMultiplier      = 1.0;
-                    $releaseTs          = $game['first_release_date'] ?? null;
+                    $releaseTs = $game['first_release_date'] ?? null;
+                    $computed  = max(0.01, round($basePriceGbp * $discountMultiplier, 2));
                     if ($releaseTs !== null) {
-                        $ageReductionPerYear = (float) Setting::get('age_reduction_per_year', 1);
-                        if ($ageReductionPerYear > 0) {
-                            $ageYears      = max(0, (int) floor((time() - $releaseTs) / (365.25 * 86400)));
-                            $agePct        = min($ageReductionPerYear * $ageYears, 99.0);
-                            $ageMultiplier = 1 - ($agePct / 100);
+                        $ageReductionGbp = (float) Setting::get('age_reduction_per_year', 0);
+                        if ($ageReductionGbp > 0) {
+                            $ageYears = max(0, (int) floor((time() - $releaseTs) / (365.25 * 86400)));
+                            $computed = max(0.01, $computed - ($ageYears * $ageReductionGbp));
                         }
                     }
-                    $computed = max(0.01, round($basePriceGbp * $discountMultiplier * $ageMultiplier, 2));
                     if ($computed < 0.10) {
                         $computed = round($computed + 0.20, 2);
                     }

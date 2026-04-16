@@ -107,13 +107,12 @@ class GamePrice extends Model
         // 4. No platform modifier here — per-platform prices are computed by
         //    getComputedPriceForPlatform() and shown individually in the Get Cash dropdown.
 
-        // 5. Age-based reduction
+        // 5. Age-based reduction (flat £ per year deducted from the computed price)
         if ($this->release_date !== null) {
-            $ageReductionPerYear = (float) Setting::get('age_reduction_per_year', 1);
-            if ($ageReductionPerYear > 0) {
+            $ageReductionGbp = (float) Setting::get('age_reduction_per_year', 0);
+            if ($ageReductionGbp > 0) {
                 $ageYears = max(0, (int) floor((time() - $this->release_date) / (365.25 * 86400)));
-                $agePct   = min($ageReductionPerYear * $ageYears, 99.0);
-                $computed *= 1 - ($agePct / 100);
+                $computed = max(0.01, $computed - ($ageYears * $ageReductionGbp));
             }
         }
 
@@ -175,13 +174,12 @@ class GamePrice extends Model
             $computed *= 1 + ($adjustment / 100);
         }
 
-        // 5. Age-based reduction
+        // 5. Age-based reduction (flat £ per year deducted from the computed price)
         if ($this->release_date !== null) {
-            $ageReductionPerYear = (float) Setting::get('age_reduction_per_year', 1);
-            if ($ageReductionPerYear > 0) {
+            $ageReductionGbp = (float) Setting::get('age_reduction_per_year', 0);
+            if ($ageReductionGbp > 0) {
                 $ageYears = max(0, (int) floor((time() - $this->release_date) / (365.25 * 86400)));
-                $agePct   = min($ageReductionPerYear * $ageYears, 99.0);
-                $computed *= 1 - ($agePct / 100);
+                $computed = max(0.01, $computed - ($ageYears * $ageReductionGbp));
             }
         }
 
