@@ -41,7 +41,7 @@ class DetectSuspiciousInput
             foreach (self::PATTERNS as [$label, $pattern]) {
                 if (preg_match($pattern, $value)) {
                     $truncated = mb_strimwidth($value, 0, 120, '…');
-                    ActivityLogger::suspicious(
+                    ActivityLogger::security(
                         sprintf('Suspicious input (%s) in field "%s": %s', $label, $field, $truncated),
                         $request
                     );

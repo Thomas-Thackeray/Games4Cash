@@ -3,7 +3,6 @@
     @elseif($log->type === 'login') 🔑
     @elseif($log->type === 'quote') 💰
     @elseif($log->type === 'security') 🚨
-    @elseif($log->type === 'suspicious') ⚠️
     @else 🎮
     @endif
     {{ ucfirst($log->type) }}
