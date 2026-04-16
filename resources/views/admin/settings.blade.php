@@ -24,61 +24,60 @@
             <div>
                 <strong>Step 1 — Find the base price</strong>
                 <p class="settings-hint" style="margin-top:0.25rem;">
-                    The system first checks <strong>CheapShark</strong> for the all-time historical lowest sale price of the game (in USD).
-                    If CheapShark has no record, it falls back to the current <strong>Steam GBP price</strong>.
+                    The system first checks the current <strong>Steam GBP price</strong> for the game.
+                    If Steam has no data, it falls back to <strong>CheapShark</strong> (all-time historical lowest sale price, in USD —
+                    converted to GBP using the <strong>USD → GBP Exchange Rate</strong> setting).
                     If neither source has data, it uses the <strong>Base Price (GBP)</strong> setting below as a last resort.
-                    The USD price is converted to GBP using the <strong>USD → GBP Exchange Rate</strong> setting.
                 </p>
             </div>
 
             <div>
-                <strong>Step 2 — Apply the discount</strong>
+                <strong>Step 2 — Apply the franchise adjustment</strong>
                 <p class="settings-hint" style="margin-top:0.25rem;">
-                    The base GBP price is multiplied by <code>(100% − Discount%)</code>.
-                    For example, with an 85% discount only <strong>15%</strong> of the base price remains.
+                    If the game belongs to a franchise with an adjustment set, that flat <strong>£ amount is added or subtracted
+                    from the base price</strong> before any discounting.
+                    For example: Call of Duty +£0.20 increases the base; a low-demand series −£1.00 reduces it.
+                    Manage franchise adjustments in the section at the bottom of this page.
+                </p>
+            </div>
+
+            <div>
+                <strong>Step 3 — Apply the discount</strong>
+                <p class="settings-hint" style="margin-top:0.25rem;">
+                    The (franchise-adjusted) base price is multiplied by <code>(100% − Discount%)</code>.
+                    At 85% discount, only <strong>15%</strong> of the base price remains.
                     Increasing this setting makes all cash offers lower; decreasing it makes them higher.
                 </p>
             </div>
 
             <div>
-                <strong>Step 3 — Apply the age reduction</strong>
+                <strong>Step 4 — Apply the platform modifier</strong>
                 <p class="settings-hint" style="margin-top:0.25rem;">
-                    For each full year since the game's release date, the price is reduced by an additional <strong>Age Reduction % per year</strong>.
-                    A 2004 game at 1%/year loses 22%, leaving 78% of the discounted price.
-                    The age reduction is capped at 99% so the price never reaches zero.
-                    Setting this to 0 disables age-based reductions entirely.
-                </p>
-            </div>
-
-            <div>
-                <strong>Step 4 — Apply the franchise adjustment</strong>
-                <p class="settings-hint" style="margin-top:0.25rem;">
-                    A flat <strong>£ amount</strong> is added or subtracted for games belonging to a specific franchise
-                    (e.g. add £1.00 for Call of Duty, deduct £0.50 for a low-demand series).
-                    This is applied before the low-price boost so it can influence whether the boost fires.
-                    Manage franchise adjustments in the section below.
-                </p>
-            </div>
-
-            <div>
-                <strong>Step 5 — Low-price boost</strong>
-                <p class="settings-hint" style="margin-top:0.25rem;">
-                    If the price at this point is <strong>less than £0.10</strong>,
-                    <strong>£0.20 is automatically added</strong> to keep the offer meaningful.
-                    This most often affects very old games whose historical sale price was extremely cheap.
-                    The boost is applied <em>before</em> the platform modifier so that console modifiers
-                    always have a visible effect.
-                </p>
-            </div>
-
-            <div>
-                <strong>Step 6 — Apply the platform modifier</strong>
-                <p class="settings-hint" style="margin-top:0.25rem;">
-                    A percentage is applied to the (already boosted) price based on the console.
+                    A percentage adjustment is applied based on the console.
                     A positive % increases the offer (e.g. PS5 games may be worth more);
                     a negative % reduces it. Set to 0 to leave a platform's price unchanged.
                     On the game detail page each platform shows its own adjusted price in the Get Cash dropdown.
-                    For multi-platform games on cards the most favourable modifier is used.
+                    For multi-platform game cards the most favourable modifier is used.
+                </p>
+            </div>
+
+            <div>
+                <strong>Step 5 — Apply the age-based reduction</strong>
+                <p class="settings-hint" style="margin-top:0.25rem;">
+                    For each full year since the game's release date, the price is reduced by an additional
+                    <strong>Age Reduction % per year</strong>.
+                    A 2004 game at 1%/year loses 22%, leaving 78% of the price after steps 1–4.
+                    The age reduction is capped at 99% so the price never reaches zero from age alone.
+                    Set this to 0 to disable age-based reductions entirely.
+                </p>
+            </div>
+
+            <div>
+                <strong>Step 6 — Low-price boost</strong>
+                <p class="settings-hint" style="margin-top:0.25rem;">
+                    If the price after all the above steps is still <strong>less than £0.10</strong>,
+                    <strong>£0.20 is automatically added</strong> to keep the offer meaningful.
+                    This most often affects very old games whose Steam/CheapShark price is extremely low.
                 </p>
             </div>
 
@@ -93,9 +92,11 @@
             </div>
 
             <div style="background:rgba(255,255,255,0.04); border-radius:6px; padding:0.75rem 1rem; font-family:monospace; font-size:0.85rem; color:var(--text-muted);">
-                base = raw_price × (1 − discount%) × (1 − age_years × age%/yr) + franchise_adj
-                <br>if base &lt; £0.10 → base += £0.20
-                <br>offer = base × (1 + platform%) × (1 + condition%)
+                base = steam_gbp &nbsp;OR&nbsp; (cheapshark_usd ÷ rate) &nbsp;OR&nbsp; base_price_gbp
+                <br>base += franchise_adj
+                <br>offer = base × (1 − discount%) × (1 + platform%) × (1 − age%)
+                <br>if offer &lt; £0.10 → offer += £0.20
+                <br>final = offer × (1 + condition%)
             </div>
 
         </div>
