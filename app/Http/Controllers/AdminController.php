@@ -265,7 +265,7 @@ class AdminController extends Controller
             });
         }
 
-        $logs = $query->get();
+        $logs = $query->paginate(50)->withQueryString();
 
         return view('admin.activity-logs', compact('logs', 'type', 'search'));
     }

@@ -136,9 +136,34 @@
         @endforelse
     </div>
 
-    <p style="color:var(--text-muted); font-size:0.85rem; margin-top:1rem;">
-        {{ $logs->count() }} {{ $logs->count() === 1 ? 'entry' : 'entries' }}
-    </p>
+    <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:0.75rem; margin-top:1rem;">
+        <p style="color:var(--text-muted); font-size:0.85rem; margin:0;">
+            Showing {{ $logs->firstItem() }}–{{ $logs->lastItem() }} of {{ $logs->total() }} {{ $logs->total() === 1 ? 'entry' : 'entries' }}
+        </p>
+        @if($logs->hasPages())
+        <div style="display:flex; gap:0.4rem; flex-wrap:wrap;">
+            @if($logs->onFirstPage())
+                <span class="btn btn--outline btn--sm" style="opacity:0.4; cursor:default;">← Prev</span>
+            @else
+                <a href="{{ $logs->previousPageUrl() }}" class="btn btn--outline btn--sm">← Prev</a>
+            @endif
+
+            @foreach($logs->getUrlRange(max(1, $logs->currentPage() - 2), min($logs->lastPage(), $logs->currentPage() + 2)) as $page => $url)
+                @if($page === $logs->currentPage())
+                    <span class="btn btn--primary btn--sm">{{ $page }}</span>
+                @else
+                    <a href="{{ $url }}" class="btn btn--outline btn--sm">{{ $page }}</a>
+                @endif
+            @endforeach
+
+            @if($logs->hasMorePages())
+                <a href="{{ $logs->nextPageUrl() }}" class="btn btn--outline btn--sm">Next →</a>
+            @else
+                <span class="btn btn--outline btn--sm" style="opacity:0.4; cursor:default;">Next →</span>
+            @endif
+        </div>
+        @endif
+    </div>
 
 </div>
 @endsection
