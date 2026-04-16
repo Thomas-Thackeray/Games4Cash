@@ -119,6 +119,11 @@ class GamePrice extends Model
         $franchiseAdj  = FranchiseAdjustment::getAdjustment($resolvedNames);
         $computed = max(0.01, round($baseGbp * $discountMultiplier * $ageMultiplier * $platformMultiplier + $franchiseAdj, 2));
 
+        // Low-price boost: if the result is under £0.10, add £0.20 to keep offers meaningful
+        if ($computed < 0.10) {
+            $computed = round($computed + 0.20, 2);
+        }
+
         return [
             'is_free'       => false,
             'display_price' => '£' . number_format($computed, 2),
@@ -177,6 +182,11 @@ class GamePrice extends Model
         $resolvedNames = !empty($franchiseNames) ? $franchiseNames : ($this->franchise_names ?? []);
         $franchiseAdj  = FranchiseAdjustment::getAdjustment($resolvedNames);
         $computed = max(0.01, round($baseGbp * $discountMultiplier * $ageMultiplier * $platformMultiplier + $franchiseAdj, 2));
+
+        // Low-price boost: if the result is under £0.10, add £0.20 to keep offers meaningful
+        if ($computed < 0.10) {
+            $computed = round($computed + 0.20, 2);
+        }
 
         return [
             'is_free'       => false,

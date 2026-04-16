@@ -12,6 +12,91 @@
         <button type="submit" form="settings-form" class="btn btn--primary">Save Settings</button>
     </div>
 
+    {{-- Pricing Formula Explainer --}}
+    <div class="settings-card settings-card--wide" style="margin-bottom:1.5rem; border-left:3px solid var(--accent);">
+        <h2 class="settings-card__title">How Pricing Works</h2>
+        <p class="settings-hint" style="margin-bottom:1.25rem;">
+            This explains how the cash offer shown to customers is calculated, and what happens when you change each setting.
+        </p>
+
+        <div style="display:flex; flex-direction:column; gap:1rem; font-size:0.92rem; color:var(--text);">
+
+            <div>
+                <strong>Step 1 — Find the base price</strong>
+                <p class="settings-hint" style="margin-top:0.25rem;">
+                    The system first checks <strong>CheapShark</strong> for the all-time historical lowest sale price of the game (in USD).
+                    If CheapShark has no record, it falls back to the current <strong>Steam GBP price</strong>.
+                    If neither source has data, it uses the <strong>Base Price (GBP)</strong> setting below as a last resort.
+                    The USD price is converted to GBP using the <strong>USD → GBP Exchange Rate</strong> setting.
+                </p>
+            </div>
+
+            <div>
+                <strong>Step 2 — Apply the discount</strong>
+                <p class="settings-hint" style="margin-top:0.25rem;">
+                    The base GBP price is multiplied by <code>(100% − Discount%)</code>.
+                    For example, with an 85% discount only <strong>15%</strong> of the base price remains.
+                    Increasing this setting makes all cash offers lower; decreasing it makes them higher.
+                </p>
+            </div>
+
+            <div>
+                <strong>Step 3 — Apply the age reduction</strong>
+                <p class="settings-hint" style="margin-top:0.25rem;">
+                    For each full year since the game's release date, the price is reduced by an additional <strong>Age Reduction % per year</strong>.
+                    A 2004 game at 1%/year loses 22%, leaving 78% of the discounted price.
+                    The age reduction is capped at 99% so the price never reaches zero.
+                    Setting this to 0 disables age-based reductions entirely.
+                </p>
+            </div>
+
+            <div>
+                <strong>Step 4 — Apply the platform modifier</strong>
+                <p class="settings-hint" style="margin-top:0.25rem;">
+                    If a game is available on multiple platforms, the <strong>most favourable modifier</strong> is chosen.
+                    A positive % increases the offer (e.g. PS5 games may be worth more);
+                    a negative % reduces it. Set to 0 to leave a platform's price unchanged.
+                    On the game detail page each platform shows its own adjusted price in the Get Cash dropdown.
+                </p>
+            </div>
+
+            <div>
+                <strong>Step 5 — Apply the franchise adjustment</strong>
+                <p class="settings-hint" style="margin-top:0.25rem;">
+                    A flat <strong>£ amount</strong> is added or subtracted for games belonging to a specific franchise
+                    (e.g. add £1.00 for Call of Duty, deduct £0.50 for a low-demand series).
+                    This is applied after all percentage multipliers so it has a predictable absolute effect.
+                    Manage franchise adjustments in the section below.
+                </p>
+            </div>
+
+            <div>
+                <strong>Step 6 — Low-price boost</strong>
+                <p class="settings-hint" style="margin-top:0.25rem;">
+                    If the calculated price after all the above steps would be <strong>less than £0.10</strong>,
+                    <strong>£0.20 is automatically added</strong> to keep the offer meaningful.
+                    This most often affects very old games whose historical sale price was extremely cheap.
+                </p>
+            </div>
+
+            <div>
+                <strong>Step 7 — Condition modifier (applied at quote time)</strong>
+                <p class="settings-hint" style="margin-top:0.25rem;">
+                    When a customer selects the physical condition of their game in the cash basket,
+                    a final percentage adjustment is applied on top of the computed price.
+                    <em>Brand New</em> increases the offer; <em>Just Disk</em> reduces it.
+                    This is the last step and is shown live in the basket before the customer submits their quote.
+                </p>
+            </div>
+
+            <div style="background:rgba(255,255,255,0.04); border-radius:6px; padding:0.75rem 1rem; font-family:monospace; font-size:0.85rem; color:var(--text-muted);">
+                Final offer = ( base_price × (1 − discount%) × (1 − age_years × age%/yr) × (1 + platform%) + franchise_adj ) × (1 + condition%)
+                <br><em style="font-family:inherit;">If result &lt; £0.10 → add £0.20</em>
+            </div>
+
+        </div>
+    </div>
+
     <form method="POST" action="{{ route('admin.settings.update') }}" id="settings-form">
         @csrf
 

@@ -92,6 +92,9 @@ class GameController extends Controller
                         }
                     }
                     $computed = max(0.01, round($basePriceGbp * $discountMultiplier * $ageMultiplier, 2));
+                    if ($computed < 0.10) {
+                        $computed = round($computed + 0.20, 2);
+                    }
                     $pricing  = [
                         'is_free'       => false,
                         'display_price' => '£' . number_format($computed, 2),
