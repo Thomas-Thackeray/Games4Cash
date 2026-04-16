@@ -17,6 +17,7 @@ use App\Http\Controllers\PlatformController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SearchController;
 use App\Http\Controllers\SecurityController;
+use App\Http\Controllers\RecentlyViewedController;
 use App\Http\Controllers\WishlistController;
 use Illuminate\Support\Facades\Route;
 
@@ -64,6 +65,9 @@ Route::middleware(['auth', 'track.active', 'force.reset'])->group(function () {
 
     Route::get('/security', [SecurityController::class, 'show'])->name('security');
     Route::put('/security/password', [SecurityController::class, 'updatePassword'])->name('security.password');
+
+    // Recently viewed
+    Route::get('/recently-viewed', [RecentlyViewedController::class, 'index'])->name('recently-viewed');
 
     // Wishlist
     Route::get('/wishlist', [WishlistController::class, 'index'])->name('wishlist.index');
