@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use App\Models\FranchiseAdjustment;
+use App\Models\GameNameAdjustment;
 use App\Models\Setting;
 
 class GamePrice extends Model
@@ -75,7 +76,7 @@ class GamePrice extends Model
      *   5. Apply age-based reduction
      *   6. Floor at £0.01; if under £0.10 add £0.20 low-price boost
      */
-    public function getComputedPrice(array $franchiseNames = []): ?array
+    public function getComputedPrice(array $franchiseNames = [], ?string $gameTitle = null): ?array
     {
         if ($this->is_free) {
             return [
@@ -103,6 +104,11 @@ class GamePrice extends Model
         $resolvedNames = !empty($franchiseNames) ? $franchiseNames : ($this->franchise_names ?? []);
         $franchiseAdj  = FranchiseAdjustment::getAdjustment($resolvedNames);
         $baseGbp      += $franchiseAdj;
+
+        // 2b. Game name adjustment (keyword partial-match against the game title)
+        if ($gameTitle !== null) {
+            $baseGbp += GameNameAdjustment::getAdjustment($gameTitle);
+        }
 
         // 3. Discount
         $discountPct = (float) Setting::get('pricing_discount_percent', 85);
@@ -154,7 +160,7 @@ class GamePrice extends Model
      * Same formula as getComputedPrice() but uses the given platform's modifier
      * rather than the best modifier across all stored platforms.
      */
-    public function getComputedPriceForPlatform(int $platformId, array $franchiseNames = []): ?array
+    public function getComputedPriceForPlatform(int $platformId, array $franchiseNames = [], ?string $gameTitle = null): ?array
     {
         if ($this->is_free) {
             return [
@@ -182,6 +188,11 @@ class GamePrice extends Model
         $resolvedNames = !empty($franchiseNames) ? $franchiseNames : ($this->franchise_names ?? []);
         $franchiseAdj  = FranchiseAdjustment::getAdjustment($resolvedNames);
         $baseGbp      += $franchiseAdj;
+
+        // 2b. Game name adjustment (keyword partial-match against the game title)
+        if ($gameTitle !== null) {
+            $baseGbp += GameNameAdjustment::getAdjustment($gameTitle);
+        }
 
         // 3. Discount
         $discountPct = (float) Setting::get('pricing_discount_percent', 85);

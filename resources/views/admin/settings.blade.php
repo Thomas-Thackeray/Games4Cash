@@ -376,5 +376,73 @@
         </form>
     </div>
 
+    {{-- Game Name Price Adjustments --}}
+    <div class="settings-card settings-card--wide" style="margin-top:1.5rem;">
+        <h2 class="settings-card__title">Game Name Price Adjustments</h2>
+        <p class="settings-hint" style="margin-bottom:1.5rem;">
+            Add or deduct a flat £ amount from any game whose title contains the keyword (case-insensitive).
+            For example, keyword <em>Elden Ring</em> matches "Elden Ring" and "Elden Ring: Shadow of the Erdtree".
+            Positive values increase the cash offer; negative values reduce it.
+        </p>
+
+        {{-- Existing adjustments --}}
+        @if($gameNameAdjustments->isNotEmpty())
+        <div style="display:flex; flex-direction:column; gap:0.5rem; margin-bottom:1.5rem;">
+            @foreach($gameNameAdjustments as $gna)
+            <form method="POST" action="{{ route('admin.game-name-adjustments.update', $gna->id) }}"
+                  style="display:flex; align-items:center; gap:0.75rem; flex-wrap:wrap;">
+                @csrf
+                @method('PATCH')
+                <span style="flex:1; min-width:160px; font-weight:500; color:var(--text);">{{ $gna->keyword }}</span>
+                <div class="settings-input-row">
+                    <span class="settings-unit">£</span>
+                    <input type="number" name="adjustment_gbp"
+                           value="{{ $gna->adjustment_gbp }}"
+                           min="-999.99" max="999.99" step="0.01"
+                           class="form-input settings-input--sm"
+                           style="width:90px;">
+                </div>
+                <button type="submit" class="btn btn--outline btn--sm">Save</button>
+                <button type="button"
+                    class="btn btn--sm" style="background:rgba(230,57,70,0.12); color:var(--accent); border:1px solid rgba(230,57,70,0.3);"
+                    data-confirm="Remove game name adjustment for &quot;{{ e($gna->keyword) }}&quot;?"
+                    form="gna-destroy-{{ $gna->id }}">
+                    Remove
+                </button>
+            </form>
+            <form id="gna-destroy-{{ $gna->id }}" method="POST"
+                  action="{{ route('admin.game-name-adjustments.destroy', $gna->id) }}" style="display:none;">
+                @csrf
+                @method('DELETE')
+            </form>
+            @endforeach
+        </div>
+        @endif
+
+        {{-- Add new --}}
+        <form method="POST" action="{{ route('admin.game-name-adjustments.store') }}"
+              style="display:flex; align-items:flex-end; gap:0.75rem; flex-wrap:wrap;">
+            @csrf
+            <div class="form-group" style="flex:1; min-width:180px; margin:0;">
+                <label class="form-label">Game Name / Keyword</label>
+                <input type="text" name="keyword" value="{{ old('keyword') }}"
+                       class="form-input" placeholder="e.g. Elden Ring"
+                       autocomplete="off">
+                @error('keyword')<p class="form-error">{{ $message }}</p>@enderror
+            </div>
+            <div class="form-group" style="margin:0;">
+                <label class="form-label">Adjustment (£)</label>
+                <div class="settings-input-row">
+                    <span class="settings-unit">£</span>
+                    <input type="number" name="adjustment_gbp" value="{{ old('adjustment_gbp', '0.00') }}"
+                           min="-999.99" max="999.99" step="0.01"
+                           class="form-input settings-input--sm" style="width:90px;">
+                </div>
+                @error('adjustment_gbp')<p class="form-error">{{ $message }}</p>@enderror
+            </div>
+            <button type="submit" class="btn btn--primary btn--sm" style="margin-bottom:1px;">Add Keyword</button>
+        </form>
+    </div>
+
 </div>
 @endsection

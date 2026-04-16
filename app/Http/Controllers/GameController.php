@@ -77,7 +77,7 @@ class GameController extends Controller
         if ($game) {
             $gamePrice = GamePrice::where('igdb_game_id', $id)->first();
             if ($gamePrice) {
-                $pricing = $gamePrice->getComputedPrice($franchiseNames);
+                $pricing = $gamePrice->getComputedPrice($franchiseNames, $game['name'] ?? null);
             } else {
                 // No DB record yet — compute from base price setting directly
                 $basePriceGbp = (float) Setting::get('base_price_gbp', 0);

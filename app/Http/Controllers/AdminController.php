@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\ActivityLog;
 use App\Models\BlacklistedPassword;
 use App\Models\FranchiseAdjustment;
+use App\Models\GameNameAdjustment;
 use App\Models\CashBasketItem;
 use App\Models\CashOrder;
 use App\Models\ContactSubmission;
@@ -90,8 +91,8 @@ class AdminController extends Controller
             if ($gamePrice) {
                 try {
                     $pricing = $item->platform_id
-                        ? $gamePrice->getComputedPriceForPlatform((int) $item->platform_id)
-                        : $gamePrice->getComputedPrice();
+                        ? $gamePrice->getComputedPriceForPlatform((int) $item->platform_id, [], $item->game_title)
+                        : $gamePrice->getComputedPrice([], $item->game_title);
                 } catch (\Throwable) {}
             }
             $displayPrice = null;
@@ -438,9 +439,10 @@ class AdminController extends Controller
             ]);
         }, self::PLATFORMS);
 
-        $franchiseAdjustments = FranchiseAdjustment::orderBy('franchise_name')->get();
+        $franchiseAdjustments  = FranchiseAdjustment::orderBy('franchise_name')->get();
+        $gameNameAdjustments   = GameNameAdjustment::orderBy('keyword')->get();
 
-        return view('admin.settings', compact('settings', 'platforms', 'franchiseAdjustments'));
+        return view('admin.settings', compact('settings', 'platforms', 'franchiseAdjustments', 'gameNameAdjustments'));
     }
 
     // ----------------------------------------------------------------
@@ -570,5 +572,44 @@ class AdminController extends Controller
         FranchiseAdjustment::findOrFail($id)->delete();
 
         return back()->with('flash_success', 'Franchise adjustment removed.');
+    }
+
+    // ----------------------------------------------------------------
+    //  Game name price adjustments
+    // ----------------------------------------------------------------
+
+    public function storeGameNameAdjustment(Request $request): RedirectResponse
+    {
+        $request->validate([
+            'keyword'        => ['required', 'string', 'max:200', 'unique:game_name_adjustments,keyword'],
+            'adjustment_gbp' => ['required', 'numeric', 'min:-999.99', 'max:999.99'],
+        ]);
+
+        GameNameAdjustment::create([
+            'keyword'        => trim($request->input('keyword')),
+            'adjustment_gbp' => $request->input('adjustment_gbp'),
+        ]);
+
+        return back()->with('flash_success', 'Game name adjustment added.');
+    }
+
+    public function updateGameNameAdjustment(Request $request, int $id): RedirectResponse
+    {
+        $request->validate([
+            'adjustment_gbp' => ['required', 'numeric', 'min:-999.99', 'max:999.99'],
+        ]);
+
+        GameNameAdjustment::findOrFail($id)->update([
+            'adjustment_gbp' => $request->input('adjustment_gbp'),
+        ]);
+
+        return back()->with('flash_success', 'Game name adjustment updated.');
+    }
+
+    public function destroyGameNameAdjustment(int $id): RedirectResponse
+    {
+        GameNameAdjustment::findOrFail($id)->delete();
+
+        return back()->with('flash_success', 'Game name adjustment removed.');
     }
 }

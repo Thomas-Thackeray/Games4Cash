@@ -157,8 +157,8 @@ class CashBasketController extends Controller
         if ($gamePrice) {
             try {
                 $pricing = $item->platform_id
-                    ? $gamePrice->getComputedPriceForPlatform((int) $item->platform_id)
-                    : $gamePrice->getComputedPrice();
+                    ? $gamePrice->getComputedPriceForPlatform((int) $item->platform_id, [], $item->game_title)
+                    : $gamePrice->getComputedPrice([], $item->game_title);
             } catch (\Throwable) {}
         }
 
