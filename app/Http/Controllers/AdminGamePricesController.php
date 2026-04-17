@@ -29,7 +29,8 @@ class AdminGamePricesController extends Controller
                    ->orWhere('cex_prices', 'null')
                    ->orWhere('cex_prices', '{}'));
 
-            $hiddenIds = HiddenGame::pluck('igdb_game_id')->all();
+            $hasHiddenTable = \Illuminate\Support\Facades\Schema::hasTable('hidden_games');
+            $hiddenIds      = $hasHiddenTable ? HiddenGame::pluck('igdb_game_id')->all() : [];
 
             // Source / visibility filter
             match ($source) {
@@ -156,6 +157,10 @@ class AdminGamePricesController extends Controller
 
     public function toggleHide(int $igdbGameId): JsonResponse
     {
+        if (! \Illuminate\Support\Facades\Schema::hasTable('hidden_games')) {
+            return response()->json(['error' => 'Run php artisan migrate first.'], 503);
+        }
+
         $existing = HiddenGame::where('igdb_game_id', $igdbGameId)->first();
 
         if ($existing) {

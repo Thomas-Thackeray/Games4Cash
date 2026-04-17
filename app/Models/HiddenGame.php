@@ -18,6 +18,10 @@ class HiddenGame extends Model
             return [];
         }
 
+        if (! \Illuminate\Support\Facades\Schema::hasTable('hidden_games')) {
+            return $igdbGames;
+        }
+
         $ids       = array_column($igdbGames, 'id');
         $hiddenIds = static::whereIn('igdb_game_id', $ids)
             ->pluck('igdb_game_id')
