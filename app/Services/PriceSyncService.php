@@ -82,6 +82,7 @@ class PriceSyncService
         }
 
         if (empty($missingIds)) {
+            self::syncCex($igdbGames);
             return;
         }
 
