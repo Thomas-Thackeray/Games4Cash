@@ -9,7 +9,10 @@
             <h1 class="admin-title">Site Settings</h1>
             <p class="admin-subtitle"><a href="{{ route('admin.dashboard') }}" style="color:var(--accent);">← Dashboard</a></p>
         </div>
-        <button type="submit" form="settings-form" class="btn btn--primary">Save Settings</button>
+        <div style="display:flex; gap:0.75rem; align-items:center;">
+            <a href="{{ route('admin.game-prices') }}" class="btn btn--outline btn--sm">Game Prices ↗</a>
+            <button type="submit" form="settings-form" class="btn btn--primary">Save Settings</button>
+        </div>
     </div>
 
     {{-- Pricing Formula Explainer --}}

@@ -58,11 +58,13 @@ class PriceSyncService
         // Build per-game lookup maps from the IGDB data we already have
         $releaseDates = [];
         $platformMap  = [];
+        $titleMap     = [];
         foreach ($igdbGames as $g) {
             $releaseDates[$g['id']] = $g['first_release_date'] ?? null;
             $platformMap[$g['id']]  = array_values(array_filter(
                 array_column($g['platforms'] ?? [], 'id')
             ));
+            $titleMap[$g['id']] = $g['name'] ?? null;
         }
 
         // Backfill platform_ids for "done" records that are missing them.
@@ -94,18 +96,19 @@ class PriceSyncService
         // until 6 hours have passed
         $noSteamIds = array_diff($missingIds, array_keys($steamMap));
         foreach ($noSteamIds as $igdbId) {
-            GamePrice::updateOrCreate(
-                ['igdb_game_id' => (int) $igdbId],
-                [
-                    'steam_app_id'   => null,
-                    'release_date'   => $releaseDates[$igdbId] ?? null,
-                    'platform_ids'   => self::encodePlatformIds($platformMap[$igdbId] ?? []),
-                    'is_free'        => false,
-                    'steam_gbp'      => null,
-                    'cheapshark_usd' => null,
-                    'updated_at'     => now(),
-                ]
-            );
+            $values = [
+                'steam_app_id'   => null,
+                'release_date'   => $releaseDates[$igdbId] ?? null,
+                'platform_ids'   => self::encodePlatformIds($platformMap[$igdbId] ?? []),
+                'is_free'        => false,
+                'steam_gbp'      => null,
+                'cheapshark_usd' => null,
+                'updated_at'     => now(),
+            ];
+            if (! empty($titleMap[$igdbId])) {
+                $values['game_title'] = $titleMap[$igdbId];
+            }
+            GamePrice::updateOrCreate(['igdb_game_id' => (int) $igdbId], $values);
         }
 
         if (empty($steamMap)) {
@@ -117,19 +120,20 @@ class PriceSyncService
         $rawPrices = self::fetchRawBatch(array_values($steamMap));
 
         foreach ($steamMap as $igdbId => $steamAppId) {
-            $raw = $rawPrices[$steamAppId] ?? null;
-            GamePrice::updateOrCreate(
-                ['igdb_game_id' => (int) $igdbId],
-                [
-                    'steam_app_id'   => $steamAppId,
-                    'release_date'   => $releaseDates[$igdbId] ?? null,
-                    'platform_ids'   => self::encodePlatformIds($platformMap[$igdbId] ?? []),
-                    'is_free'        => $raw['is_free']        ?? false,
-                    'steam_gbp'      => $raw['steam_gbp']      ?? null,
-                    'cheapshark_usd' => $raw['cheapshark_usd'] ?? null,
-                    'updated_at'     => now(),
-                ]
-            );
+            $raw    = $rawPrices[$steamAppId] ?? null;
+            $values = [
+                'steam_app_id'   => $steamAppId,
+                'release_date'   => $releaseDates[$igdbId] ?? null,
+                'platform_ids'   => self::encodePlatformIds($platformMap[$igdbId] ?? []),
+                'is_free'        => $raw['is_free']        ?? false,
+                'steam_gbp'      => $raw['steam_gbp']      ?? null,
+                'cheapshark_usd' => $raw['cheapshark_usd'] ?? null,
+                'updated_at'     => now(),
+            ];
+            if (! empty($titleMap[$igdbId])) {
+                $values['game_title'] = $titleMap[$igdbId];
+            }
+            GamePrice::updateOrCreate(['igdb_game_id' => (int) $igdbId], $values);
         }
 
         self::syncCex($igdbGames);

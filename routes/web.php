@@ -3,6 +3,7 @@
 use App\Http\Controllers\AdminBlogController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AdminFaqController;
+use App\Http\Controllers\AdminGamePricesController;
 use App\Http\Controllers\BlogController;
 use App\Http\Controllers\PasswordResetController;
 use App\Http\Controllers\AuthController;
@@ -131,6 +132,12 @@ Route::middleware(['auth', 'track.active', 'admin'])->prefix('admin')->name('adm
     // Settings
     Route::get('/settings', [AdminController::class, 'showSettings'])->name('settings');
     Route::post('/settings', [AdminController::class, 'updateSettings'])->name('settings.update');
+
+    // Game prices table
+    Route::get('/game-prices', [AdminGamePricesController::class, 'index'])->name('game-prices');
+    Route::patch('/game-prices/{igdbGameId}/{platformId}/override', [AdminGamePricesController::class, 'updateOverride'])
+        ->name('game-prices.override')
+        ->where(['igdbGameId' => '[0-9]+', 'platformId' => '[0-9]+']);
 
     // CeX sync
     Route::post('/settings/sync-cex-prices', [AdminController::class, 'syncCexPrices'])->name('settings.sync-cex');
