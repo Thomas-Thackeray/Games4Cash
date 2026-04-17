@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\GamePrice;
 use App\Services\ActivityLogger;
 use App\Services\IgdbService;
 use App\Services\PriceSyncService;
@@ -46,6 +47,7 @@ class PlatformController extends Controller
             $error = $e->getMessage();
         }
 
+        $games = GamePrice::stripFreeGames($games);
         PriceSyncService::ensureForGames($games);
 
         return view('platform', compact(

@@ -58,6 +58,29 @@ class GamePrice extends Model
     }
 
     /**
+     * Remove any games from $igdbGames that are already known to be free-to-play.
+     * One DB query regardless of list size; unknown games are left in (they'll be
+     * checked on first price sync and removed from future listings once marked free).
+     */
+    public static function stripFreeGames(array $igdbGames): array
+    {
+        if (empty($igdbGames)) {
+            return [];
+        }
+
+        $ids     = array_column($igdbGames, 'id');
+        $freeIds = static::whereIn('igdb_game_id', $ids)
+            ->where('is_free', true)
+            ->pluck('igdb_game_id')
+            ->flip() // use as a hash set for O(1) lookup
+            ->all();
+
+        return empty($freeIds)
+            ? $igdbGames
+            : array_values(array_filter($igdbGames, fn ($g) => ! isset($freeIds[$g['id']])));
+    }
+
+    /**
      * Upsert raw price data. Always sets updated_at so retry logic works correctly.
      */
     public static function record(
