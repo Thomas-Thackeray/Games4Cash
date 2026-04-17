@@ -9,32 +9,41 @@ use Illuminate\View\View;
 
 class AdminGamePricesController extends Controller
 {
-    public function index(Request $request): View
+    public function index(Request $request): \Illuminate\Contracts\View\View
     {
-        $search = trim($request->input('search', ''));
+        try {
+            $search = trim($request->input('search', ''));
 
-        $query = GamePrice::whereNotNull('platform_ids')
-            ->where('platform_ids', '!=', '[]');
+            $query = GamePrice::whereNotNull('platform_ids')
+                ->where('platform_ids', '!=', '[]');
 
-        $hasGameTitle = \Illuminate\Support\Facades\Schema::hasColumn('game_prices', 'game_title');
+            $hasGameTitle = \Illuminate\Support\Facades\Schema::hasColumn('game_prices', 'game_title');
 
-        if ($search !== '') {
-            $query->where(function ($q) use ($search, $hasGameTitle) {
-                if ($hasGameTitle) {
-                    $q->where('game_title', 'like', "%{$search}%")
-                      ->orWhere('slug', 'like', "%{$search}%");
-                } else {
-                    $q->where('slug', 'like', "%{$search}%");
-                }
-            });
+            if ($search !== '') {
+                $query->where(function ($q) use ($search, $hasGameTitle) {
+                    if ($hasGameTitle) {
+                        $q->where('game_title', 'like', "%{$search}%")
+                          ->orWhere('slug', 'like', "%{$search}%");
+                    } else {
+                        $q->where('slug', 'like', "%{$search}%");
+                    }
+                });
+            }
+
+            $gamePrices = $hasGameTitle
+                ? $query->orderBy('game_title')->orderBy('slug')->paginate(30)->withQueryString()
+                : $query->orderBy('slug')->paginate(30)->withQueryString();
+            $allPlatforms = config('igdb.all_platforms');
+
+            return view('admin.game-prices', compact('gamePrices', 'search', 'allPlatforms'));
+
+        } catch (\Throwable $e) {
+            return view('admin.error-debug', [
+                'error'   => $e->getMessage(),
+                'file'    => $e->getFile() . ':' . $e->getLine(),
+                'context' => 'admin/game-prices index',
+            ]);
         }
-
-        $gamePrices = $hasGameTitle
-            ? $query->orderBy('game_title')->orderBy('slug')->paginate(30)->withQueryString()
-            : $query->orderBy('slug')->paginate(30)->withQueryString();
-        $allPlatforms = config('igdb.all_platforms');
-
-        return view('admin.game-prices', compact('gamePrices', 'search', 'allPlatforms'));
     }
 
     public function updateOverride(Request $request, int $igdbGameId, int $platformId): JsonResponse
