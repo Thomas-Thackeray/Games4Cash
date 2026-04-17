@@ -41,10 +41,14 @@ class AdminGamePricesController extends Controller
                 'base'       => $query->whereNull('steam_gbp')
                                       ->whereNull('cheapshark_usd')
                                       ->when($hasCexPrices, $noCexClause),
-                'none'       => $query->whereNull('steam_gbp')
-                                      ->whereNull('cheapshark_usd')
-                                      ->where('is_free', false)
-                                      ->when($hasCexPrices, $noCexClause),
+                'none'       => $query->where(function ($q) use ($hasCexPrices, $noCexClause) {
+                                    $q->where('is_free', true)
+                                      ->orWhere(function ($q2) use ($hasCexPrices, $noCexClause) {
+                                          $q2->whereNull('steam_gbp')
+                                             ->whereNull('cheapshark_usd')
+                                             ->when($hasCexPrices, $noCexClause);
+                                      });
+                                }),
                 'override'   => $query->when($hasPriceOverrides, fn ($q) =>
                                     $q->whereNotNull('price_overrides')
                                       ->where('price_overrides', '!=', 'null')
