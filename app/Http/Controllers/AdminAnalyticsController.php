@@ -65,9 +65,10 @@ class AdminAnalyticsController extends Controller
             ];
         }
 
-        // Top pages (last 30 days)
+        // Top pages (last 30 days) — exclude image proxy paths
         $topPages = PageView::select('path', DB::raw('COUNT(*) as views'), DB::raw('COUNT(DISTINCT session_id) as visitors'))
             ->where('created_at', '>=', $now->copy()->subDays(29)->startOfDay())
+            ->where('path', 'not like', '/img/%')
             ->groupBy('path')
             ->orderByDesc('views')
             ->limit(15)
