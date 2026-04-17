@@ -251,6 +251,128 @@ class GamePrice extends Model
     }
 
     /**
+     * Return a step-by-step breakdown of how the price was calculated.
+     * Each step: ['label', 'running' (GBP after this step), 'note']
+     */
+    public function getBreakdownForPlatform(int $platformId, array $franchiseNames = []): ?array
+    {
+        if ($this->is_free) {
+            return ['is_free' => true, 'steps' => []];
+        }
+
+        $overrides = $this->price_overrides ?? [];
+        if (isset($overrides[$platformId])) {
+            $p = round((float) $overrides[$platformId], 2);
+            return [
+                'is_free'  => false,
+                'override' => true,
+                'final'    => $p,
+                'steps'    => [['label' => 'Manual Override', 'running' => $p, 'note' => 'Set by admin — no formula applied']],
+            ];
+        }
+
+        $usdToGbp = (float) Setting::get('usd_to_gbp_rate', 1.36);
+        $steps    = [];
+
+        if ($this->cheapshark_usd !== null) {
+            $running = $this->cheapshark_usd / $usdToGbp;
+            $steps[] = [
+                'label'   => 'Base Price (CheapShark)',
+                'running' => $running,
+                'note'    => '$' . number_format($this->cheapshark_usd, 2) . ' ÷ ' . $usdToGbp . ' (USD→GBP rate)',
+            ];
+        } elseif ($this->steam_gbp !== null) {
+            $running = $this->steam_gbp;
+            $steps[] = [
+                'label'   => 'Base Price (Steam)',
+                'running' => $running,
+                'note'    => 'Steam retail price in GBP',
+            ];
+        } else {
+            return null;
+        }
+
+        // Franchise adjustment
+        $resolvedNames = ! empty($franchiseNames) ? $franchiseNames : ($this->franchise_names ?? []);
+        if (is_string($resolvedNames)) {
+            $resolvedNames = json_decode($resolvedNames, true) ?? [];
+        }
+        $franchiseAdj = FranchiseAdjustment::getAdjustment($resolvedNames);
+        if ($franchiseAdj != 0) {
+            $running += $franchiseAdj;
+            $sign     = $franchiseAdj >= 0 ? '+' : '';
+            $steps[]  = [
+                'label'   => 'Franchise Adjustment',
+                'running' => $running,
+                'note'    => $sign . '£' . number_format(abs($franchiseAdj), 2)
+                             . (! empty($resolvedNames) ? ' (' . implode(', ', $resolvedNames) . ')' : ''),
+            ];
+        }
+
+        // Platform modifier
+        $modifier     = (float) Setting::get("platform_modifier_{$platformId}", 0);
+        $modifierType = Setting::get("platform_modifier_type_{$platformId}", 'percent');
+        if ($modifier !== 0.0) {
+            $sign = $modifier >= 0 ? '+' : '';
+            if ($modifierType === 'gbp') {
+                $running += $modifier;
+                $note     = $sign . '£' . number_format(abs($modifier), 2) . ' flat';
+            } else {
+                $running *= (1 + ($modifier / 100));
+                $note     = $sign . number_format($modifier, 1) . '%';
+            }
+            $steps[] = ['label' => 'Platform Modifier', 'running' => $running, 'note' => $note];
+        }
+
+        // Age reduction
+        if ($this->release_date !== null) {
+            $ageReduction = (float) Setting::get('age_reduction_per_year', 0);
+            if ($ageReduction > 0) {
+                $ageYears = max(0, (int) floor((time() - $this->release_date) / (365.25 * 86400)));
+                if ($ageYears > 0) {
+                    $deduction = $ageYears * $ageReduction;
+                    $running   = max(0.01, $running - $deduction);
+                    $steps[]   = [
+                        'label'   => 'Age Reduction',
+                        'running' => $running,
+                        'note'    => $ageYears . ' yr' . ($ageYears !== 1 ? 's' : '')
+                                     . ' × £' . number_format($ageReduction, 2)
+                                     . ' = −£' . number_format($deduction, 2),
+                    ];
+                }
+            }
+        }
+
+        // Discount
+        $discountPct = (float) Setting::get('pricing_discount_percent', 85);
+        $running     = max(0.01, $running * (1 - ($discountPct / 100)));
+        $steps[]     = [
+            'label'   => 'Discount',
+            'running' => $running,
+            'note'    => $discountPct . '% off → ' . (100 - $discountPct) . '% of price remains',
+        ];
+
+        // Low-price boost
+        $running       = round($running, 2);
+        $lowPriceBoost = (float) Setting::get('low_price_boost_gbp', 0.10);
+        if ($running < 0.05 && $lowPriceBoost > 0) {
+            $running = round($lowPriceBoost, 2);
+            $steps[] = [
+                'label'   => 'Low-Price Boost',
+                'running' => $running,
+                'note'    => 'Price was under £0.05 — set to £' . number_format($lowPriceBoost, 2),
+            ];
+        }
+
+        return [
+            'is_free'  => false,
+            'override' => false,
+            'final'    => $running,
+            'steps'    => $steps,
+        ];
+    }
+
+    /**
      * Legacy: compute a single general price (not platform-specific).
      * Used by admin user-detail basket view.
      */

@@ -148,7 +148,12 @@
                                     <span style="color:var(--text-dim);">—</span>
                                 @endif
                             </td>
-                            <td class="js-display-price" data-row="{{ $rowId }}">
+                            <td class="js-display-price js-breakdown-trigger"
+                                data-row="{{ $rowId }}"
+                                data-igdb="{{ $gamePrice->igdb_game_id }}"
+                                data-platform="{{ $platformId }}"
+                                title="Click to see price calculation"
+                                style="cursor:pointer; text-decoration:underline dotted; text-underline-offset:3px;">
                                 {{ $displayPrice }}
                             </td>
                             <td class="js-source-cell" data-row="{{ $rowId }}">
@@ -250,6 +255,27 @@
 
     @endif
 
+</div>
+
+{{-- Price breakdown modal --}}
+<div id="breakdown-overlay" style="
+    display:none; position:fixed; inset:0; z-index:500;
+    background:rgba(0,0,0,0.6); backdrop-filter:blur(2px);
+    align-items:center; justify-content:center;">
+    <div style="
+        background:var(--bg-card); border:1px solid var(--border); border-radius:10px;
+        padding:1.5rem 1.75rem; max-width:460px; width:90%; max-height:85vh; overflow-y:auto;
+        box-shadow:0 20px 60px rgba(0,0,0,0.5);">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.25rem;">
+            <h3 id="breakdown-title" style="margin:0; font-size:1rem; color:var(--text);">Price Breakdown</h3>
+            <button id="breakdown-close" style="
+                background:none; border:none; cursor:pointer; color:var(--text-muted);
+                font-size:1.3rem; line-height:1; padding:0 0.25rem;">×</button>
+        </div>
+        <div id="breakdown-body">
+            <p style="color:var(--text-muted); text-align:center; padding:1rem 0;">Loading…</p>
+        </div>
+    </div>
 </div>
 
 <script>
@@ -509,7 +535,101 @@
             const row = e.target.closest('.js-override-input').dataset.row;
             document.querySelector(`.js-save-override[data-row="${row}"]`)?.click();
         }
+        if (e.key === 'Escape') closeBreakdown();
     });
+
+    // ── Price breakdown modal ─────────────────────────────────────────────────
+    const overlay       = document.getElementById('breakdown-overlay');
+    const breakdownBody = document.getElementById('breakdown-body');
+    const breakdownTitle = document.getElementById('breakdown-title');
+
+    function closeBreakdown() {
+        overlay.style.display = 'none';
+    }
+
+    function fmtGbp(v) {
+        return '£' + parseFloat(v).toFixed(2);
+    }
+
+    function renderBreakdown(data, gameTitle, platformName) {
+        breakdownTitle.textContent = gameTitle + (platformName ? ' — ' + platformName : '');
+
+        if (data.is_free) {
+            breakdownBody.innerHTML = '<p style="color:var(--text-muted);">This game is free to play — no cash offer applies.</p>';
+            return;
+        }
+
+        if (data.error) {
+            breakdownBody.innerHTML = `<p style="color:var(--accent-2);">${data.error}</p>`;
+            return;
+        }
+
+        let html = '<table style="width:100%; border-collapse:collapse; font-size:0.875rem;">';
+        html += '<thead><tr>'
+             + '<th style="text-align:left; padding:0.4rem 0.5rem; color:var(--text-muted); font-weight:600; border-bottom:1px solid var(--border);">Step</th>'
+             + '<th style="text-align:right; padding:0.4rem 0.5rem; color:var(--text-muted); font-weight:600; border-bottom:1px solid var(--border);">Running Total</th>'
+             + '</tr></thead><tbody>';
+
+        data.steps.forEach((step, i) => {
+            const isLast  = i === data.steps.length - 1;
+            const rowStyle = isLast
+                ? 'background:rgba(255,255,255,0.04); font-weight:700;'
+                : '';
+            html += `<tr style="${rowStyle}">`;
+            html += `<td style="padding:0.5rem 0.5rem; border-bottom:1px solid rgba(255,255,255,0.05);">`;
+            html += `<div style="color:var(--text);">${step.label}</div>`;
+            if (step.note) html += `<div style="color:var(--text-muted); font-size:0.78rem; margin-top:0.1rem;">${step.note}</div>`;
+            html += `</td>`;
+            html += `<td style="padding:0.5rem 0.5rem; text-align:right; border-bottom:1px solid rgba(255,255,255,0.05); color:${isLast ? 'var(--accent)' : 'var(--text)'}; white-space:nowrap;">`;
+            html += fmtGbp(step.running);
+            html += `</td></tr>`;
+        });
+
+        html += '</tbody></table>';
+
+        if (data.override) {
+            html = `<div style="background:rgba(168,85,247,0.1); border:1px solid rgba(168,85,247,0.3); border-radius:6px; padding:0.75rem 1rem; margin-bottom:1rem; font-size:0.875rem; color:#c084fc;">
+                        Manual override — admin-set price, no formula applied.
+                    </div>` + html;
+        }
+
+        html += `<div style="margin-top:1rem; padding-top:0.75rem; border-top:1px solid var(--border); display:flex; justify-content:space-between; align-items:center;">
+                    <span style="color:var(--text-muted); font-size:0.85rem;">Final cash offer</span>
+                    <span style="font-size:1.2rem; font-weight:700; color:var(--accent);">${fmtGbp(data.final)}</span>
+                 </div>`;
+
+        breakdownBody.innerHTML = html;
+    }
+
+    document.addEventListener('click', async function (e) {
+        const cell = e.target.closest('.js-breakdown-trigger');
+        if (! cell) return;
+
+        const igdb     = cell.dataset.igdb;
+        const platform = cell.dataset.platform;
+        const tr       = cell.closest('tr');
+        const gameTitle  = tr?.querySelector('td:nth-child(2)')?.textContent?.trim() ?? 'Game #' + igdb;
+        const platformName = tr?.querySelector('.admin-td-muted')?.textContent?.trim() ?? '';
+
+        overlay.style.display = 'flex';
+        breakdownTitle.textContent = 'Price Breakdown';
+        breakdownBody.innerHTML = '<p style="color:var(--text-muted); text-align:center; padding:1.5rem 0;">Loading…</p>';
+
+        try {
+            const url  = '{{ rtrim(url('/'), '/') }}/admin/game-prices/' + igdb + '/' + platform + '/breakdown';
+            const resp = await fetch(url, { headers: { 'Accept': 'application/json' } });
+            const data = await resp.json();
+            renderBreakdown(data, gameTitle, platformName);
+        } catch {
+            breakdownBody.innerHTML = '<p style="color:var(--accent-2);">Failed to load breakdown.</p>';
+        }
+    });
+
+    overlay.addEventListener('click', function (e) {
+        if (e.target === overlay) closeBreakdown();
+    });
+
+    document.getElementById('breakdown-close')?.addEventListener('click', closeBreakdown);
 })();
 </script>
 @endsection

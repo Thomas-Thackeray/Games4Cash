@@ -206,4 +206,19 @@ class AdminGamePricesController extends Controller
             'override_set'  => isset($newOverrides[$platformId]),
         ]);
     }
+
+    public function breakdown(int $igdbGameId, int $platformId): JsonResponse
+    {
+        $gp = GamePrice::where('igdb_game_id', $igdbGameId)->first();
+        if (! $gp) {
+            return response()->json(['error' => 'Game not found'], 404);
+        }
+
+        $data = $gp->getBreakdownForPlatform($platformId);
+        if ($data === null) {
+            return response()->json(['error' => 'No price data available for this game/platform'], 404);
+        }
+
+        return response()->json($data);
+    }
 }

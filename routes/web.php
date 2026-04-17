@@ -145,6 +145,9 @@ Route::middleware(['auth', 'track.active', 'admin'])->prefix('admin')->name('adm
     Route::post('/game-prices/{igdbGameId}/{platformId}/hide', [AdminGamePricesController::class, 'toggleHide'])
         ->name('game-prices.hide')
         ->where(['igdbGameId' => '[0-9]+', 'platformId' => '[0-9]+']);
+    Route::get('/game-prices/{igdbGameId}/{platformId}/breakdown', [AdminGamePricesController::class, 'breakdown'])
+        ->name('game-prices.breakdown')
+        ->where(['igdbGameId' => '[0-9]+', 'platformId' => '[0-9]+']);
 
     // No-price review
     Route::get('/no-price-review', [\App\Http\Controllers\AdminNoPriceController::class, 'index'])->name('no-price-review');
