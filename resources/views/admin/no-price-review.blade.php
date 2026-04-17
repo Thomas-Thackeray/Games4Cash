@@ -15,21 +15,14 @@
     <div class="flash flash--success" style="margin-bottom:1rem;">{{ session('flash_success') }}</div>
     @endif
 
-    @if(!empty($migrationPending))
-    <div class="settings-card settings-card--wide" style="border-left:3px solid var(--accent-2);">
-        <p style="color:var(--text);">The <code>no_price_reviews</code> table does not exist yet.</p>
-        <p class="settings-hint" style="margin-top:0.5rem;">Run <code>php artisan migrate</code> on the server to create it, then revisit this page.</p>
-    </div>
-    @else
-
     <div class="settings-card settings-card--wide" style="margin-bottom:1.5rem; border-left:3px solid var(--accent-2);">
         <p class="settings-hint">
             These games have no price from CheapShark or Steam and are currently <strong>hidden from public listings</strong>.
-            Set a manual price override for each platform to make the game visible, or dismiss the entry to permanently skip it.
+            Set a manual price override to make the game visible, or dismiss to skip it.
         </p>
     </div>
 
-    @if($reviews->isEmpty())
+    @if($rows->isEmpty())
     <div class="settings-card settings-card--wide" style="text-align:center; padding:2rem;">
         <p style="color:var(--text-muted);">No games awaiting review — everything is priced.</p>
     </div>
@@ -40,18 +33,19 @@
             <thead>
                 <tr>
                     <th>Game</th>
-                    <th>Platforms Needing Price</th>
-                    <th>Queued</th>
-                    <th style="width:200px;">Set Price Override</th>
+                    <th>Known Platforms</th>
+                    <th style="width:260px;">Set Price Override</th>
                 </tr>
             </thead>
             <tbody>
-                @foreach($reviews as $review)
+                @foreach($rows as $gp)
                 @php
-                    $gp          = $gamePrices[$review->igdb_game_id] ?? null;
-                    $title       = $gp?->game_title ?? ($gp?->slug ? ucwords(str_replace('-', ' ', $gp->slug)) : 'Game #' . $review->igdb_game_id);
-                    $gameUrl     = $gp?->slug ? route('game.show', ['slug' => $gp->slug]) : null;
-                    $platformIds = array_filter(array_map('intval', explode(',', $review->platform_ids_csv)));
+                    $title      = $gp->game_title ?? ($gp->slug ? ucwords(str_replace('-', ' ', $gp->slug)) : 'Game #' . $gp->igdb_game_id);
+                    $gameUrl    = $gp->slug ? route('game.show', ['slug' => $gp->slug]) : null;
+                    $platformIds = json_decode($gp->platform_ids ?? '[]', true);
+                    // Prefer no_price_reviews platforms if available, fall back to game_prices platform_ids
+                    $displayPids = $nprPlatforms[$gp->igdb_game_id] ?? $platformIds;
+                    $displayPids = array_values(array_unique(array_filter($displayPids)));
                 @endphp
                 <tr>
                     <td>
@@ -60,29 +54,32 @@
                         @else
                         <span style="color:var(--text);">{{ $title }}</span>
                         @endif
-                        @if($gp?->steam_app_id)
+                        @if($gp->steam_app_id)
                         <br><a href="https://store.steampowered.com/app/{{ $gp->steam_app_id }}" target="_blank" style="font-size:0.78rem; color:var(--text-muted);">Steam ↗</a>
                         @endif
                     </td>
                     <td>
+                        @if(!empty($displayPids))
                         <div style="display:flex; flex-wrap:wrap; gap:0.35rem;">
-                            @foreach($platformIds as $pid)
+                            @foreach($displayPids as $pid)
                             <span style="background:rgba(255,255,255,0.06); border:1px solid var(--border); border-radius:4px; padding:0.15rem 0.45rem; font-size:0.8rem;">
                                 {{ $platforms[$pid] ?? 'Platform ' . $pid }}
                             </span>
                             @endforeach
                         </div>
-                    </td>
-                    <td style="color:var(--text-muted); font-size:0.82rem; white-space:nowrap;">
-                        {{ $review->created_at ? \Carbon\Carbon::parse($review->created_at)->diffForHumans() : '—' }}
+                        @else
+                        <span style="color:var(--text-muted); font-size:0.82rem;">Unknown</span>
+                        @endif
                     </td>
                     <td>
-                        <form method="POST" action="{{ route('admin.no-price-review.set-price', $review->igdb_game_id) }}"
+                        <form method="POST" action="{{ route('admin.no-price-review.set-price', $gp->igdb_game_id) }}"
                               style="display:flex; gap:0.5rem; align-items:center; flex-wrap:wrap;">
                             @csrf
-                            <select name="platform_id" class="form-input" style="flex:1; min-width:110px; font-size:0.82rem; padding:0.3rem 0.5rem;">
-                                @foreach($platformIds as $pid)
-                                <option value="{{ $pid }}">{{ $platforms[$pid] ?? 'Platform ' . $pid }}</option>
+                            <select name="platform_id" class="form-input" style="flex:1; min-width:120px; font-size:0.82rem; padding:0.3rem 0.5rem;">
+                                @foreach($platforms as $pid => $pName)
+                                <option value="{{ $pid }}" {{ !empty($displayPids) && $displayPids[0] == $pid ? 'selected' : '' }}>
+                                    {{ $pName }}
+                                </option>
                                 @endforeach
                             </select>
                             <div style="display:flex; align-items:center; gap:0.25rem;">
@@ -94,13 +91,13 @@
                             <button type="submit" class="btn btn--primary btn--sm">Save</button>
                         </form>
 
-                        <form method="POST" action="{{ route('admin.no-price-review.dismiss', $review->igdb_game_id) }}"
+                        <form method="POST" action="{{ route('admin.no-price-review.dismiss', $gp->igdb_game_id) }}"
                               style="margin-top:0.4rem;">
                             @csrf
                             @method('DELETE')
                             <button type="button" class="btn btn--outline btn--sm" style="font-size:0.78rem; opacity:0.6;"
-                                    data-confirm="Dismiss all review entries for this game? It will remain hidden from listings.">
-                                Dismiss all
+                                    data-confirm="Dismiss this game? It will remain hidden from listings.">
+                                Dismiss
                             </button>
                         </form>
                     </td>
@@ -111,11 +108,10 @@
     </div>
 
     <div style="margin-top:1rem;">
-        {{ $reviews->links() }}
+        {{ $rows->links() }}
     </div>
-    @endif
 
-    @endif {{-- migrationPending --}}
+    @endif
 
 </div>
 @endsection

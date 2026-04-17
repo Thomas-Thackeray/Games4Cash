@@ -47,7 +47,13 @@ class AdminController extends Controller
             'views_today'       => $hasPageViews ? PageView::where('created_at', '>=', now()->startOfDay())->count() : null,
             'visitors_today'    => $hasPageViews ? PageView::where('created_at', '>=', now()->startOfDay())->distinct('session_id')->count('session_id') : null,
             'visitors_month'    => $hasPageViews ? PageView::where('created_at', '>=', now()->startOfMonth())->distinct('session_id')->count('session_id') : null,
-            'no_price_count'      => \Illuminate\Support\Facades\Schema::hasTable('no_price_reviews') ? NoPriceReview::distinct('igdb_game_id')->count('igdb_game_id') : 0,
+            'no_price_count'      => GamePrice::where(function ($q) {
+                                        $q->whereNull('steam_gbp')->whereNull('cheapshark_usd');
+                                    })->where(function ($q) {
+                                        $q->whereNull('price_overrides')->orWhere('price_overrides', '')->orWhere('price_overrides', '{}')->orWhere('price_overrides', 'null');
+                                    })->where(function ($q) {
+                                        $q->whereNull('is_free')->orWhere('is_free', false);
+                                    })->count(),
             'price_request_count' => \Illuminate\Support\Facades\Schema::hasTable('price_requests') ? PriceRequest::where('status', 'pending')->distinct('igdb_game_id')->count('igdb_game_id') : 0,
         ];
 
