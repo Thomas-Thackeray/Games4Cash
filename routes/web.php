@@ -137,11 +137,6 @@ Route::middleware(['auth', 'track.active', 'admin'])->prefix('admin')->name('adm
     Route::patch('/settings/franchise-adjustments/{id}', [AdminController::class, 'updateFranchiseAdjustment'])->name('franchise-adjustments.update')->where('id', '[0-9]+');
     Route::delete('/settings/franchise-adjustments/{id}', [AdminController::class, 'destroyFranchiseAdjustment'])->name('franchise-adjustments.destroy')->where('id', '[0-9]+');
 
-    // Game name adjustments
-    Route::post('/settings/game-name-adjustments', [AdminController::class, 'storeGameNameAdjustment'])->name('game-name-adjustments.store');
-    Route::patch('/settings/game-name-adjustments/{id}', [AdminController::class, 'updateGameNameAdjustment'])->name('game-name-adjustments.update')->where('id', '[0-9]+');
-    Route::delete('/settings/game-name-adjustments/{id}', [AdminController::class, 'destroyGameNameAdjustment'])->name('game-name-adjustments.destroy')->where('id', '[0-9]+');
-
     // Email templates
     Route::get('/email-templates', [AdminController::class, 'showEmailTemplates'])->name('email-templates');
     Route::post('/email-templates', [AdminController::class, 'updateEmailTemplates'])->name('email-templates.update');

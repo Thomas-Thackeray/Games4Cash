@@ -4,8 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use App\Models\FranchiseAdjustment;
-use App\Models\GameNameAdjustment;
 use App\Models\Setting;
+use App\Services\CexService;
 
 class GamePrice extends Model
 {
@@ -87,12 +87,11 @@ class GamePrice extends Model
      * Compute the display price from stored raw values and current admin settings.
      *
      * Formula (in order):
-     *   1. Base price: Steam GBP → CheapShark USD (converted) → admin Base Price fallback
-     *   2. Add/subtract franchise adjustment (flat £)
-     *   3. Apply discount %
-     *   4. Apply best platform modifier across the game's platforms
-     *   5. Apply age-based reduction
-     *   6. Floor at £0.01; if under £0.10 add £0.20 low-price boost
+     *   1. Base price: CeX cashPrice (if available) → Steam GBP → CheapShark USD → admin fallback
+     *   2. If using CeX: apply cex_margin_pct. Otherwise: franchise adj + discount %.
+     *   3. Apply age-based reduction
+     *   4. Floor at £0.01; if under £0.10 add low-price boost
+     *   5. Bundle bonus and high-price reduction
      */
     public function getComputedPrice(array $franchiseNames = [], ?string $gameTitle = null): ?array
     {
@@ -104,38 +103,41 @@ class GamePrice extends Model
             ];
         }
 
-        // 1. Base price: Steam first, CheapShark second, admin fallback last
-        $usdToGbp = (float) Setting::get('usd_to_gbp_rate', 1.36);
-        if ($this->steam_gbp !== null) {
-            $baseGbp = $this->steam_gbp;
-        } elseif ($this->cheapshark_usd !== null) {
-            $baseGbp = $this->cheapshark_usd / $usdToGbp;
+        // 1. Try CeX first when we have a game title
+        $cexPrices = $gameTitle ? CexService::getPrices($gameTitle) : [];
+        $usedCex   = false;
+
+        if (! empty($cexPrices)) {
+            // Use the highest CeX cash price across all platforms as the general price
+            $maxCash  = max(array_column($cexPrices, 'cash'));
+            $marginPct = (float) Setting::get('cex_margin_pct', 90);
+            $computed  = $maxCash * ($marginPct / 100);
+            $usedCex   = true;
         } else {
-            $basePriceGbp = (float) Setting::get('base_price_gbp', 0);
-            if ($basePriceGbp <= 0) {
-                return null;
+            // Fallback: Steam → CheapShark → admin base price
+            $usdToGbp = (float) Setting::get('usd_to_gbp_rate', 1.36);
+            if ($this->steam_gbp !== null) {
+                $baseGbp = $this->steam_gbp;
+            } elseif ($this->cheapshark_usd !== null) {
+                $baseGbp = $this->cheapshark_usd / $usdToGbp;
+            } else {
+                $basePriceGbp = (float) Setting::get('base_price_gbp', 0);
+                if ($basePriceGbp <= 0) {
+                    return null;
+                }
+                $baseGbp = $basePriceGbp;
             }
-            $baseGbp = $basePriceGbp;
+
+            // Franchise adjustment
+            $resolvedNames = !empty($franchiseNames) ? $franchiseNames : ($this->franchise_names ?? []);
+            $baseGbp      += FranchiseAdjustment::getAdjustment($resolvedNames);
+
+            // Discount
+            $discountPct = (float) Setting::get('pricing_discount_percent', 85);
+            $computed    = $baseGbp * (1 - ($discountPct / 100));
         }
 
-        // 2. Franchise adjustment added to the base price
-        $resolvedNames = !empty($franchiseNames) ? $franchiseNames : ($this->franchise_names ?? []);
-        $franchiseAdj  = FranchiseAdjustment::getAdjustment($resolvedNames);
-        $baseGbp      += $franchiseAdj;
-
-        // 2b. Game name adjustment (keyword partial-match against the game title)
-        if ($gameTitle !== null) {
-            $baseGbp += GameNameAdjustment::getAdjustment($gameTitle);
-        }
-
-        // 3. Discount
-        $discountPct = (float) Setting::get('pricing_discount_percent', 85);
-        $computed    = $baseGbp * (1 - ($discountPct / 100));
-
-        // 4. No platform modifier here — per-platform prices are computed by
-        //    getComputedPriceForPlatform() and shown individually in the Get Cash dropdown.
-
-        // 5. Age-based reduction (flat £ per year deducted from the computed price)
+        // Age-based reduction (flat £ per year)
         if ($this->release_date !== null) {
             $ageReductionGbp = (float) Setting::get('age_reduction_per_year', 0);
             if ($ageReductionGbp > 0) {
@@ -144,14 +146,14 @@ class GamePrice extends Model
             }
         }
 
-        // 6. Floor and low-price boost
+        // Floor and low-price boost
         $computed = max(0.01, round($computed, 2));
         $lowPriceBoost = (float) Setting::get('low_price_boost_gbp', 0.20);
         if ($computed < 0.10 && $lowPriceBoost > 0) {
             $computed = round($computed + $lowPriceBoost, 2);
         }
 
-        // 7. Bundle bonus: if this is a game bundle, add flat £ amount
+        // Bundle bonus
         if ($this->is_bundle) {
             $bundleGbp = (float) Setting::get('bundle_price_increase_gbp', 0);
             if ($bundleGbp > 0) {
@@ -159,7 +161,7 @@ class GamePrice extends Model
             }
         }
 
-        // 8. High-price reduction: if price > £10, deduct X%
+        // High-price reduction
         $highPricePct = (float) Setting::get('high_price_reduction_pct', 0);
         if ($highPricePct > 0 && $computed > 10.00) {
             $computed = round($computed * (1 - ($highPricePct / 100)), 2);
@@ -173,10 +175,10 @@ class GamePrice extends Model
     }
 
     /**
-     * Compute the display price for a specific platform (uses that platform's modifier only).
+     * Compute the display price for a specific platform.
      *
-     * Same formula as getComputedPrice() but uses the given platform's modifier
-     * rather than the best modifier across all stored platforms.
+     * When CeX has a price for this platform, it is used directly (×cex_margin_pct).
+     * Otherwise falls back to the Steam/CheapShark formula with the admin platform modifier.
      */
     public function getComputedPriceForPlatform(int $platformId, array $franchiseNames = [], ?string $gameTitle = null): ?array
     {
@@ -188,46 +190,50 @@ class GamePrice extends Model
             ];
         }
 
-        // 1. Base price: Steam first, CheapShark second, admin fallback last
-        $usdToGbp = (float) Setting::get('usd_to_gbp_rate', 1.36);
-        if ($this->steam_gbp !== null) {
-            $baseGbp = $this->steam_gbp;
-        } elseif ($this->cheapshark_usd !== null) {
-            $baseGbp = $this->cheapshark_usd / $usdToGbp;
+        // 1. Try CeX for this specific platform
+        $cexPrices = $gameTitle ? CexService::getPrices($gameTitle) : [];
+        $usedCex   = false;
+
+        if (isset($cexPrices[$platformId])) {
+            $marginPct = (float) Setting::get('cex_margin_pct', 90);
+            $computed  = $cexPrices[$platformId]['cash'] * ($marginPct / 100);
+            $usedCex   = true;
         } else {
-            $basePriceGbp = (float) Setting::get('base_price_gbp', 0);
-            if ($basePriceGbp <= 0) {
-                return null;
-            }
-            $baseGbp = $basePriceGbp;
-        }
-
-        // 2. Franchise adjustment added to the base price
-        $resolvedNames = !empty($franchiseNames) ? $franchiseNames : ($this->franchise_names ?? []);
-        $franchiseAdj  = FranchiseAdjustment::getAdjustment($resolvedNames);
-        $baseGbp      += $franchiseAdj;
-
-        // 2b. Game name adjustment (keyword partial-match against the game title)
-        if ($gameTitle !== null) {
-            $baseGbp += GameNameAdjustment::getAdjustment($gameTitle);
-        }
-
-        // 3. Discount
-        $discountPct = (float) Setting::get('pricing_discount_percent', 85);
-        $computed    = $baseGbp * (1 - ($discountPct / 100));
-
-        // 4. This platform's modifier (% or flat £)
-        $adjustment     = (float) Setting::get("platform_modifier_{$platformId}", 0);
-        $adjustmentType = Setting::get("platform_modifier_type_{$platformId}", 'percent');
-        if ($adjustment !== 0.0) {
-            if ($adjustmentType === 'gbp') {
-                $computed += $adjustment;
+            // Fallback: Steam → CheapShark → admin base price
+            $usdToGbp = (float) Setting::get('usd_to_gbp_rate', 1.36);
+            if ($this->steam_gbp !== null) {
+                $baseGbp = $this->steam_gbp;
+            } elseif ($this->cheapshark_usd !== null) {
+                $baseGbp = $this->cheapshark_usd / $usdToGbp;
             } else {
-                $computed *= 1 + ($adjustment / 100);
+                $basePriceGbp = (float) Setting::get('base_price_gbp', 0);
+                if ($basePriceGbp <= 0) {
+                    return null;
+                }
+                $baseGbp = $basePriceGbp;
+            }
+
+            // Franchise adjustment
+            $resolvedNames = !empty($franchiseNames) ? $franchiseNames : ($this->franchise_names ?? []);
+            $baseGbp      += FranchiseAdjustment::getAdjustment($resolvedNames);
+
+            // Discount
+            $discountPct = (float) Setting::get('pricing_discount_percent', 85);
+            $computed    = $baseGbp * (1 - ($discountPct / 100));
+
+            // Platform modifier (only applied when not using CeX, since CeX prices are platform-specific)
+            $adjustment     = (float) Setting::get("platform_modifier_{$platformId}", 0);
+            $adjustmentType = Setting::get("platform_modifier_type_{$platformId}", 'percent');
+            if ($adjustment !== 0.0) {
+                if ($adjustmentType === 'gbp') {
+                    $computed += $adjustment;
+                } else {
+                    $computed *= 1 + ($adjustment / 100);
+                }
             }
         }
 
-        // 5. Age-based reduction (flat £ per year deducted from the computed price)
+        // Age-based reduction (flat £ per year)
         if ($this->release_date !== null) {
             $ageReductionGbp = (float) Setting::get('age_reduction_per_year', 0);
             if ($ageReductionGbp > 0) {
@@ -236,14 +242,14 @@ class GamePrice extends Model
             }
         }
 
-        // 6. Floor and low-price boost
+        // Floor and low-price boost
         $computed = max(0.01, round($computed, 2));
         $lowPriceBoost = (float) Setting::get('low_price_boost_gbp', 0.20);
         if ($computed < 0.10 && $lowPriceBoost > 0) {
             $computed = round($computed + $lowPriceBoost, 2);
         }
 
-        // 7. Bundle bonus: if this is a game bundle, add flat £ amount
+        // Bundle bonus
         if ($this->is_bundle) {
             $bundleGbp = (float) Setting::get('bundle_price_increase_gbp', 0);
             if ($bundleGbp > 0) {
@@ -251,7 +257,7 @@ class GamePrice extends Model
             }
         }
 
-        // 8. High-price reduction: if price > £10, deduct X%
+        // High-price reduction
         $highPricePct = (float) Setting::get('high_price_reduction_pct', 0);
         if ($highPricePct > 0 && $computed > 10.00) {
             $computed = round($computed * (1 - ($highPricePct / 100)), 2);
