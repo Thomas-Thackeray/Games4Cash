@@ -108,4 +108,56 @@ return [
         'Strategy'     => 15,
     ],
 
+    // SEO descriptions shown at the bottom of each genre page (keyed by genre ID)
+    'genre_descriptions' => [
+        31 => [
+            'heading' => 'Sell Your Adventure Games for Cash',
+            'body'    => 'Adventure games have produced some of the most celebrated titles in gaming history — from the sweeping open worlds of Red Dead Redemption and The Legend of Zelda to the cinematic storytelling of Uncharted and The Last of Us. Their rich narratives and lasting reputations keep demand high long after release, meaning your collection can still hold real value. Whether you\'ve finished the story or simply moved on to your next journey, we\'ll give you a fast, fair cash offer with free door-to-door collection anywhere in the UK.',
+        ],
+        4 => [
+            'heading' => 'Sell Your Fighting Games for Cash',
+            'body'    => 'Fighting games have one of the most passionate communities in all of gaming. Franchises like Street Fighter, Mortal Kombat, Tekken, and Super Smash Bros. release new entries regularly, which means last year\'s edition is often sitting idle on the shelf. Physical fighting game titles trade well — particularly recent releases with strong competitive scenes. Check what your collection is worth and get a cash offer in minutes, with no hassle and no hidden fees.',
+        ],
+        25 => [
+            'heading' => 'Sell Your Hack and Slash Games for Cash',
+            'body'    => 'Hack and slash games deliver some of the most visceral and satisfying combat in gaming. From the stylish chaos of Devil May Cry to the mythological brutality of God of War and the relentless action of Bayonetta, these titles attract dedicated fanbases who keep demand consistently strong. If your collection has grown and your shelves are full, turn your hack and slash titles into cash today — add them to your basket and we\'ll collect them directly from your door.',
+        ],
+        32 => [
+            'heading' => 'Sell Your Indie Games for Cash',
+            'body'    => 'The indie scene has produced some of the most inventive games of the last decade. Hollow Knight, Hades, Celeste, Stardew Valley, and Undertale all began small and became cultural touchstones, with physical editions often limited in print run and sought after by collectors. Indie games may not have blockbuster marketing budgets, but they can command surprisingly strong cash prices. Browse your collection and see what your indie favourites are worth — you might be surprised.',
+        ],
+        8 => [
+            'heading' => 'Sell Your Platformer Games for Cash',
+            'body'    => 'Platform games have been at the heart of gaming since Mario first jumped across a screen, and they remain among the most popular and accessible titles on every console. From Nintendo\'s iconic first-party lineup to modern precision platformers like Crash Bandicoot, Ratchet & Clank, and Sonic Frontiers, these games appeal to players of all ages and consistently attract buyers. If your platform collection is gathering dust, let us turn it into cash — quickly, fairly, and with free collection from your home.',
+        ],
+        9 => [
+            'heading' => 'Sell Your Puzzle Games for Cash',
+            'body'    => 'Puzzle games reward creativity and lateral thinking, and the best of them — Portal, The Witness, Returnal, and Tetris Effect — leave a lasting impression long after the final solution clicks into place. Once completed, puzzle games often sit unplayed. Rather than leaving them on the shelf, add them to your basket and convert your finished collection into cash. We offer a straightforward selling process with no auctions, no buyers, and no waiting around.',
+        ],
+        10 => [
+            'heading' => 'Sell Your Racing Games for Cash',
+            'body'    => 'Racing games deliver the thrill of high-speed competition without leaving the sofa. Franchises like Gran Turismo, Forza Motorsport, F1, and Mario Kart have enormous audiences, and their physical editions remain in demand across generations of hardware. Whether you\'re upgrading to the latest instalment, switching platforms, or simply done with the track, we\'ll give you a competitive cash offer for your racing games — with free UK-wide collection and no seller fees.',
+        ],
+        12 => [
+            'heading' => 'Sell Your RPG Games for Cash',
+            'body'    => 'Role-playing games offer some of the deepest and most immersive experiences in gaming. With landmark series like Final Fantasy, The Witcher, Dark Souls, Elden Ring, and Persona, the genre is rich with titles that hold their value thanks to passionate fanbases and strong critical reputations. Limited physical editions and collector\'s releases can be particularly valuable. Check what your RPG collection is worth and get an instant cash offer — no listing, no waiting, just a straightforward sale.',
+        ],
+        5 => [
+            'heading' => 'Sell Your Shooter Games for Cash',
+            'body'    => 'Shooters dominate the gaming charts year after year, and for good reason — from sweeping single-player campaigns like Halo and Call of Duty to the relentless multiplayer of Battlefield and Destiny, the genre has something for everyone. Physical shooter titles trade reliably, especially recent entries in major franchises. If last year\'s shooter has been replaced by the next instalment, don\'t let it sit idle — check what it\'s worth and get a cash offer today.',
+        ],
+        13 => [
+            'heading' => 'Sell Your Simulation Games for Cash',
+            'body'    => 'Simulation games cover an enormous range — from farming and city-building to sports management and vehicle operation. Titles like Football Manager, The Sims, Farming Simulator, and Planet Coaster have built loyal audiences who invest hundreds of hours, and physical editions remain popular gifts and trade-ins. If you\'ve moved on to a newer version or simply want to free up shelf space, we\'ll give you a fair cash price for your simulation collection with free collection from your door.',
+        ],
+        14 => [
+            'heading' => 'Sell Your Sports Games for Cash',
+            'body'    => 'Sports games are among the best-selling titles every year — annual franchises like EA FC, NBA 2K, and WWE 2K move millions of copies and trade frequently between players looking for the latest edition. While last season\'s entry is quickly replaced, the demand for physical copies remains strong, and older titles in good condition still attract fair cash prices. Don\'t let your sports collection pile up — check what it\'s worth and sell it fast with free UK-wide collection.',
+        ],
+        15 => [
+            'heading' => 'Sell Your Strategy Games for Cash',
+            'body'    => 'Strategy games demand patience, forward thinking, and tactical decision-making — and franchises like XCOM, Civilization, Total War, and Fire Emblem have cultivated some of the most dedicated fanbases in gaming. Physical strategy titles, particularly on console, can hold their value well and are consistently sought after by collectors and new players alike. If your campaigns are complete and your shelves need clearing, add your strategy games to the basket and see how much cash your collection could earn.',
+        ],
+    ],
+
 ];
