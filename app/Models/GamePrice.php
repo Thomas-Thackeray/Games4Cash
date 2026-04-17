@@ -105,11 +105,15 @@ class GamePrice extends Model
         $prices = CexService::getPrices($gameTitle);
 
         if (! empty($prices)) {
-            static::where('igdb_game_id', $this->igdb_game_id)->update([
-                'cex_prices'     => json_encode($prices),
-                'cex_fetched_at' => now(),
-            ]);
-            $this->cex_prices    = $prices;
+            try {
+                static::where('igdb_game_id', $this->igdb_game_id)->update([
+                    'cex_prices'     => json_encode($prices),
+                    'cex_fetched_at' => now(),
+                ]);
+            } catch (\Throwable) {
+                // Column may not exist yet if migration hasn't run on this environment
+            }
+            $this->cex_prices     = $prices;
             $this->cex_fetched_at = now();
         }
 

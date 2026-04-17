@@ -442,11 +442,16 @@ class AdminController extends Controller
 
         $franchiseAdjustments = FranchiseAdjustment::orderBy('franchise_name')->get();
 
-        $cexGames = GamePrice::whereNotNull('cex_prices')
-            ->where('cex_prices', '!=', '[]')
-            ->where('cex_prices', '!=', '{}')
-            ->orderByDesc('cex_fetched_at')
-            ->get(['igdb_game_id', 'slug', 'cex_prices', 'cex_fetched_at']);
+        try {
+            $cexGames = GamePrice::whereNotNull('cex_prices')
+                ->where('cex_prices', '!=', '[]')
+                ->where('cex_prices', '!=', '{}')
+                ->orderByDesc('cex_fetched_at')
+                ->get(['igdb_game_id', 'slug', 'cex_prices', 'cex_fetched_at']);
+        } catch (\Throwable) {
+            // Column may not exist yet if migration hasn't been run on this environment
+            $cexGames = collect();
+        }
 
         return view('admin.settings', compact('settings', 'platforms', 'franchiseAdjustments', 'cexGames'));
     }
