@@ -30,22 +30,23 @@ class AdminGamePricesController extends Controller
                    ->orWhere('cex_prices', '{}'));
 
             $hasHiddenTable = \Illuminate\Support\Facades\Schema::hasTable('hidden_games');
-            $hiddenIds      = $hasHiddenTable ? HiddenGame::pluck('igdb_game_id')->all() : [];
+            // IDs of games that have at least one hidden platform row
+            $gamesWithHiddenRows = $hasHiddenTable
+                ? HiddenGame::distinct()->pluck('igdb_game_id')->all()
+                : [];
 
-            // Source / visibility filter
+            // Source filter — "hidden" tab shows games with any hidden row;
+            // all other tabs show everything (hidden rows are dimmed in the view).
             match ($source) {
                 'cex'        => $query->when($hasCexPrices, fn ($q) =>
                                     $q->whereNotNull('cex_prices')
                                       ->where('cex_prices', '!=', 'null')
-                                      ->where('cex_prices', '!=', '{}'))
-                                    ->whereNotIn('igdb_game_id', $hiddenIds),
+                                      ->where('cex_prices', '!=', '{}')),
                 'cheapshark' => $query->whereNotNull('cheapshark_usd')
-                                      ->when($hasCexPrices, $noCexClause)
-                                      ->whereNotIn('igdb_game_id', $hiddenIds),
+                                      ->when($hasCexPrices, $noCexClause),
                 'steam'      => $query->whereNotNull('steam_gbp')
                                       ->whereNull('cheapshark_usd')
-                                      ->when($hasCexPrices, $noCexClause)
-                                      ->whereNotIn('igdb_game_id', $hiddenIds),
+                                      ->when($hasCexPrices, $noCexClause),
                 'base'       => $query->whereNull('steam_gbp')
                                       ->whereNull('cheapshark_usd')
                                       ->when($hasCexPrices, $noCexClause)
@@ -53,8 +54,7 @@ class AdminGamePricesController extends Controller
                                           $q->where(fn ($q2) =>
                                               $q2->whereNull('price_overrides')
                                                  ->orWhere('price_overrides', 'null')
-                                                 ->orWhere('price_overrides', '{}')))
-                                      ->whereNotIn('igdb_game_id', $hiddenIds),
+                                                 ->orWhere('price_overrides', '{}'))),
                 'none'       => $query->where(function ($q) use ($hasCexPrices, $noCexClause) {
                                     $basePriceSet = (float) \App\Models\Setting::get('base_price_gbp', 0) > 0;
                                     $q->where('is_free', true);
@@ -65,14 +65,13 @@ class AdminGamePricesController extends Controller
                                                ->when($hasCexPrices, $noCexClause);
                                         });
                                     }
-                                })->whereNotIn('igdb_game_id', $hiddenIds),
+                                }),
                 'override'   => $query->when($hasPriceOverrides, fn ($q) =>
                                     $q->whereNotNull('price_overrides')
                                       ->where('price_overrides', '!=', 'null')
-                                      ->where('price_overrides', '!=', '{}'))
-                                    ->whereNotIn('igdb_game_id', $hiddenIds),
-                'hidden'     => $query->whereIn('igdb_game_id', $hiddenIds),
-                default      => $query->whereNotIn('igdb_game_id', $hiddenIds),
+                                      ->where('price_overrides', '!=', '{}')),
+                'hidden'     => $query->whereIn('igdb_game_id', $gamesWithHiddenRows),
+                default      => null,
             };
 
             if ($search !== '') {
@@ -93,10 +92,13 @@ class AdminGamePricesController extends Controller
             // Backfill missing names for games on this page only (keeps request fast)
             $this->backfillNamesForPage($gamePrices->items());
 
-            $allPlatforms  = config('igdb.all_platforms');
-            $hiddenGameIds = array_flip($hiddenIds); // for O(1) lookup in view
+            $allPlatforms = config('igdb.all_platforms');
 
-            return view('admin.game-prices', compact('gamePrices', 'search', 'source', 'allPlatforms', 'hiddenGameIds'));
+            // Build [igdb_game_id => [platform_id, ...]] for the current page only
+            $pageIds   = array_column($gamePrices->items(), 'igdb_game_id');
+            $hiddenMap = HiddenGame::hiddenMapForGames($pageIds);
+
+            return view('admin.game-prices', compact('gamePrices', 'search', 'source', 'allPlatforms', 'hiddenMap'));
 
         } catch (\Throwable $e) {
             return view('admin.error-debug', [
@@ -155,19 +157,21 @@ class AdminGamePricesController extends Controller
         }
     }
 
-    public function toggleHide(int $igdbGameId): JsonResponse
+    public function toggleHide(int $igdbGameId, int $platformId): JsonResponse
     {
         if (! \Illuminate\Support\Facades\Schema::hasTable('hidden_games')) {
             return response()->json(['error' => 'Run php artisan migrate first.'], 503);
         }
 
-        $existing = HiddenGame::where('igdb_game_id', $igdbGameId)->first();
+        $existing = HiddenGame::where('igdb_game_id', $igdbGameId)
+            ->where('platform_id', $platformId)
+            ->first();
 
         if ($existing) {
             $existing->delete();
             $hidden = false;
         } else {
-            HiddenGame::create(['igdb_game_id' => $igdbGameId]);
+            HiddenGame::create(['igdb_game_id' => $igdbGameId, 'platform_id' => $platformId]);
             $hidden = true;
         }
 

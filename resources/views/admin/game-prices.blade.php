@@ -101,9 +101,7 @@
                 @foreach($gamePrices as $gamePrice)
                     @php
                         $platformIds = json_decode($gamePrice->platform_ids, true) ?? [];
-                        $isHidden    = isset($hiddenGameIds[$gamePrice->igdb_game_id]);
-                        $firstPlatform = true;
-                        $platformCount = count(array_filter($platformIds, fn($pid) => isset($allPlatforms[$pid])));
+                        $gameHiddenPlatforms = $hiddenMap[$gamePrice->igdb_game_id] ?? [];
                     @endphp
                     @foreach($platformIds as $platformId)
                         @php
@@ -115,9 +113,10 @@
                             $overrides = $gamePrice->price_overrides ?? [];
                             $hasOverride = isset($overrides[$platformId]);
                             $rowId = 'row-' . $gamePrice->igdb_game_id . '-' . $platformId;
+                            $isRowHidden = in_array((int) $platformId, $gameHiddenPlatforms, true);
                         @endphp
                         <tr id="{{ $rowId }}" data-game="{{ $gamePrice->igdb_game_id }}"
-                            style="{{ $isHidden ? 'opacity:0.45;' : '' }}">
+                            style="{{ $isRowHidden ? 'opacity:0.45;' : '' }}">
                             <td>
                                 @if($gamePrice->slug)
                                     <a href="{{ route('game.show', $gamePrice->slug) }}" target="_blank"
@@ -164,21 +163,20 @@
                                     </button>
                                 </div>
                             </td>
-                            @if($firstPlatform)
-                            <td rowspan="{{ $platformCount }}" style="vertical-align:middle; text-align:center;">
+                            <td style="text-align:center;">
                                 <button type="button"
                                     class="btn btn--sm js-toggle-hide"
                                     data-igdb="{{ $gamePrice->igdb_game_id }}"
-                                    data-hidden="{{ $isHidden ? '1' : '0' }}"
-                                    style="{{ $isHidden
+                                    data-platform="{{ $platformId }}"
+                                    data-row="{{ $rowId }}"
+                                    data-hidden="{{ $isRowHidden ? '1' : '0' }}"
+                                    style="{{ $isRowHidden
                                         ? 'background:rgba(100,116,139,0.15); color:#94a3b8; border:1px solid rgba(100,116,139,0.4);'
                                         : 'background:rgba(30,30,30,0.5); color:#94a3b8; border:1px solid rgba(100,116,139,0.3);' }}
                                         white-space:nowrap; min-width:72px;">
-                                    {{ $isHidden ? 'Unhide' : 'Hide' }}
+                                    {{ $isRowHidden ? 'Unhide' : 'Hide' }}
                                 </button>
                             </td>
-                            @php $firstPlatform = false; @endphp
-                            @endif
                         </tr>
                     @endforeach
                 @endforeach
@@ -298,9 +296,9 @@
 
         // Toggle hide
         if (e.target.closest('.js-toggle-hide')) {
-            const btn    = e.target.closest('.js-toggle-hide');
-            const igdbId = btn.dataset.igdb;
-            const url    = '{{ rtrim(url('/'), '/') }}/admin/game-prices/' + igdbId + '/hide';
+            const btn        = e.target.closest('.js-toggle-hide');
+            const { igdb, platform, row } = btn.dataset;
+            const url        = '{{ rtrim(url('/'), '/') }}/admin/game-prices/' + igdb + '/' + platform + '/hide';
 
             btn.disabled = true;
             try {
@@ -311,19 +309,18 @@
                 if (!resp.ok) throw new Error('Request failed');
                 const data = await resp.json();
 
-                // Dim/undim all rows for this game
-                document.querySelectorAll(`tr[data-game="${igdbId}"]`).forEach(row => {
-                    row.style.opacity = data.hidden ? '0.45' : '';
-                });
+                // Dim/undim this row only
+                const tr = document.getElementById(row);
+                if (tr) tr.style.opacity = data.hidden ? '0.45' : '';
 
-                // Update button text and style
+                // Update button
                 btn.dataset.hidden = data.hidden ? '1' : '0';
                 btn.textContent    = data.hidden ? 'Unhide' : 'Hide';
                 btn.style.cssText  = data.hidden
                     ? 'background:rgba(100,116,139,0.15); color:#94a3b8; border:1px solid rgba(100,116,139,0.4); white-space:nowrap; min-width:72px;'
                     : 'background:rgba(30,30,30,0.5); color:#94a3b8; border:1px solid rgba(100,116,139,0.3); white-space:nowrap; min-width:72px;';
 
-                showFeedback(data.hidden ? 'Game hidden from application.' : 'Game is now visible.', false);
+                showFeedback(data.hidden ? 'Row hidden from application.' : 'Row is now visible.', false);
             } catch (err) {
                 showFeedback('Failed to update visibility.', true);
             } finally {
