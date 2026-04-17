@@ -94,23 +94,26 @@ class PriceSyncService
         $igdb     = new IgdbService();
         $steamMap = $igdb->getSteamAppIds($missingIds); // [igdbId => steamAppId]
 
-        $hasnoPriceTable = Schema::hasTable('no_price_reviews');
-        $usdToGbp        = (float) Setting::get('usd_to_gbp_rate', 1.36);
+        $hasnoPriceTable  = Schema::hasTable('no_price_reviews');
+        $hasBasePriceCol  = Schema::hasColumn('game_prices', 'base_price_gbp');
+        $usdToGbp         = (float) Setting::get('usd_to_gbp_rate', 1.36);
 
         // Games with no Steam App ID — store a placeholder so we don't retry
         // until 6 hours have passed; flag as no-price for admin review
         $noSteamIds = array_diff($missingIds, array_keys($steamMap));
         foreach ($noSteamIds as $igdbId) {
             $values = [
-                'steam_app_id'    => null,
-                'release_date'    => $releaseDates[$igdbId] ?? null,
-                'platform_ids'    => self::encodePlatformIds($platformMap[$igdbId] ?? []),
-                'is_free'         => false,
-                'steam_gbp'       => null,
-                'cheapshark_usd'  => null,
-                'base_price_gbp'  => null,
-                'updated_at'      => now(),
+                'steam_app_id'   => null,
+                'release_date'   => $releaseDates[$igdbId] ?? null,
+                'platform_ids'   => self::encodePlatformIds($platformMap[$igdbId] ?? []),
+                'is_free'        => false,
+                'steam_gbp'      => null,
+                'cheapshark_usd' => null,
+                'updated_at'     => now(),
             ];
+            if ($hasBasePriceCol) {
+                $values['base_price_gbp'] = null;
+            }
             if (! empty($titleMap[$igdbId])) {
                 $values['game_title'] = $titleMap[$igdbId];
             }
@@ -150,15 +153,17 @@ class PriceSyncService
             }
 
             $values = [
-                'steam_app_id'    => $steamAppId,
-                'release_date'    => $releaseDates[$igdbId] ?? null,
-                'platform_ids'    => self::encodePlatformIds($platformMap[$igdbId] ?? []),
-                'is_free'         => $isFree,
-                'steam_gbp'       => $steamGbp,
-                'cheapshark_usd'  => $cheapsharkUsd,
-                'base_price_gbp'  => $basePriceGbp,
-                'updated_at'      => now(),
+                'steam_app_id'   => $steamAppId,
+                'release_date'   => $releaseDates[$igdbId] ?? null,
+                'platform_ids'   => self::encodePlatformIds($platformMap[$igdbId] ?? []),
+                'is_free'        => $isFree,
+                'steam_gbp'      => $steamGbp,
+                'cheapshark_usd' => $cheapsharkUsd,
+                'updated_at'     => now(),
             ];
+            if ($hasBasePriceCol) {
+                $values['base_price_gbp'] = $basePriceGbp;
+            }
             if (! empty($titleMap[$igdbId])) {
                 $values['game_title'] = $titleMap[$igdbId];
             }

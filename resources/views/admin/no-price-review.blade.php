@@ -15,6 +15,13 @@
     <div class="flash flash--success" style="margin-bottom:1rem;">{{ session('flash_success') }}</div>
     @endif
 
+    @if(!empty($migrationPending))
+    <div class="settings-card settings-card--wide" style="border-left:3px solid var(--accent-2);">
+        <p style="color:var(--text);">The <code>no_price_reviews</code> table does not exist yet.</p>
+        <p class="settings-hint" style="margin-top:0.5rem;">Run <code>php artisan migrate</code> on the server to create it, then revisit this page.</p>
+    </div>
+    @else
+
     <div class="settings-card settings-card--wide" style="margin-bottom:1.5rem; border-left:3px solid var(--accent-2);">
         <p class="settings-hint">
             These games have no price from CheapShark or Steam and are currently <strong>hidden from public listings</strong>.
@@ -107,6 +114,8 @@
         {{ $reviews->links() }}
     </div>
     @endif
+
+    @endif {{-- migrationPending --}}
 
 </div>
 @endsection

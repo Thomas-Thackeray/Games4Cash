@@ -6,12 +6,22 @@ use App\Models\GamePrice;
 use App\Models\NoPriceReview;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\View\View;
 
 class AdminNoPriceController extends Controller
 {
     public function index(): View
     {
+        if (! Schema::hasTable('no_price_reviews')) {
+            return view('admin.no-price-review', [
+                'reviews'    => collect(),
+                'gamePrices' => collect(),
+                'platforms'  => [],
+                'migrationPending' => true,
+            ]);
+        }
+
         $reviews = NoPriceReview::select('igdb_game_id')
             ->selectRaw('MIN(id) as id')
             ->selectRaw('MIN(created_at) as created_at')
