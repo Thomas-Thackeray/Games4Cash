@@ -42,12 +42,17 @@ class AdminGamePricesController extends Controller
                                       ->whereNull('cheapshark_usd')
                                       ->when($hasCexPrices, $noCexClause),
                 'none'       => $query->where(function ($q) use ($hasCexPrices, $noCexClause) {
-                                    $q->where('is_free', true)
-                                      ->orWhere(function ($q2) use ($hasCexPrices, $noCexClause) {
-                                          $q2->whereNull('steam_gbp')
-                                             ->whereNull('cheapshark_usd')
-                                             ->when($hasCexPrices, $noCexClause);
-                                      });
+                                    $basePriceSet = (float) \App\Models\Setting::get('base_price_gbp', 0) > 0;
+                                    $q->where('is_free', true);
+                                    // Only include no-data games if base price isn't set —
+                                    // otherwise those games do get a calculated price
+                                    if (! $basePriceSet) {
+                                        $q->orWhere(function ($q2) use ($hasCexPrices, $noCexClause) {
+                                            $q2->whereNull('steam_gbp')
+                                               ->whereNull('cheapshark_usd')
+                                               ->when($hasCexPrices, $noCexClause);
+                                        });
+                                    }
                                 }),
                 'override'   => $query->when($hasPriceOverrides, fn ($q) =>
                                     $q->whereNotNull('price_overrides')
