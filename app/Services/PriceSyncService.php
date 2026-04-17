@@ -165,6 +165,17 @@ class PriceSyncService
 
         $allIds = array_keys($nameMap);
 
+        // Never fetch CeX prices for free-to-play games — they can't be traded
+        $freeIds = GamePrice::whereIn('igdb_game_id', $allIds)
+            ->where('is_free', true)
+            ->pluck('igdb_game_id')
+            ->all();
+        $allIds = array_values(array_diff($allIds, $freeIds));
+
+        if (empty($allIds)) {
+            return;
+        }
+
         // Only re-fetch when cex_fetched_at is null or older than 24 hours
         $freshIds = GamePrice::whereIn('igdb_game_id', $allIds)
             ->where('cex_fetched_at', '>', now()->subHours(24))

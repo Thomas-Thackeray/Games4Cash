@@ -16,7 +16,8 @@ class AdminGamePricesController extends Controller
             $source = $request->input('source', ''); // cex|cheapshark|steam|base|none
 
             $query = GamePrice::whereNotNull('platform_ids')
-                ->where('platform_ids', '!=', '[]');
+                ->where('platform_ids', '!=', '[]')
+                ->where('is_free', false);
 
             $hasGameTitle     = \Illuminate\Support\Facades\Schema::hasColumn('game_prices', 'game_title');
             $hasCexPrices     = \Illuminate\Support\Facades\Schema::hasColumn('game_prices', 'cex_prices');

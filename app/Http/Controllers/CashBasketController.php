@@ -80,6 +80,12 @@ class CashBasketController extends Controller
             return back()->with('flash_error', '"' . $request->game_title . '" is already in your cash basket.');
         }
 
+        // Block free-to-play games — no cash offer is possible
+        $gamePrice = \App\Models\GamePrice::where('igdb_game_id', $request->igdb_game_id)->first();
+        if ($gamePrice && $gamePrice->is_free) {
+            return back()->with('flash_error', '"' . $request->game_title . '" is free to play and cannot be traded for cash.');
+        }
+
         $user->cashBasketItems()->create([
             'igdb_game_id' => $request->igdb_game_id,
             'platform_id'  => $platformId,
