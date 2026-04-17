@@ -138,6 +138,9 @@ Route::middleware(['auth', 'track.active', 'admin'])->prefix('admin')->name('adm
     Route::patch('/game-prices/{igdbGameId}/{platformId}/override', [AdminGamePricesController::class, 'updateOverride'])
         ->name('game-prices.override')
         ->where(['igdbGameId' => '[0-9]+', 'platformId' => '[0-9]+']);
+    Route::post('/game-prices/{igdbGameId}/hide', [AdminGamePricesController::class, 'toggleHide'])
+        ->name('game-prices.hide')
+        ->where('igdbGameId', '[0-9]+');
 
     // CeX sync
     Route::post('/settings/sync-cex-prices', [AdminController::class, 'syncCexPrices'])->name('settings.sync-cex');
