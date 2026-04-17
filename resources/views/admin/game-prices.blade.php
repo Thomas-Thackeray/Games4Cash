@@ -95,6 +95,7 @@
                     </th>
                     <th>Game</th>
                     <th>Platform</th>
+                    <th>Base Price</th>
                     <th>Calculated Price</th>
                     <th>Calculated With</th>
                     <th>Override Price</th>
@@ -140,6 +141,13 @@
                                 @endif
                             </td>
                             <td class="admin-td-muted">{{ $platformName }}</td>
+                            <td class="admin-td-muted">
+                                @if($gamePrice->base_price_gbp !== null)
+                                    £{{ number_format($gamePrice->base_price_gbp, 2) }}
+                                @else
+                                    <span style="color:var(--text-dim);">—</span>
+                                @endif
+                            </td>
                             <td class="js-display-price" data-row="{{ $rowId }}">
                                 {{ $displayPrice }}
                             </td>
