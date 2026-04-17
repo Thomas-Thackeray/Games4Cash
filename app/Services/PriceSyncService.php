@@ -45,9 +45,10 @@ class PriceSyncService
             ->where(function ($q) {
                 $q->whereNull('steam_app_id')                                          // No Steam presence
                   ->orWhere('is_free', true)                                           // Free game
-                  ->orWhere(function ($q2) {                                           // Has a price
-                      $q2->whereNotNull('steam_gbp')->orWhereNotNull('cheapshark_usd');
+                  ->orWhere(function ($q2) {                                           // Fully synced (both prices)
+                      $q2->whereNotNull('steam_gbp')->whereNotNull('cheapshark_usd');
                   })
+                  ->orWhereNotNull('cheapshark_usd')                                   // CheapShark data present
                   ->orWhere('updated_at', '>', now()->subHours(6));                    // Tried recently
             })
             ->pluck('igdb_game_id')
