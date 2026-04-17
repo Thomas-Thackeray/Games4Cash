@@ -12,7 +12,6 @@ use App\Models\GamePrice;
 use App\Models\LoginAttempt;
 use App\Models\NoPriceReview;
 use App\Models\PageView;
-use App\Models\PriceRequest;
 use App\Models\Setting;
 use App\Models\User;
 use App\Models\Wishlist;
@@ -54,7 +53,6 @@ class AdminController extends Controller
                                     })->where(function ($q) {
                                         $q->whereNull('is_free')->orWhere('is_free', false);
                                     })->count(),
-            'price_request_count' => \Illuminate\Support\Facades\Schema::hasTable('price_requests') ? PriceRequest::where('status', 'pending')->distinct('igdb_game_id')->count('igdb_game_id') : 0,
         ];
 
         return view('admin.dashboard', compact('stats'));

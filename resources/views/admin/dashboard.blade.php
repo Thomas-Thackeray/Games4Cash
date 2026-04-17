@@ -42,10 +42,6 @@
             <div class="stat-card__value">{{ number_format($stats['no_price_count']) }}</div>
             <div class="stat-card__label">Games Awaiting Price</div>
         </div>
-        <div class="stat-card {{ $stats['price_request_count'] > 0 ? 'stat-card--warning' : '' }}">
-            <div class="stat-card__value">{{ number_format($stats['price_request_count']) }}</div>
-            <div class="stat-card__label">Pending Price Requests</div>
-        </div>
         @if($stats['views_today'] !== null)
         <div class="stat-card">
             <div class="stat-card__value" style="color:var(--accent);">{{ number_format($stats['visitors_today']) }}</div>
@@ -121,19 +117,6 @@
                 <a href="{{ route('admin.no-price-review') }}" class="btn btn--outline btn--sm">Review</a>
             </div>
 
-            <div class="admin-action-card {{ $stats['price_request_count'] > 0 ? 'admin-action-card--warning' : '' }}">
-                <div class="admin-action-card__icon">💬</div>
-                <div class="admin-action-card__body">
-                    <h3>Price Requests</h3>
-                    <p>
-                        Users requesting prices for games not yet listed.
-                        @if($stats['price_request_count'] > 0)
-                        <span class="admin-badge admin-badge--warning" style="margin-left:0.4rem;">{{ $stats['price_request_count'] }} pending</span>
-                        @endif
-                    </p>
-                </div>
-                <a href="{{ route('admin.price-requests') }}" class="btn btn--outline btn--sm">Review</a>
-            </div>
 
             <div class="admin-action-card">
                 <div class="admin-action-card__icon">⚙️</div>

@@ -5,8 +5,6 @@ use App\Http\Controllers\AdminBlogController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AdminFaqController;
 use App\Http\Controllers\AdminGamePricesController;
-use App\Http\Controllers\AdminPriceRequestController;
-use App\Http\Controllers\PriceRequestController;
 use App\Http\Controllers\BlogController;
 use App\Http\Controllers\PasswordResetController;
 use App\Http\Controllers\AuthController;
@@ -91,9 +89,6 @@ Route::middleware(['auth', 'track.active', 'force.reset'])->group(function () {
     Route::patch('/cash-basket/{id}/condition', [CashBasketController::class, 'updateCondition'])->name('cash-basket.condition')->where('id', '[0-9]+');
     Route::delete('/cash-basket/{id}', [CashBasketController::class, 'destroy'])->name('cash-basket.destroy')->where('id', '[0-9]+');
 
-    // Price requests
-    Route::post('/price-request', [PriceRequestController::class, 'store'])->name('price-request.store');
-
     // Cash orders (submitted quotes)
     Route::get('/cash-orders', [CashOrderController::class, 'index'])->name('cash-orders.index');
     Route::get('/cash-orders/create', [CashOrderController::class, 'create'])->name('cash-orders.create');
@@ -153,11 +148,6 @@ Route::middleware(['auth', 'track.active', 'admin'])->prefix('admin')->name('adm
     Route::get('/game-prices/{igdbGameId}/{platformId}/breakdown', [AdminGamePricesController::class, 'breakdown'])
         ->name('game-prices.breakdown')
         ->where(['igdbGameId' => '[0-9]+', 'platformId' => '[0-9]+']);
-
-    // Price requests (user-submitted)
-    Route::get('/price-requests', [AdminPriceRequestController::class, 'index'])->name('price-requests');
-    Route::post('/price-requests/{igdbGameId}/fulfill', [AdminPriceRequestController::class, 'fulfill'])->name('price-requests.fulfill')->where('igdbGameId', '[0-9]+');
-    Route::delete('/price-requests/{igdbGameId}/dismiss', [AdminPriceRequestController::class, 'dismiss'])->name('price-requests.dismiss')->where('igdbGameId', '[0-9]+');
 
     // No-price review
     Route::get('/no-price-review', [\App\Http\Controllers\AdminNoPriceController::class, 'index'])->name('no-price-review');
