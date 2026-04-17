@@ -441,7 +441,13 @@ class AdminController extends Controller
 
         $franchiseAdjustments = FranchiseAdjustment::orderBy('franchise_name')->get();
 
-        return view('admin.settings', compact('settings', 'platforms', 'franchiseAdjustments'));
+        $cexGames = GamePrice::whereNotNull('cex_prices')
+            ->where('cex_prices', '!=', '[]')
+            ->where('cex_prices', '!=', '{}')
+            ->orderByDesc('cex_fetched_at')
+            ->get(['igdb_game_id', 'slug', 'cex_prices', 'cex_fetched_at']);
+
+        return view('admin.settings', compact('settings', 'platforms', 'franchiseAdjustments', 'cexGames'));
     }
 
     // ----------------------------------------------------------------

@@ -395,6 +395,66 @@
         </form>
     </div>
 
+    {{-- CeX Priced Games --}}
+    <div class="settings-card settings-card--wide" style="margin-top:1.5rem;">
+        <h2 class="settings-card__title">Games with CeX Prices ({{ $cexGames->count() }})</h2>
+        <p class="settings-hint" style="margin-bottom:1.5rem;">
+            Games listed here have been priced using live CeX cash buy data. Prices are fetched on first view and cached for 24 hours.
+            A game appears here once a customer or admin has visited its page.
+        </p>
+
+        @if($cexGames->isEmpty())
+        <p style="color:var(--text-dim); padding:0.5rem 0;">No games have been priced via CeX yet. Visit a game page to trigger the first lookup.</p>
+        @else
+        @php $allPlatforms = config('igdb.all_platforms'); @endphp
+        <div class="admin-table-wrap">
+            <table class="admin-table">
+                <thead>
+                    <tr>
+                        <th>Game</th>
+                        <th>CeX Platforms &amp; Cash Prices</th>
+                        <th>Fetched</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach($cexGames as $gp)
+                    @php
+                        $gameSlug  = $gp->slug ?? null;
+                        $gameName  = $gameSlug
+                            ? ucwords(str_replace('-', ' ', $gameSlug))
+                            : 'Game #' . $gp->igdb_game_id;
+                        $gameUrl   = $gameSlug
+                            ? route('game.show', ['slug' => $gameSlug])
+                            : url('/game/' . $gp->igdb_game_id);
+                        $prices    = $gp->cex_prices ?? [];
+                    @endphp
+                    <tr>
+                        <td>
+                            <a href="{{ $gameUrl }}" style="color:var(--accent); text-decoration:none;" target="_blank">
+                                {{ $gameName }}
+                            </a>
+                        </td>
+                        <td>
+                            <div style="display:flex; flex-wrap:wrap; gap:0.4rem;">
+                                @foreach($prices as $platformId => $priceData)
+                                @php $platformName = $allPlatforms[$platformId] ?? 'Platform ' . $platformId; @endphp
+                                <span style="display:inline-flex; align-items:center; gap:0.3rem; background:rgba(255,255,255,0.06); border:1px solid var(--border); border-radius:4px; padding:0.2rem 0.5rem; font-size:0.8rem; white-space:nowrap;">
+                                    {{ $platformName }}
+                                    <strong style="color:var(--accent-2);">£{{ number_format($priceData['cash'], 2) }}</strong>
+                                </span>
+                                @endforeach
+                            </div>
+                        </td>
+                        <td style="color:var(--text-muted); font-size:0.82rem; white-space:nowrap;">
+                            {{ $gp->cex_fetched_at ? $gp->cex_fetched_at->diffForHumans() : '—' }}
+                        </td>
+                    </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+        @endif
+    </div>
 
 </div>
 @endsection

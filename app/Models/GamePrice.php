@@ -17,6 +17,8 @@ class GamePrice extends Model
     protected $fillable = [
         'igdb_game_id',
         'slug',
+        'cex_prices',
+        'cex_fetched_at',
         'steam_app_id',
         'release_date',
         'platform_ids',
@@ -34,6 +36,8 @@ class GamePrice extends Model
         'steam_gbp'       => 'float',
         'cheapshark_usd'  => 'float',
         'franchise_names' => 'array',
+        'cex_prices'      => 'array',
+        'cex_fetched_at'  => 'datetime',
     ];
 
     /**
@@ -84,6 +88,35 @@ class GamePrice extends Model
     }
 
     /**
+     * Return CeX prices for this game, fetching from the API if not yet stored.
+     * Persists the result to cex_prices + cex_fetched_at so it can be listed in admin.
+     */
+    private function resolveCexPrices(?string $gameTitle): array
+    {
+        // Use what's already stored on this record
+        if (! empty($this->cex_prices)) {
+            return $this->cex_prices;
+        }
+
+        if ($gameTitle === null || $gameTitle === '') {
+            return [];
+        }
+
+        $prices = CexService::getPrices($gameTitle);
+
+        if (! empty($prices)) {
+            static::where('igdb_game_id', $this->igdb_game_id)->update([
+                'cex_prices'     => json_encode($prices),
+                'cex_fetched_at' => now(),
+            ]);
+            $this->cex_prices    = $prices;
+            $this->cex_fetched_at = now();
+        }
+
+        return $prices;
+    }
+
+    /**
      * Compute the display price from stored raw values and current admin settings.
      *
      * Formula (in order):
@@ -104,7 +137,7 @@ class GamePrice extends Model
         }
 
         // 1. Try CeX first when we have a game title
-        $cexPrices = $gameTitle ? CexService::getPrices($gameTitle) : [];
+        $cexPrices = $this->resolveCexPrices($gameTitle);
         $usedCex   = false;
 
         if (! empty($cexPrices)) {
@@ -191,7 +224,7 @@ class GamePrice extends Model
         }
 
         // 1. Try CeX for this specific platform
-        $cexPrices = $gameTitle ? CexService::getPrices($gameTitle) : [];
+        $cexPrices = $this->resolveCexPrices($gameTitle);
         $usedCex   = false;
 
         if (isset($cexPrices[$platformId])) {
