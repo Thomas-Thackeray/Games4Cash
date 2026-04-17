@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\GamePrice;
+use App\Services\CexService;
 use Illuminate\Http\Client\Pool;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
@@ -107,6 +108,7 @@ class PriceSyncService
         }
 
         if (empty($steamMap)) {
+            self::syncCex($igdbGames);
             return;
         }
 
@@ -127,6 +129,72 @@ class PriceSyncService
                     'updated_at'     => now(),
                 ]
             );
+        }
+
+        self::syncCex($igdbGames);
+    }
+
+    // -----------------------------------------------------------------------
+
+    /**
+     * Parallel-fetch CeX cash prices for all games whose data is missing or stale (>24 h).
+     * Runs after the Steam/CheapShark sync so game_prices records exist.
+     */
+    private static function syncCex(array $igdbGames): void
+    {
+        if (empty($igdbGames)) {
+            return;
+        }
+
+        // Build name map from IGDB data
+        $nameMap = [];
+        foreach ($igdbGames as $g) {
+            if (! empty($g['name'])) {
+                $nameMap[(int) $g['id']] = $g['name'];
+            }
+        }
+
+        if (empty($nameMap)) {
+            return;
+        }
+
+        $allIds = array_keys($nameMap);
+
+        // Only re-fetch when cex_fetched_at is null or older than 24 hours
+        $freshIds = GamePrice::whereIn('igdb_game_id', $allIds)
+            ->where('cex_fetched_at', '>', now()->subHours(24))
+            ->pluck('igdb_game_id')
+            ->all();
+
+        $staleIds = array_values(array_diff($allIds, $freshIds));
+
+        if (empty($staleIds)) {
+            return;
+        }
+
+        // Parallel CeX search requests
+        $responses = Http::pool(function (Pool $pool) use ($staleIds, $nameMap) {
+            foreach ($staleIds as $igdbId) {
+                $pool->as((string) $igdbId)
+                    ->timeout(8)
+                    ->withHeaders(['User-Agent' => 'Mozilla/5.0'])
+                    ->get('https://wss2.cex.io/api/search', ['q' => $nameMap[$igdbId]]);
+            }
+        });
+
+        foreach ($staleIds as $igdbId) {
+            $name = $nameMap[$igdbId];
+            try {
+                $boxes  = $responses[(string) $igdbId]?->json('response.data.boxes') ?? [];
+                $prices = CexService::parseBoxes($name, $boxes);
+            } catch (\Throwable) {
+                $prices = [];
+            }
+
+            GamePrice::where('igdb_game_id', $igdbId)->update([
+                'cex_prices'     => empty($prices) ? null : json_encode($prices),
+                'cex_fetched_at' => now(),
+            ]);
         }
     }
 

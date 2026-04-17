@@ -68,47 +68,56 @@ class CexService
 
             $boxes = $response->json('response.data.boxes') ?? [];
 
-            if (empty($boxes)) {
-                return [];
-            }
-
-            $prices = [];
-
-            foreach ($boxes as $box) {
-                $boxName = $box['boxName'] ?? '';
-
-                // Only accept boxes whose name closely matches the searched title.
-                // similar_text gives percentage overlap; 65% catches subtitles like
-                // "Elden Ring: Shadow of the Erdtree" when searching "Elden Ring".
-                similar_text(strtolower(trim($gameTitle)), strtolower(trim($boxName)), $pct);
-                if ($pct < 65) {
-                    continue;
-                }
-
-                $categoryName = $box['categoryName'] ?? '';
-                $platformId   = self::mapCategory($categoryName);
-                if ($platformId === null) {
-                    continue;
-                }
-
-                $cashPrice = isset($box['cashPrice']) ? (float) $box['cashPrice'] : null;
-                if ($cashPrice === null || $cashPrice <= 0) {
-                    continue;
-                }
-
-                // Keep the highest cash price per platform (handles duplicate listings)
-                if (! isset($prices[$platformId]) || $cashPrice > $prices[$platformId]['cash']) {
-                    $prices[$platformId] = [
-                        'cash' => $cashPrice,
-                        'sell' => (float) ($box['sellPrice'] ?? 0),
-                    ];
-                }
-            }
-
-            return $prices;
+            return self::parseBoxes($gameTitle, $boxes);
         } catch (\Throwable) {
             return [];
         }
+    }
+
+    // -----------------------------------------------------------------------
+
+    /**
+     * Parse a CeX API boxes array into per-platform price data.
+     * Exposed publicly so PriceSyncService can reuse it after batch HTTP calls.
+     *
+     * Returns: [igdbPlatformId => ['cash' => float, 'sell' => float], ...]
+     */
+    public static function parseBoxes(string $gameTitle, array $boxes): array
+    {
+        $prices = [];
+
+        foreach ($boxes as $box) {
+            $boxName = $box['boxName'] ?? '';
+
+            // Only accept boxes whose name closely matches the searched title.
+            // similar_text gives percentage overlap; 65% catches subtitles like
+            // "Elden Ring: Shadow of the Erdtree" when searching "Elden Ring".
+            similar_text(strtolower(trim($gameTitle)), strtolower(trim($boxName)), $pct);
+            if ($pct < 65) {
+                continue;
+            }
+
+            $categoryName = $box['categoryName'] ?? '';
+            $platformId   = self::mapCategory($categoryName);
+            if ($platformId === null) {
+                continue;
+            }
+
+            $cashPrice = isset($box['cashPrice']) ? (float) $box['cashPrice'] : null;
+            if ($cashPrice === null || $cashPrice <= 0) {
+                continue;
+            }
+
+            // Keep the highest cash price per platform (handles duplicate listings)
+            if (! isset($prices[$platformId]) || $cashPrice > $prices[$platformId]['cash']) {
+                $prices[$platformId] = [
+                    'cash' => $cashPrice,
+                    'sell' => (float) ($box['sellPrice'] ?? 0),
+                ];
+            }
+        }
+
+        return $prices;
     }
 
     // -----------------------------------------------------------------------
