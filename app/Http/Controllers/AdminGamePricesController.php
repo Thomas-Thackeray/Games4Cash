@@ -72,8 +72,16 @@ class AdminGamePricesController extends Controller
                                       ->where('price_overrides', '!=', '{}')),
                 'hidden'     => $query->whereIn('igdb_game_id', $gamesWithHiddenRows),
                 'over10'     => $query->where(function ($q) {
-                                    $q->where('steam_gbp', '>', 10)
-                                      ->orWhere('cheapshark_usd', '>', 13); // ~£10 at 1.3 USD/GBP
+                                    // Work backwards through the discount to find the raw price
+                                    // threshold that would produce a ~£10 calculated offer.
+                                    // computed = raw * (1 - discount%) so raw > 10 / (1 - discount%)
+                                    $discountPct = (float) \App\Models\Setting::get('pricing_discount_percent', 85);
+                                    $factor      = max(0.01, 1 - ($discountPct / 100));
+                                    $steamMin    = round(10.0 / $factor, 2);
+                                    $usdToGbp    = (float) \App\Models\Setting::get('usd_to_gbp_rate', 1.36);
+                                    $csMin       = round($steamMin * $usdToGbp, 2);
+                                    $q->where('steam_gbp', '>', $steamMin)
+                                      ->orWhere('cheapshark_usd', '>', $csMin);
                                 }),
                 default      => null,
             };
