@@ -5,12 +5,13 @@ namespace App\Http\Controllers;
 use App\Models\ActivityLog;
 use App\Models\BlacklistedPassword;
 use App\Models\FranchiseAdjustment;
-use App\Services\CexService;
 use App\Models\CashBasketItem;
 use App\Models\CashOrder;
 use App\Models\ContactSubmission;
 use App\Models\GamePrice;
 use App\Models\LoginAttempt;
+use App\Models\NoPriceReview;
+use App\Models\PageView;
 use App\Models\Setting;
 use App\Models\User;
 use App\Models\Wishlist;
@@ -26,6 +27,8 @@ class AdminController extends Controller
 
     public function dashboard(): View
     {
+        $hasPageViews = \Illuminate\Support\Facades\Schema::hasTable('page_views');
+
         $stats = [
             'total_users'       => User::where('role', 'user')->count(),
             'new_this_month'    => User::where('role', 'user')
@@ -40,6 +43,10 @@ class AdminController extends Controller
                                         ->count(),
             'unread_contacts'   => ContactSubmission::whereNull('read_at')->count(),
             'pending_orders'    => CashOrder::where('status', 'pending')->count(),
+            'views_today'       => $hasPageViews ? PageView::where('created_at', '>=', now()->startOfDay())->count() : null,
+            'visitors_today'    => $hasPageViews ? PageView::where('created_at', '>=', now()->startOfDay())->distinct('session_id')->count('session_id') : null,
+            'visitors_month'    => $hasPageViews ? PageView::where('created_at', '>=', now()->startOfMonth())->distinct('session_id')->count('session_id') : null,
+            'no_price_count'    => \Illuminate\Support\Facades\Schema::hasTable('no_price_reviews') ? NoPriceReview::distinct('igdb_game_id')->count('igdb_game_id') : 0,
         ];
 
         return view('admin.dashboard', compact('stats'));
@@ -419,18 +426,14 @@ class AdminController extends Controller
     public function showSettings(): View
     {
         $settings = [
-            'cex_margin_pct'           => Setting::get('cex_margin_pct', 90),
             'pricing_discount_percent' => Setting::get('pricing_discount_percent', 85),
             'usd_to_gbp_rate'          => Setting::get('usd_to_gbp_rate', 1.36),
             'age_reduction_per_year'   => Setting::get('age_reduction_per_year', 1),
-            'base_price_gbp'           => Setting::get('base_price_gbp', 0),
             'min_order_gbp'            => Setting::get('min_order_gbp', 20),
-            'condition_new_pct'          => Setting::get('condition_new_pct', 20),
-            'condition_complete_pct'     => Setting::get('condition_complete_pct', 0),
-            'condition_disk_pct'         => Setting::get('condition_disk_pct', -50),
-            'low_price_boost_gbp'        => Setting::get('low_price_boost_gbp', 0.20),
-            'high_price_reduction_pct'   => Setting::get('high_price_reduction_pct', 0),
-            'bundle_price_increase_gbp'  => Setting::get('bundle_price_increase_gbp', 0),
+            'condition_new_pct'        => Setting::get('condition_new_pct', 20),
+            'condition_complete_pct'   => Setting::get('condition_complete_pct', 0),
+            'condition_disk_pct'       => Setting::get('condition_disk_pct', -50),
+            'low_price_boost_gbp'      => Setting::get('low_price_boost_gbp', 0.10),
         ];
 
         $platforms = array_map(function ($p) {
@@ -442,18 +445,7 @@ class AdminController extends Controller
 
         $franchiseAdjustments = FranchiseAdjustment::orderBy('franchise_name')->get();
 
-        try {
-            $cexGames = GamePrice::whereNotNull('cex_prices')
-                ->where('cex_prices', '!=', '[]')
-                ->where('cex_prices', '!=', '{}')
-                ->orderByDesc('cex_fetched_at')
-                ->get(['igdb_game_id', 'slug', 'cex_prices', 'cex_fetched_at']);
-        } catch (\Throwable) {
-            // Column may not exist yet if migration hasn't been run on this environment
-            $cexGames = collect();
-        }
-
-        return view('admin.settings', compact('settings', 'platforms', 'franchiseAdjustments', 'cexGames'));
+        return view('admin.settings', compact('settings', 'platforms', 'franchiseAdjustments'));
     }
 
     // ----------------------------------------------------------------
@@ -503,18 +495,14 @@ class AdminController extends Controller
     public function updateSettings(Request $request): RedirectResponse
     {
         $request->validate([
-            'cex_margin_pct'            => ['required', 'numeric', 'min:1', 'max:150'],
             'pricing_discount_percent'  => ['required', 'numeric', 'min:0', 'max:99'],
             'usd_to_gbp_rate'           => ['required', 'numeric', 'min:0.01', 'max:99.99'],
             'age_reduction_per_year'    => ['required', 'numeric', 'min:0', 'max:9.99'],
-            'base_price_gbp'            => ['required', 'numeric', 'min:0', 'max:999.99'],
             'min_order_gbp'             => ['required', 'numeric', 'min:0', 'max:999.99'],
             'condition_new_pct'         => ['required', 'numeric', 'min:-100', 'max:100'],
             'condition_complete_pct'    => ['required', 'numeric', 'min:-100', 'max:100'],
             'condition_disk_pct'        => ['required', 'numeric', 'min:-100', 'max:100'],
             'low_price_boost_gbp'       => ['required', 'numeric', 'min:0', 'max:99.99'],
-            'high_price_reduction_pct'  => ['required', 'numeric', 'min:0', 'max:99'],
-            'bundle_price_increase_gbp' => ['required', 'numeric', 'min:0', 'max:999.99'],
             'platform_modifier.*'       => ['nullable', 'numeric', 'min:-999.99', 'max:999.99'],
             'platform_modifier_type.*'  => ['nullable', 'in:percent,gbp'],
         ], [
@@ -522,21 +510,16 @@ class AdminController extends Controller
             'pricing_discount_percent.max' => 'Discount must be between 0% and 99%.',
             'usd_to_gbp_rate.min'          => 'Exchange rate must be a positive number.',
             'age_reduction_per_year.max'   => 'Age reduction cannot exceed £9.99 per year.',
-            'base_price_gbp.max'           => 'Base price cannot exceed £999.99.',
         ]);
 
-        Setting::set('cex_margin_pct', $request->input('cex_margin_pct'));
         Setting::set('pricing_discount_percent', $request->input('pricing_discount_percent'));
         Setting::set('usd_to_gbp_rate', $request->input('usd_to_gbp_rate'));
         Setting::set('age_reduction_per_year', $request->input('age_reduction_per_year'));
-        Setting::set('base_price_gbp', $request->input('base_price_gbp'));
         Setting::set('min_order_gbp', $request->input('min_order_gbp'));
         Setting::set('condition_new_pct', $request->input('condition_new_pct'));
         Setting::set('condition_complete_pct', $request->input('condition_complete_pct'));
         Setting::set('condition_disk_pct', $request->input('condition_disk_pct'));
         Setting::set('low_price_boost_gbp', $request->input('low_price_boost_gbp'));
-        Setting::set('high_price_reduction_pct', $request->input('high_price_reduction_pct'));
-        Setting::set('bundle_price_increase_gbp', $request->input('bundle_price_increase_gbp'));
 
         $modifierTypes = $request->input('platform_modifier_type', []);
         foreach ($request->input('platform_modifier', []) as $platformId => $modifier) {
@@ -587,35 +570,4 @@ class AdminController extends Controller
         return back()->with('flash_success', 'Franchise adjustment removed.');
     }
 
-    // ----------------------------------------------------------------
-    //  CeX price sync
-    // ----------------------------------------------------------------
-
-    public function syncCexPrices(): RedirectResponse
-    {
-        $games = GamePrice::whereNotNull('slug')->get(['igdb_game_id', 'slug', 'cex_prices', 'cex_fetched_at']);
-
-        $priced = 0;
-        $total  = $games->count();
-
-        foreach ($games as $gp) {
-            // Derive a human title from the slug: "elden-ring" → "Elden Ring"
-            $title  = ucwords(str_replace('-', ' ', $gp->slug));
-            $prices = CexService::fetchDirect($title);
-
-            GamePrice::where('igdb_game_id', $gp->igdb_game_id)->update([
-                'cex_prices'     => empty($prices) ? null : json_encode($prices),
-                'cex_fetched_at' => now(),
-            ]);
-
-            if (! empty($prices)) {
-                $priced++;
-            }
-        }
-
-        return back()->with(
-            'flash_success',
-            "CeX sync complete: found prices for {$priced} of {$total} games."
-        );
-    }
 }

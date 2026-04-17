@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\GamePrice;
+use App\Models\HiddenGame;
+use App\Models\NoPriceReview;
 use App\Services\IgdbService;
 use App\Services\PriceSyncService;
 use Illuminate\View\View;
@@ -33,6 +35,8 @@ class HomeController extends Controller
         }
 
         $games = GamePrice::stripFreeGames($games);
+        $games = HiddenGame::strip($games);
+        $games = NoPriceReview::strip($games);
         PriceSyncService::ensureForGames($games);
 
         return view('home', compact('games', 'sectionTitle'));

@@ -38,6 +38,24 @@
             <div class="stat-card__value">{{ number_format($stats['pending_orders']) }}</div>
             <div class="stat-card__label">Pending Cash Orders</div>
         </div>
+        <div class="stat-card {{ $stats['no_price_count'] > 0 ? 'stat-card--warning' : '' }}">
+            <div class="stat-card__value">{{ number_format($stats['no_price_count']) }}</div>
+            <div class="stat-card__label">Games Awaiting Price</div>
+        </div>
+        @if($stats['views_today'] !== null)
+        <div class="stat-card">
+            <div class="stat-card__value" style="color:var(--accent);">{{ number_format($stats['visitors_today']) }}</div>
+            <div class="stat-card__label">Unique Visitors Today</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-card__value">{{ number_format($stats['views_today']) }}</div>
+            <div class="stat-card__label">Page Views Today</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-card__value" style="color:var(--accent);">{{ number_format($stats['visitors_month']) }}</div>
+            <div class="stat-card__label">Unique Visitors This Month</div>
+        </div>
+        @endif
     </div>
 
     {{-- Quick actions --}}
@@ -85,6 +103,20 @@
                 <a href="{{ route('admin.activity-logs') }}" class="btn btn--outline btn--sm">Open</a>
             </div>
 
+            <div class="admin-action-card {{ $stats['no_price_count'] > 0 ? 'admin-action-card--warning' : '' }}">
+                <div class="admin-action-card__icon">🏷️</div>
+                <div class="admin-action-card__body">
+                    <h3>No Price Review</h3>
+                    <p>
+                        Games hidden from listings because no price was found.
+                        @if($stats['no_price_count'] > 0)
+                        <span class="admin-badge admin-badge--warning" style="margin-left:0.4rem;">{{ $stats['no_price_count'] }} awaiting</span>
+                        @endif
+                    </p>
+                </div>
+                <a href="{{ route('admin.no-price-review') }}" class="btn btn--outline btn--sm">Review</a>
+            </div>
+
             <div class="admin-action-card">
                 <div class="admin-action-card__icon">⚙️</div>
                 <div class="admin-action-card__body">
@@ -119,6 +151,15 @@
                     <p>Write and publish blog posts — gaming news, reviews, and selling guides.</p>
                 </div>
                 <a href="{{ route('admin.blog.index') }}" class="btn btn--outline btn--sm">Open</a>
+            </div>
+
+            <div class="admin-action-card">
+                <div class="admin-action-card__icon">📊</div>
+                <div class="admin-action-card__body">
+                    <h3>Analytics</h3>
+                    <p>Track unique visitors, page views, top pages, and referral sources.</p>
+                </div>
+                <a href="{{ route('admin.analytics') }}" class="btn btn--outline btn--sm">Open</a>
             </div>
 
             <div class="admin-action-card">

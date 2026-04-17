@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AdminAnalyticsController;
 use App\Http\Controllers\AdminBlogController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AdminFaqController;
@@ -129,6 +130,9 @@ Route::middleware(['auth', 'track.active', 'admin'])->prefix('admin')->name('adm
     Route::delete('/activity-logs/clear', [AdminController::class, 'clearActivityLogs'])->name('activity-logs.clear');
     Route::delete('/activity-logs/{id}', [AdminController::class, 'deleteActivityLog'])->name('activity-logs.delete')->where('id', '[0-9]+');
 
+    // Analytics
+    Route::get('/analytics', [AdminAnalyticsController::class, 'index'])->name('analytics');
+
     // Settings
     Route::get('/settings', [AdminController::class, 'showSettings'])->name('settings');
     Route::post('/settings', [AdminController::class, 'updateSettings'])->name('settings.update');
@@ -138,9 +142,17 @@ Route::middleware(['auth', 'track.active', 'admin'])->prefix('admin')->name('adm
     Route::patch('/game-prices/{igdbGameId}/{platformId}/override', [AdminGamePricesController::class, 'updateOverride'])
         ->name('game-prices.override')
         ->where(['igdbGameId' => '[0-9]+', 'platformId' => '[0-9]+']);
+    Route::post('/game-prices/{igdbGameId}/{platformId}/hide', [AdminGamePricesController::class, 'toggleHide'])
+        ->name('game-prices.hide')
+        ->where(['igdbGameId' => '[0-9]+', 'platformId' => '[0-9]+']);
+    Route::get('/game-prices/{igdbGameId}/{platformId}/breakdown', [AdminGamePricesController::class, 'breakdown'])
+        ->name('game-prices.breakdown')
+        ->where(['igdbGameId' => '[0-9]+', 'platformId' => '[0-9]+']);
 
-    // CeX sync
-    Route::post('/settings/sync-cex-prices', [AdminController::class, 'syncCexPrices'])->name('settings.sync-cex');
+    // No-price review
+    Route::get('/no-price-review', [\App\Http\Controllers\AdminNoPriceController::class, 'index'])->name('no-price-review');
+    Route::post('/no-price-review/{igdbGameId}/set-price', [\App\Http\Controllers\AdminNoPriceController::class, 'setPrice'])->name('no-price-review.set-price')->where('igdbGameId', '[0-9]+');
+    Route::delete('/no-price-review/{igdbGameId}/dismiss', [\App\Http\Controllers\AdminNoPriceController::class, 'dismiss'])->name('no-price-review.dismiss')->where('igdbGameId', '[0-9]+');
 
     // Franchise adjustments
     Route::post('/settings/franchise-adjustments', [AdminController::class, 'storeFranchiseAdjustment'])->name('franchise-adjustments.store');

@@ -5,22 +5,18 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\FranchiseAdjustment;
 use App\Models\Setting;
-use App\Services\CexService;
 
 class GamePrice extends Model
 {
     protected $table      = 'game_prices';
     protected $primaryKey = 'igdb_game_id';
     public    $incrementing = false;
-    public    $timestamps   = false; // updated_at set explicitly so we control retry logic
+    public    $timestamps   = false;
 
     protected $fillable = [
         'igdb_game_id',
         'game_title',
         'slug',
-        'cex_prices',
-        'cex_fetched_at',
-        'price_overrides',
         'steam_app_id',
         'release_date',
         'platform_ids',
@@ -29,6 +25,8 @@ class GamePrice extends Model
         'is_bundle',
         'steam_gbp',
         'cheapshark_usd',
+        'base_price_gbp',
+        'price_overrides',
         'updated_at',
     ];
 
@@ -37,15 +35,15 @@ class GamePrice extends Model
         'is_bundle'       => 'boolean',
         'steam_gbp'       => 'float',
         'cheapshark_usd'  => 'float',
+        'base_price_gbp'  => 'float',
         'franchise_names' => 'array',
-        'cex_prices'      => 'array',
-        'cex_fetched_at'  => 'datetime',
         'price_overrides' => 'array',
     ];
 
-    /**
-     * Human-readable display name, falling back to slug-derived title.
-     */
+    // -----------------------------------------------------------------------
+    //  Helpers
+    // -----------------------------------------------------------------------
+
     public function displayName(): string
     {
         if (! empty($this->game_title)) {
@@ -58,21 +56,18 @@ class GamePrice extends Model
     }
 
     /**
-     * Remove any games from $igdbGames that are already known to be free-to-play.
-     * One DB query regardless of list size; unknown games are left in (they'll be
-     * checked on first price sync and removed from future listings once marked free).
+     * Remove free-to-play games from an IGDB result array.
      */
     public static function stripFreeGames(array $igdbGames): array
     {
         if (empty($igdbGames)) {
             return [];
         }
-
         $ids     = array_column($igdbGames, 'id');
         $freeIds = static::whereIn('igdb_game_id', $ids)
             ->where('is_free', true)
             ->pluck('igdb_game_id')
-            ->flip() // use as a hash set for O(1) lookup
+            ->flip()
             ->all();
 
         return empty($freeIds)
@@ -81,7 +76,7 @@ class GamePrice extends Model
     }
 
     /**
-     * Upsert raw price data. Always sets updated_at so retry logic works correctly.
+     * Upsert raw price data.
      */
     public static function record(
         int    $igdbGameId,
@@ -90,11 +85,20 @@ class GamePrice extends Model
         bool   $isFree,
         ?float $steamGbp,
         ?float $cheapsharkUsd,
-        array  $platformIds = [],
+        array  $platformIds    = [],
         array  $franchiseNames = [],
-        bool   $isBundle = false,
-        ?string $slug = null,
+        bool   $isBundle       = false,
+        ?string $slug          = null,
     ): void {
+        $usdToGbp     = (float) Setting::get('usd_to_gbp_rate', 1.36);
+        $basePriceGbp = null;
+
+        if ($cheapsharkUsd !== null) {
+            $basePriceGbp = round($cheapsharkUsd / $usdToGbp, 4);
+        } elseif ($steamGbp !== null) {
+            $basePriceGbp = round($steamGbp, 4);
+        }
+
         $values = [
             'steam_app_id'    => $steamAppId,
             'release_date'    => $releaseDate,
@@ -104,10 +108,10 @@ class GamePrice extends Model
             'is_bundle'       => $isBundle,
             'steam_gbp'       => $steamGbp,
             'cheapshark_usd'  => $cheapsharkUsd,
+            'base_price_gbp'  => $basePriceGbp,
             'updated_at'      => now(),
         ];
 
-        // Only write slug when we have one — never overwrite with null
         if ($slug !== null) {
             $values['slug'] = $slug;
         }
@@ -115,10 +119,6 @@ class GamePrice extends Model
         self::updateOrCreate(['igdb_game_id' => $igdbGameId], $values);
     }
 
-    /**
-     * Return the canonical public URL for a game given its IGDB ID.
-     * Uses the stored slug when available, falls back to the numeric ID route.
-     */
     public static function urlForId(int $igdbId): string
     {
         $slug = static::where('igdb_game_id', $igdbId)->value('slug');
@@ -127,135 +127,20 @@ class GamePrice extends Model
             : url('/game/' . $igdbId);
     }
 
-    /**
-     * Return CeX prices for this game, fetching from the API if not yet stored.
-     * Persists the result to cex_prices + cex_fetched_at so it can be listed in admin.
-     */
-    private function resolveCexPrices(?string $gameTitle): array
-    {
-        // Use what's already stored on this record
-        if (! empty($this->cex_prices)) {
-            return $this->cex_prices;
-        }
-
-        if ($gameTitle === null || $gameTitle === '') {
-            return [];
-        }
-
-        $prices = CexService::getPrices($gameTitle);
-
-        if (! empty($prices)) {
-            try {
-                static::where('igdb_game_id', $this->igdb_game_id)->update([
-                    'cex_prices'     => json_encode($prices),
-                    'cex_fetched_at' => now(),
-                ]);
-            } catch (\Throwable) {
-                // Column may not exist yet if migration hasn't run on this environment
-            }
-            $this->cex_prices     = $prices;
-            $this->cex_fetched_at = now();
-        }
-
-        return $prices;
-    }
+    // -----------------------------------------------------------------------
+    //  Pricing
+    // -----------------------------------------------------------------------
 
     /**
-     * Compute the display price from stored raw values and current admin settings.
+     * Compute the cash offer price for a specific platform.
      *
-     * Formula (in order):
-     *   1. Base price: CeX cashPrice (if available) → Steam GBP → CheapShark USD → admin fallback
-     *   2. If using CeX: apply cex_margin_pct. Otherwise: franchise adj + discount %.
-     *   3. Apply age-based reduction
-     *   4. Floor at £0.01; if under £0.10 add low-price boost
-     *   5. Bundle bonus and high-price reduction
-     */
-    public function getComputedPrice(array $franchiseNames = [], ?string $gameTitle = null): ?array
-    {
-        if ($this->is_free) {
-            return [
-                'is_free'       => true,
-                'display_price' => 'Free to Play',
-                'price_numeric' => null,
-            ];
-        }
-
-        // 1. Try CeX first when we have a game title
-        $cexPrices = $this->resolveCexPrices($gameTitle);
-        $usedCex   = false;
-
-        if (! empty($cexPrices)) {
-            // Use the highest CeX cash price across all platforms as the general price
-            $maxCash  = max(array_column($cexPrices, 'cash'));
-            $marginPct = (float) Setting::get('cex_margin_pct', 90);
-            $computed  = $maxCash * ($marginPct / 100);
-            $usedCex   = true;
-        } else {
-            // Fallback: CheapShark → Steam → admin base price
-            $usdToGbp = (float) Setting::get('usd_to_gbp_rate', 1.36);
-            if ($this->cheapshark_usd !== null) {
-                $baseGbp = $this->cheapshark_usd / $usdToGbp;
-            } elseif ($this->steam_gbp !== null) {
-                $baseGbp = $this->steam_gbp;
-            } else {
-                $basePriceGbp = (float) Setting::get('base_price_gbp', 0);
-                if ($basePriceGbp <= 0) {
-                    return null;
-                }
-                $baseGbp = $basePriceGbp;
-            }
-
-            // Franchise adjustment
-            $resolvedNames = !empty($franchiseNames) ? $franchiseNames : ($this->franchise_names ?? []);
-            $baseGbp      += FranchiseAdjustment::getAdjustment($resolvedNames);
-
-            // Discount
-            $discountPct = (float) Setting::get('pricing_discount_percent', 85);
-            $computed    = $baseGbp * (1 - ($discountPct / 100));
-        }
-
-        // Age-based reduction (flat £ per year)
-        if ($this->release_date !== null) {
-            $ageReductionGbp = (float) Setting::get('age_reduction_per_year', 0);
-            if ($ageReductionGbp > 0) {
-                $ageYears = max(0, (int) floor((time() - $this->release_date) / (365.25 * 86400)));
-                $computed = max(0.01, $computed - ($ageYears * $ageReductionGbp));
-            }
-        }
-
-        // Floor and low-price boost
-        $computed = max(0.01, round($computed, 2));
-        $lowPriceBoost = (float) Setting::get('low_price_boost_gbp', 0.20);
-        if ($computed < 0.10 && $lowPriceBoost > 0) {
-            $computed = round($computed + $lowPriceBoost, 2);
-        }
-
-        // Bundle bonus
-        if ($this->is_bundle) {
-            $bundleGbp = (float) Setting::get('bundle_price_increase_gbp', 0);
-            if ($bundleGbp > 0) {
-                $computed = round($computed + $bundleGbp, 2);
-            }
-        }
-
-        // High-price reduction
-        $highPricePct = (float) Setting::get('high_price_reduction_pct', 0);
-        if ($highPricePct > 0 && $computed > 10.00) {
-            $computed = round($computed * (1 - ($highPricePct / 100)), 2);
-        }
-
-        return [
-            'is_free'       => false,
-            'display_price' => '£' . number_format($computed, 2),
-            'price_numeric' => $computed,
-        ];
-    }
-
-    /**
-     * Compute the display price for a specific platform.
-     *
-     * Priority: Override → CeX → CheapShark → Steam → base price.
-     * Returns 'source' indicating which signal was used.
+     * Formula:
+     *   1. Base price: CheapShark USD → GBP, then Steam GBP (no other fallback)
+     *   2. Add franchise adjustment (flat £)
+     *   3. Add platform modifier (flat £ or %)
+     *   4. Apply age-based reduction (£ per year)
+     *   5. Apply discount %
+     *   6. Floor at £0.01; if < £0.05 apply low-price boost
      */
     public function getComputedPriceForPlatform(int $platformId, array $franchiseNames = [], ?string $gameTitle = null): ?array
     {
@@ -263,102 +148,30 @@ class GamePrice extends Model
             return ['is_free' => true, 'display_price' => 'Free to Play', 'price_numeric' => null, 'source' => null];
         }
 
-        // 0. Manual override takes absolute priority
+        // 0. Manual override (absolute priority)
         $overrides = $this->price_overrides ?? [];
         if (isset($overrides[$platformId])) {
-            $overridePrice = round((float) $overrides[$platformId], 2);
-            return [
-                'is_free'       => false,
-                'display_price' => '£' . number_format($overridePrice, 2),
-                'price_numeric' => $overridePrice,
-                'source'        => 'Override',
-            ];
+            $p = round((float) $overrides[$platformId], 2);
+            return ['is_free' => false, 'display_price' => '£' . number_format($p, 2), 'price_numeric' => $p, 'source' => 'Override'];
         }
 
-        // 1. Try CeX for this specific platform
-        $cexPrices = $this->resolveCexPrices($gameTitle);
-
-        if (isset($cexPrices[$platformId])) {
-            $marginPct = (float) Setting::get('cex_margin_pct', 90);
-            $computed  = $cexPrices[$platformId]['cash'] * ($marginPct / 100);
-            $source    = 'CeX';
+        // 1. Base price
+        $usdToGbp = (float) Setting::get('usd_to_gbp_rate', 1.36);
+        if ($this->cheapshark_usd !== null) {
+            $baseGbp = $this->cheapshark_usd / $usdToGbp;
+            $source  = 'CheapShark';
+        } elseif ($this->steam_gbp !== null) {
+            $baseGbp = $this->steam_gbp;
+            $source  = 'Steam';
         } else {
-            // Fallback: CheapShark → Steam → admin base price
-            $usdToGbp = (float) Setting::get('usd_to_gbp_rate', 1.36);
-            if ($this->cheapshark_usd !== null) {
-                $baseGbp = $this->cheapshark_usd / $usdToGbp;
-                $source  = 'CheapShark';
-            } elseif ($this->steam_gbp !== null) {
-                $baseGbp = $this->steam_gbp;
-                $source  = 'Steam';
-            } else {
-                $basePriceGbp = (float) Setting::get('base_price_gbp', 0);
-                if ($basePriceGbp <= 0) {
-                    return null;
-                }
-                $baseGbp = $basePriceGbp;
-                $source  = 'Base Price';
-            }
-
-            // Franchise adjustment
-            $resolvedNames = !empty($franchiseNames) ? $franchiseNames : ($this->franchise_names ?? []);
-            $baseGbp      += FranchiseAdjustment::getAdjustment($resolvedNames);
-
-            // Discount
-            $discountPct = (float) Setting::get('pricing_discount_percent', 85);
-            $computed    = $baseGbp * (1 - ($discountPct / 100));
-
-            // Platform modifier (skipped when using CeX since those prices are already platform-specific)
-            $adjustment     = (float) Setting::get("platform_modifier_{$platformId}", 0);
-            $adjustmentType = Setting::get("platform_modifier_type_{$platformId}", 'percent');
-            if ($adjustment !== 0.0) {
-                $computed = $adjustmentType === 'gbp'
-                    ? $computed + $adjustment
-                    : $computed * (1 + ($adjustment / 100));
-            }
+            return null;
         }
 
-        // Age-based reduction
-        if ($this->release_date !== null) {
-            $ageReductionGbp = (float) Setting::get('age_reduction_per_year', 0);
-            if ($ageReductionGbp > 0) {
-                $ageYears = max(0, (int) floor((time() - $this->release_date) / (365.25 * 86400)));
-                $computed = max(0.01, $computed - ($ageYears * $ageReductionGbp));
-            }
-        }
-
-        // Floor and low-price boost
-        $computed      = max(0.01, round($computed, 2));
-        $lowPriceBoost = (float) Setting::get('low_price_boost_gbp', 0.20);
-        if ($computed < 0.10 && $lowPriceBoost > 0) {
-            $computed = round($computed + $lowPriceBoost, 2);
-        }
-
-        // Bundle bonus
-        if ($this->is_bundle) {
-            $bundleGbp = (float) Setting::get('bundle_price_increase_gbp', 0);
-            if ($bundleGbp > 0) {
-                $computed = round($computed + $bundleGbp, 2);
-            }
-        }
-
-        // High-price reduction
-        $highPricePct = (float) Setting::get('high_price_reduction_pct', 0);
-        if ($highPricePct > 0 && $computed > 10.00) {
-            $computed = round($computed * (1 - ($highPricePct / 100)), 2);
-        }
-
-        return [
-            'is_free'       => false,
-            'display_price' => '£' . number_format($computed, 2),
-            'price_numeric' => $computed,
-            'source'        => $source,
-        ];
+        return $this->applyAdjustments($baseGbp, $source, $platformId, $franchiseNames);
     }
 
     /**
-     * Compute price for admin listing using only already-stored data.
-     * Never triggers CeX API calls or DB writes — safe to call in bulk.
+     * Admin-safe version: reads stored data only, never triggers API calls.
      */
     public function adminPriceForPlatform(int $platformId): ?array
     {
@@ -373,66 +186,201 @@ class GamePrice extends Model
             return ['display_price' => '£' . number_format($p, 2), 'price_numeric' => $p, 'source' => 'Override'];
         }
 
-        // CeX (stored column only — no API call)
-        $cexPrices = $this->cex_prices ?? [];
-        if (isset($cexPrices[$platformId])) {
-            $marginPct = (float) Setting::get('cex_margin_pct', 90);
-            $computed  = $cexPrices[$platformId]['cash'] * ($marginPct / 100);
-            $source    = 'CeX';
+        // Base price
+        $usdToGbp = (float) Setting::get('usd_to_gbp_rate', 1.36);
+        if ($this->cheapshark_usd !== null) {
+            $baseGbp = $this->cheapshark_usd / $usdToGbp;
+            $source  = 'CheapShark';
+        } elseif ($this->steam_gbp !== null) {
+            $baseGbp = $this->steam_gbp;
+            $source  = 'Steam';
         } else {
-            $usdToGbp = (float) Setting::get('usd_to_gbp_rate', 1.36);
-            if ($this->cheapshark_usd !== null) {
-                $baseGbp = $this->cheapshark_usd / $usdToGbp;
-                $source  = 'CheapShark';
-            } elseif ($this->steam_gbp !== null) {
-                $baseGbp = $this->steam_gbp;
-                $source  = 'Steam';
-            } else {
-                $basePriceGbp = (float) Setting::get('base_price_gbp', 0);
-                if ($basePriceGbp <= 0) return null;
-                $baseGbp = $basePriceGbp;
-                $source  = 'Base Price';
-            }
-
-            $franchiseNames = $this->franchise_names ?? [];
-            if (is_string($franchiseNames)) {
-                $franchiseNames = json_decode($franchiseNames, true) ?? [];
-            }
-            $baseGbp    += FranchiseAdjustment::getAdjustment($franchiseNames);
-            $discountPct = (float) Setting::get('pricing_discount_percent', 85);
-            $computed    = $baseGbp * (1 - ($discountPct / 100));
-
-            $adjustment     = (float) Setting::get("platform_modifier_{$platformId}", 0);
-            $adjustmentType = Setting::get("platform_modifier_type_{$platformId}", 'percent');
-            if ($adjustment !== 0.0) {
-                $computed = $adjustmentType === 'gbp'
-                    ? $computed + $adjustment
-                    : $computed * (1 + ($adjustment / 100));
-            }
+            return null;
         }
 
+        return $this->applyAdjustments($baseGbp, $source, $platformId);
+    }
+
+    /**
+     * Shared adjustment pipeline used by both price methods.
+     */
+    private function applyAdjustments(float $baseGbp, string $source, int $platformId, array $franchiseNames = []): array
+    {
+        // 2. Franchise adjustment (flat £)
+        $resolvedNames = ! empty($franchiseNames) ? $franchiseNames : ($this->franchise_names ?? []);
+        if (is_string($resolvedNames)) {
+            $resolvedNames = json_decode($resolvedNames, true) ?? [];
+        }
+        $baseGbp += FranchiseAdjustment::getAdjustment($resolvedNames);
+
+        // 3. Platform modifier (£ or %)
+        $modifier     = (float) Setting::get("platform_modifier_{$platformId}", 0);
+        $modifierType = Setting::get("platform_modifier_type_{$platformId}", 'percent');
+        if ($modifier !== 0.0) {
+            $baseGbp = $modifierType === 'gbp'
+                ? $baseGbp + $modifier
+                : $baseGbp * (1 + ($modifier / 100));
+        }
+
+        // 4. Age-based reduction
         if ($this->release_date !== null) {
-            $ageReductionGbp = (float) Setting::get('age_reduction_per_year', 0);
-            if ($ageReductionGbp > 0) {
+            $ageReduction = (float) Setting::get('age_reduction_per_year', 0);
+            if ($ageReduction > 0) {
                 $ageYears = max(0, (int) floor((time() - $this->release_date) / (365.25 * 86400)));
-                $computed = max(0.01, $computed - ($ageYears * $ageReductionGbp));
+                $baseGbp  = max(0.01, $baseGbp - ($ageYears * $ageReduction));
             }
         }
 
-        $computed      = max(0.01, round($computed, 2));
-        $lowPriceBoost = (float) Setting::get('low_price_boost_gbp', 0.20);
-        if ($computed < 0.10 && $lowPriceBoost > 0) {
-            $computed = round($computed + $lowPriceBoost, 2);
-        }
-        if ($this->is_bundle) {
-            $bundleGbp = (float) Setting::get('bundle_price_increase_gbp', 0);
-            if ($bundleGbp > 0) $computed = round($computed + $bundleGbp, 2);
-        }
-        $highPricePct = (float) Setting::get('high_price_reduction_pct', 0);
-        if ($highPricePct > 0 && $computed > 10.00) {
-            $computed = round($computed * (1 - ($highPricePct / 100)), 2);
+        // 5. Discount
+        $discountPct = (float) Setting::get('pricing_discount_percent', 85);
+        $computed    = max(0.01, $baseGbp * (1 - ($discountPct / 100)));
+
+        // 6. Floor & low-price boost (threshold: £0.05)
+        $computed      = round($computed, 2);
+        $lowPriceBoost = (float) Setting::get('low_price_boost_gbp', 0.10);
+        if ($computed < 0.05 && $lowPriceBoost > 0) {
+            $computed = round($lowPriceBoost, 2);
         }
 
-        return ['display_price' => '£' . number_format($computed, 2), 'price_numeric' => $computed, 'source' => $source];
+        return [
+            'is_free'       => false,
+            'display_price' => '£' . number_format($computed, 2),
+            'price_numeric' => $computed,
+            'source'        => $source,
+        ];
+    }
+
+    /**
+     * Return a step-by-step breakdown of how the price was calculated.
+     * Each step: ['label', 'running' (GBP after this step), 'note']
+     */
+    public function getBreakdownForPlatform(int $platformId, array $franchiseNames = []): ?array
+    {
+        if ($this->is_free) {
+            return ['is_free' => true, 'steps' => []];
+        }
+
+        $overrides = $this->price_overrides ?? [];
+        if (isset($overrides[$platformId])) {
+            $p = round((float) $overrides[$platformId], 2);
+            return [
+                'is_free'  => false,
+                'override' => true,
+                'final'    => $p,
+                'steps'    => [['label' => 'Manual Override', 'running' => $p, 'note' => 'Set by admin — no formula applied']],
+            ];
+        }
+
+        $usdToGbp = (float) Setting::get('usd_to_gbp_rate', 1.36);
+        $steps    = [];
+
+        if ($this->cheapshark_usd !== null) {
+            $running = $this->cheapshark_usd / $usdToGbp;
+            $steps[] = [
+                'label'   => 'Base Price (CheapShark)',
+                'running' => $running,
+                'note'    => '$' . number_format($this->cheapshark_usd, 2) . ' ÷ ' . $usdToGbp . ' (USD→GBP rate)',
+            ];
+        } elseif ($this->steam_gbp !== null) {
+            $running = $this->steam_gbp;
+            $steps[] = [
+                'label'   => 'Base Price (Steam)',
+                'running' => $running,
+                'note'    => 'Steam retail price in GBP',
+            ];
+        } else {
+            return null;
+        }
+
+        // Franchise adjustment
+        $resolvedNames = ! empty($franchiseNames) ? $franchiseNames : ($this->franchise_names ?? []);
+        if (is_string($resolvedNames)) {
+            $resolvedNames = json_decode($resolvedNames, true) ?? [];
+        }
+        $franchiseAdj = FranchiseAdjustment::getAdjustment($resolvedNames);
+        if ($franchiseAdj != 0) {
+            $running += $franchiseAdj;
+            $sign     = $franchiseAdj >= 0 ? '+' : '';
+            $steps[]  = [
+                'label'   => 'Franchise Adjustment',
+                'running' => $running,
+                'note'    => $sign . '£' . number_format(abs($franchiseAdj), 2)
+                             . (! empty($resolvedNames) ? ' (' . implode(', ', $resolvedNames) . ')' : ''),
+            ];
+        }
+
+        // Platform modifier
+        $modifier     = (float) Setting::get("platform_modifier_{$platformId}", 0);
+        $modifierType = Setting::get("platform_modifier_type_{$platformId}", 'percent');
+        if ($modifier !== 0.0) {
+            $sign = $modifier >= 0 ? '+' : '';
+            if ($modifierType === 'gbp') {
+                $running += $modifier;
+                $note     = $sign . '£' . number_format(abs($modifier), 2) . ' flat';
+            } else {
+                $running *= (1 + ($modifier / 100));
+                $note     = $sign . number_format($modifier, 1) . '%';
+            }
+            $steps[] = ['label' => 'Platform Modifier', 'running' => $running, 'note' => $note];
+        }
+
+        // Age reduction
+        if ($this->release_date !== null) {
+            $ageReduction = (float) Setting::get('age_reduction_per_year', 0);
+            if ($ageReduction > 0) {
+                $ageYears = max(0, (int) floor((time() - $this->release_date) / (365.25 * 86400)));
+                if ($ageYears > 0) {
+                    $deduction = $ageYears * $ageReduction;
+                    $running   = max(0.01, $running - $deduction);
+                    $steps[]   = [
+                        'label'   => 'Age Reduction',
+                        'running' => $running,
+                        'note'    => $ageYears . ' yr' . ($ageYears !== 1 ? 's' : '')
+                                     . ' × £' . number_format($ageReduction, 2)
+                                     . ' = −£' . number_format($deduction, 2),
+                    ];
+                }
+            }
+        }
+
+        // Discount
+        $discountPct = (float) Setting::get('pricing_discount_percent', 85);
+        $running     = max(0.01, $running * (1 - ($discountPct / 100)));
+        $steps[]     = [
+            'label'   => 'Discount',
+            'running' => $running,
+            'note'    => $discountPct . '% off → ' . (100 - $discountPct) . '% of price remains',
+        ];
+
+        // Low-price boost
+        $running       = round($running, 2);
+        $lowPriceBoost = (float) Setting::get('low_price_boost_gbp', 0.10);
+        if ($running < 0.05 && $lowPriceBoost > 0) {
+            $running = round($lowPriceBoost, 2);
+            $steps[] = [
+                'label'   => 'Low-Price Boost',
+                'running' => $running,
+                'note'    => 'Price was under £0.05 — set to £' . number_format($lowPriceBoost, 2),
+            ];
+        }
+
+        return [
+            'is_free'  => false,
+            'override' => false,
+            'final'    => $running,
+            'steps'    => $steps,
+        ];
+    }
+
+    /**
+     * Legacy: compute a single general price (not platform-specific).
+     * Used by admin user-detail basket view.
+     */
+    public function getComputedPrice(array $franchiseNames = [], ?string $gameTitle = null): ?array
+    {
+        // Use the first platform ID available, or 0 as a generic fallback
+        $platformIds = json_decode($this->platform_ids ?? '[]', true) ?? [];
+        $platformId  = (int) ($platformIds[0] ?? 0);
+        return $this->getComputedPriceForPlatform($platformId, $franchiseNames, $gameTitle);
     }
 }
