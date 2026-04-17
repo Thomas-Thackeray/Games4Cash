@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\ActivityLog;
 use App\Models\BlacklistedPassword;
 use App\Models\FranchiseAdjustment;
+use App\Services\CexService;
 use App\Models\CashBasketItem;
 use App\Models\CashOrder;
 use App\Models\ContactSubmission;
@@ -581,4 +582,35 @@ class AdminController extends Controller
         return back()->with('flash_success', 'Franchise adjustment removed.');
     }
 
+    // ----------------------------------------------------------------
+    //  CeX price sync
+    // ----------------------------------------------------------------
+
+    public function syncCexPrices(): RedirectResponse
+    {
+        $games = GamePrice::whereNotNull('slug')->get(['igdb_game_id', 'slug', 'cex_prices', 'cex_fetched_at']);
+
+        $priced = 0;
+        $total  = $games->count();
+
+        foreach ($games as $gp) {
+            // Derive a human title from the slug: "elden-ring" → "Elden Ring"
+            $title  = ucwords(str_replace('-', ' ', $gp->slug));
+            $prices = CexService::fetchDirect($title);
+
+            GamePrice::where('igdb_game_id', $gp->igdb_game_id)->update([
+                'cex_prices'     => empty($prices) ? null : json_encode($prices),
+                'cex_fetched_at' => now(),
+            ]);
+
+            if (! empty($prices)) {
+                $priced++;
+            }
+        }
+
+        return back()->with(
+            'flash_success',
+            "CeX sync complete: found prices for {$priced} of {$total} games."
+        );
+    }
 }

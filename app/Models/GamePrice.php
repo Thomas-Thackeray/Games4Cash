@@ -147,12 +147,12 @@ class GamePrice extends Model
             $computed  = $maxCash * ($marginPct / 100);
             $usedCex   = true;
         } else {
-            // Fallback: Steam → CheapShark → admin base price
+            // Fallback: CheapShark → Steam → admin base price
             $usdToGbp = (float) Setting::get('usd_to_gbp_rate', 1.36);
-            if ($this->steam_gbp !== null) {
-                $baseGbp = $this->steam_gbp;
-            } elseif ($this->cheapshark_usd !== null) {
+            if ($this->cheapshark_usd !== null) {
                 $baseGbp = $this->cheapshark_usd / $usdToGbp;
+            } elseif ($this->steam_gbp !== null) {
+                $baseGbp = $this->steam_gbp;
             } else {
                 $basePriceGbp = (float) Setting::get('base_price_gbp', 0);
                 if ($basePriceGbp <= 0) {
@@ -211,7 +211,7 @@ class GamePrice extends Model
      * Compute the display price for a specific platform.
      *
      * When CeX has a price for this platform, it is used directly (×cex_margin_pct).
-     * Otherwise falls back to the Steam/CheapShark formula with the admin platform modifier.
+     * Otherwise falls back to CheapShark → Steam → base with the admin platform modifier.
      */
     public function getComputedPriceForPlatform(int $platformId, array $franchiseNames = [], ?string $gameTitle = null): ?array
     {
@@ -232,12 +232,12 @@ class GamePrice extends Model
             $computed  = $cexPrices[$platformId]['cash'] * ($marginPct / 100);
             $usedCex   = true;
         } else {
-            // Fallback: Steam → CheapShark → admin base price
+            // Fallback: CheapShark → Steam → admin base price
             $usdToGbp = (float) Setting::get('usd_to_gbp_rate', 1.36);
-            if ($this->steam_gbp !== null) {
-                $baseGbp = $this->steam_gbp;
-            } elseif ($this->cheapshark_usd !== null) {
+            if ($this->cheapshark_usd !== null) {
                 $baseGbp = $this->cheapshark_usd / $usdToGbp;
+            } elseif ($this->steam_gbp !== null) {
+                $baseGbp = $this->steam_gbp;
             } else {
                 $basePriceGbp = (float) Setting::get('base_price_gbp', 0);
                 if ($basePriceGbp <= 0) {

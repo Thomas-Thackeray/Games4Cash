@@ -53,6 +53,27 @@ class CexService
         });
     }
 
+    /**
+     * Fetch fresh CeX prices directly, bypassing the cache.
+     * Use this for admin manual syncs where you always want live data.
+     */
+    public static function fetchDirect(string $gameTitle): array
+    {
+        if ($gameTitle === '') {
+            return [];
+        }
+
+        $prices = self::fetch($gameTitle);
+
+        // Also prime the cache so normal page loads reuse this fresh result
+        if (! empty($prices)) {
+            $cacheKey = 'cex_v1_' . md5(strtolower(trim($gameTitle)));
+            Cache::put($cacheKey, $prices, now()->addHours(self::CACHE_TTL_HOURS));
+        }
+
+        return $prices;
+    }
+
     // -----------------------------------------------------------------------
 
     private static function fetch(string $gameTitle): array

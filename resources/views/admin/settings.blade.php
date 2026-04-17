@@ -397,14 +397,25 @@
 
     {{-- CeX Priced Games --}}
     <div class="settings-card settings-card--wide" style="margin-top:1.5rem;">
-        <h2 class="settings-card__title">Games with CeX Prices ({{ $cexGames->count() }})</h2>
-        <p class="settings-hint" style="margin-bottom:1.5rem;">
-            Games listed here have been priced using live CeX cash buy data. Prices are fetched on first view and cached for 24 hours.
-            A game appears here once a customer or admin has visited its page.
-        </p>
+        <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:1rem; flex-wrap:wrap; margin-bottom:1.5rem;">
+            <div>
+                <h2 class="settings-card__title" style="margin-bottom:0.25rem;">Games with CeX Prices ({{ $cexGames->count() }})</h2>
+                <p class="settings-hint">
+                    Games listed here are priced using live CeX cash buy data. Click <strong>Sync Now</strong> to fetch prices
+                    for all known games at once. Prices refresh automatically every 24 hours during normal browsing.
+                </p>
+            </div>
+            <form method="POST" action="{{ route('admin.sync-cex-prices') }}" style="flex-shrink:0;">
+                @csrf
+                <button type="submit" class="btn btn--primary btn--sm"
+                    data-confirm="This will fetch CeX prices for all known games. It may take a minute — proceed?">
+                    Sync CeX Now
+                </button>
+            </form>
+        </div>
 
         @if($cexGames->isEmpty())
-        <p style="color:var(--text-dim); padding:0.5rem 0;">No games have been priced via CeX yet. Visit a game page to trigger the first lookup.</p>
+        <p style="color:var(--text-dim); padding:0.5rem 0;">No CeX prices yet. Click <strong>Sync CeX Now</strong> above to fetch prices for all known games.</p>
         @else
         @php $allPlatforms = config('igdb.all_platforms'); @endphp
         <div class="admin-table-wrap">
