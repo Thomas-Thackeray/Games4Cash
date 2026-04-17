@@ -371,7 +371,11 @@ class GamePrice extends Model
                 $source  = 'Base Price';
             }
 
-            $baseGbp    += FranchiseAdjustment::getAdjustment($this->franchise_names ?? []);
+            $franchiseNames = $this->franchise_names ?? [];
+            if (is_string($franchiseNames)) {
+                $franchiseNames = json_decode($franchiseNames, true) ?? [];
+            }
+            $baseGbp    += FranchiseAdjustment::getAdjustment($franchiseNames);
             $discountPct = (float) Setting::get('pricing_discount_percent', 85);
             $computed    = $baseGbp * (1 - ($discountPct / 100));
 
