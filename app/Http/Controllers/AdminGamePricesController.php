@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\GamePrice;
+use App\Services\IgdbService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -44,6 +46,45 @@ class AdminGamePricesController extends Controller
                 'context' => 'admin/game-prices index',
             ]);
         }
+    }
+
+    public function syncNames(): RedirectResponse
+    {
+        // Find all records missing both game_title and slug
+        $missing = GamePrice::whereNull('game_title')
+            ->whereNull('slug')
+            ->pluck('igdb_game_id')
+            ->all();
+
+        if (empty($missing)) {
+            return back()->with('flash_success', 'All games already have names.');
+        }
+
+        $igdb    = new IgdbService();
+        $updated = 0;
+
+        // IGDB allows up to 500 IDs per query; batch in 50s to stay safe
+        foreach (array_chunk($missing, 50) as $chunk) {
+            try {
+                $games = $igdb->getGamesByIds($chunk, 50);
+                foreach ($games as $g) {
+                    $slug  = $g['slug']  ?? null;
+                    $title = $g['name']  ?? null;
+                    if (! $title && ! $slug) {
+                        continue;
+                    }
+                    $values = [];
+                    if ($title) $values['game_title'] = $title;
+                    if ($slug)  $values['slug']       = $slug;
+                    GamePrice::where('igdb_game_id', (int) $g['id'])->update($values);
+                    $updated++;
+                }
+            } catch (\Throwable) {
+                // best-effort; continue with next batch
+            }
+        }
+
+        return back()->with('flash_success', "Synced names for {$updated} game(s). " . (count($missing) - $updated) . " not found on IGDB.");
     }
 
     public function updateOverride(Request $request, int $igdbGameId, int $platformId): JsonResponse

@@ -9,7 +9,18 @@
             <h1 class="admin-title">Game Prices</h1>
             <p class="admin-subtitle"><a href="{{ route('admin.settings') }}" style="color:var(--accent);">← Settings</a></p>
         </div>
+        <form method="POST" action="{{ route('admin.game-prices.sync-names') }}">
+            @csrf
+            <button type="submit" class="btn btn--outline btn--sm"
+                data-confirm="Fetch missing game names from IGDB? This may take a few seconds.">
+                Sync Missing Names
+            </button>
+        </form>
     </div>
+
+    @if(session('flash_success'))
+    <div class="alert alert--success" style="margin-bottom:1.5rem;">{{ session('flash_success') }}</div>
+    @endif
 
     {{-- Search --}}
     <form method="GET" action="{{ route('admin.game-prices') }}" class="admin-search-form">
@@ -119,11 +130,9 @@
     </div>
 
     {{-- Pagination --}}
-    @if($gamePrices->hasPages())
-    <div style="margin-top:1.5rem;">
+    <div style="margin-top:0.5rem;">
         {{ $gamePrices->links() }}
     </div>
-    @endif
 
     @endif
 
