@@ -12,6 +12,7 @@ use App\Models\GamePrice;
 use App\Models\LoginAttempt;
 use App\Models\NoPriceReview;
 use App\Models\PageView;
+use App\Models\PriceRequest;
 use App\Models\Setting;
 use App\Models\User;
 use App\Models\Wishlist;
@@ -46,7 +47,8 @@ class AdminController extends Controller
             'views_today'       => $hasPageViews ? PageView::where('created_at', '>=', now()->startOfDay())->count() : null,
             'visitors_today'    => $hasPageViews ? PageView::where('created_at', '>=', now()->startOfDay())->distinct('session_id')->count('session_id') : null,
             'visitors_month'    => $hasPageViews ? PageView::where('created_at', '>=', now()->startOfMonth())->distinct('session_id')->count('session_id') : null,
-            'no_price_count'    => \Illuminate\Support\Facades\Schema::hasTable('no_price_reviews') ? NoPriceReview::distinct('igdb_game_id')->count('igdb_game_id') : 0,
+            'no_price_count'      => \Illuminate\Support\Facades\Schema::hasTable('no_price_reviews') ? NoPriceReview::distinct('igdb_game_id')->count('igdb_game_id') : 0,
+            'price_request_count' => \Illuminate\Support\Facades\Schema::hasTable('price_requests') ? PriceRequest::where('status', 'pending')->distinct('igdb_game_id')->count('igdb_game_id') : 0,
         ];
 
         return view('admin.dashboard', compact('stats'));

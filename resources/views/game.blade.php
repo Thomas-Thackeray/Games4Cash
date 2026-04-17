@@ -272,6 +272,18 @@
                             </button>
                         </form>
                         @endif
+                    @elseif(!$gamePrice || !$gamePrice->is_free)
+                    {{-- No price yet — offer Request Price --}}
+                    <form method="POST" action="{{ route('price-request.store') }}">
+                        @csrf
+                        <input type="hidden" name="igdb_game_id" value="{{ $game['id'] }}">
+                        <input type="hidden" name="game_title"   value="{{ $name }}">
+                        <input type="hidden" name="cover_url"    value="{{ $coverUrl }}">
+                        <input type="hidden" name="slug"         value="{{ $game['slug'] ?? '' }}">
+                        <button type="submit" class="btn gd-wishlist-btn" style="border-color:var(--accent-2); color:var(--accent-2);">
+                            Request Price
+                        </button>
+                    </form>
                     @endif
 
                     @else
@@ -298,6 +310,11 @@
                         @else
                         <a href="{{ route('login') }}" class="btn gd-cash-btn">💰 Get Cash ({{ $pricing['display_price'] }})</a>
                         @endif
+                    @elseif(!$gamePrice || !$gamePrice->is_free)
+                    {{-- No price yet — prompt to sign in to request --}}
+                    <a href="{{ route('login') }}" class="btn gd-wishlist-btn" style="border-color:var(--accent-2); color:var(--accent-2);">
+                        Request Price
+                    </a>
                     @endif
                     @endauth
                 </div>

@@ -19,6 +19,8 @@
         $pricing = null;
     }
 
+    $isFreeGame = $gamePrice && $gamePrice->is_free;
+
     // Per-platform rows for the Get Cash dropdown (card uses DB-stored prices)
     $platformsData = [];
     if ($gamePrice && $pricing) {
@@ -118,6 +120,22 @@
             @else
             <a href="{{ route('login') }}" class="btn btn--primary btn--xs">Get Cash</a>
             @endif
+        @endauth
+    </div>
+    @elseif(!$isFreeGame)
+    {{-- No price available — offer a Request Price option --}}
+    <div class="game-card__actions">
+        @auth
+        <form method="POST" action="{{ route('price-request.store') }}">
+            @csrf
+            <input type="hidden" name="igdb_game_id" value="{{ $cardId }}">
+            <input type="hidden" name="game_title"   value="{{ $name }}">
+            <input type="hidden" name="cover_url"    value="{{ $imgUrl }}">
+            <input type="hidden" name="slug"         value="{{ $game['slug'] ?? '' }}">
+            <button type="submit" class="btn btn--outline btn--xs">Request Price</button>
+        </form>
+        @else
+        <a href="{{ route('login') }}" class="btn btn--outline btn--xs">Request Price</a>
         @endauth
     </div>
     @endif
