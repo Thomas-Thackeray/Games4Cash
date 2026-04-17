@@ -314,8 +314,14 @@
                     <form method="POST" action="{{ route('admin.no-price-review.set-price', $game['id']) }}"
                           style="display:flex; gap:0.75rem; align-items:center; flex-wrap:wrap;">
                         @csrf
+                        @php
+                            $__allP     = config('igdb.all_platforms');
+                            $__gamePids = array_map(fn($p) => $p['id'] ?? null, $platforms ?? []);
+                            $__opts     = array_filter($__allP, fn($pid) => in_array($pid, $__gamePids), ARRAY_FILTER_USE_KEY);
+                            if (empty($__opts)) $__opts = $__allP;
+                        @endphp
                         <select name="platform_id" class="form-input" style="min-width:150px; font-size:0.85rem;">
-                            @foreach(config('igdb.all_platforms') as $pid => $pName)
+                            @foreach($__opts as $pid => $pName)
                             <option value="{{ $pid }}">{{ $pName }}</option>
                             @endforeach
                         </select>
