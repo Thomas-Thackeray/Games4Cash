@@ -17,6 +17,9 @@ return Application::configure(basePath: dirname(__DIR__))
             'force.reset'  => \App\Http\Middleware\CheckForcePasswordReset::class,
         ]);
 
+        // Track public page views for analytics
+        $middleware->appendToGroup('web', \App\Http\Middleware\TrackPageView::class);
+
         // Security headers on every web response
         $middleware->appendToGroup('web', \App\Http\Middleware\SecurityHeaders::class);
 

@@ -11,6 +11,7 @@ use App\Models\CashOrder;
 use App\Models\ContactSubmission;
 use App\Models\GamePrice;
 use App\Models\LoginAttempt;
+use App\Models\PageView;
 use App\Models\Setting;
 use App\Models\User;
 use App\Models\Wishlist;
@@ -26,6 +27,8 @@ class AdminController extends Controller
 
     public function dashboard(): View
     {
+        $hasPageViews = \Illuminate\Support\Facades\Schema::hasTable('page_views');
+
         $stats = [
             'total_users'       => User::where('role', 'user')->count(),
             'new_this_month'    => User::where('role', 'user')
@@ -40,6 +43,9 @@ class AdminController extends Controller
                                         ->count(),
             'unread_contacts'   => ContactSubmission::whereNull('read_at')->count(),
             'pending_orders'    => CashOrder::where('status', 'pending')->count(),
+            'views_today'       => $hasPageViews ? PageView::where('created_at', '>=', now()->startOfDay())->count() : null,
+            'visitors_today'    => $hasPageViews ? PageView::where('created_at', '>=', now()->startOfDay())->distinct('session_id')->count('session_id') : null,
+            'visitors_month'    => $hasPageViews ? PageView::where('created_at', '>=', now()->startOfMonth())->distinct('session_id')->count('session_id') : null,
         ];
 
         return view('admin.dashboard', compact('stats'));

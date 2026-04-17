@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AdminAnalyticsController;
 use App\Http\Controllers\AdminBlogController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AdminFaqController;
@@ -128,6 +129,9 @@ Route::middleware(['auth', 'track.active', 'admin'])->prefix('admin')->name('adm
     Route::get('/activity-logs', [AdminController::class, 'activityLogs'])->name('activity-logs');
     Route::delete('/activity-logs/clear', [AdminController::class, 'clearActivityLogs'])->name('activity-logs.clear');
     Route::delete('/activity-logs/{id}', [AdminController::class, 'deleteActivityLog'])->name('activity-logs.delete')->where('id', '[0-9]+');
+
+    // Analytics
+    Route::get('/analytics', [AdminAnalyticsController::class, 'index'])->name('analytics');
 
     // Settings
     Route::get('/settings', [AdminController::class, 'showSettings'])->name('settings');
