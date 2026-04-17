@@ -5,9 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\GamePrice;
 use App\Services\IgdbService;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\View\View;
 
 class AdminGamePricesController extends Controller
 {
@@ -35,6 +33,10 @@ class AdminGamePricesController extends Controller
             $gamePrices = $hasGameTitle
                 ? $query->orderBy('game_title')->orderBy('slug')->paginate(30)->withQueryString()
                 : $query->orderBy('slug')->paginate(30)->withQueryString();
+
+            // Backfill missing names for games on this page only (keeps request fast)
+            $this->backfillNamesForPage($gamePrices->items());
+
             $allPlatforms = config('igdb.all_platforms');
 
             return view('admin.game-prices', compact('gamePrices', 'search', 'allPlatforms'));
@@ -48,43 +50,52 @@ class AdminGamePricesController extends Controller
         }
     }
 
-    public function syncNames(): RedirectResponse
+    /**
+     * For any games on the current page that are missing both game_title and slug,
+     * fetch their names from IGDB in a single batched query and persist them.
+     * Updates the in-memory model instances so the view shows the name immediately.
+     */
+    private function backfillNamesForPage(array $items): void
     {
-        // Find all records missing both game_title and slug
-        $missing = GamePrice::whereNull('game_title')
-            ->whereNull('slug')
-            ->pluck('igdb_game_id')
-            ->all();
+        $needsName = array_values(array_filter($items, fn ($gp) =>
+            empty($gp->game_title) && empty($gp->slug)
+        ));
 
-        if (empty($missing)) {
-            return back()->with('flash_success', 'All games already have names.');
+        if (empty($needsName)) {
+            return;
         }
 
-        $igdb    = new IgdbService();
-        $updated = 0;
+        try {
+            $ids   = array_column($needsName, 'igdb_game_id');
+            $igdb  = new IgdbService();
+            $games = $igdb->getGamesByIds($ids, count($ids));
 
-        // IGDB allows up to 500 IDs per query; batch in 50s to stay safe
-        foreach (array_chunk($missing, 50) as $chunk) {
-            try {
-                $games = $igdb->getGamesByIds($chunk, 50);
-                foreach ($games as $g) {
-                    $slug  = $g['slug']  ?? null;
-                    $title = $g['name']  ?? null;
-                    if (! $title && ! $slug) {
-                        continue;
-                    }
-                    $values = [];
-                    if ($title) $values['game_title'] = $title;
-                    if ($slug)  $values['slug']       = $slug;
-                    GamePrice::where('igdb_game_id', (int) $g['id'])->update($values);
-                    $updated++;
-                }
-            } catch (\Throwable) {
-                // best-effort; continue with next batch
+            // Index results by IGDB ID for fast lookup
+            $byId = [];
+            foreach ($games as $g) {
+                $byId[(int) $g['id']] = $g;
             }
-        }
 
-        return back()->with('flash_success', "Synced names for {$updated} game(s). " . (count($missing) - $updated) . " not found on IGDB.");
+            foreach ($needsName as $gp) {
+                $g = $byId[$gp->igdb_game_id] ?? null;
+                if (! $g) {
+                    continue;
+                }
+                $title = $g['name'] ?? null;
+                $slug  = $g['slug'] ?? null;
+                $values = [];
+                if ($title) $values['game_title'] = $title;
+                if ($slug)  $values['slug']       = $slug;
+                if (! empty($values)) {
+                    GamePrice::where('igdb_game_id', $gp->igdb_game_id)->update($values);
+                    // Update in-memory so the view shows it without a reload
+                    if ($title) $gp->game_title = $title;
+                    if ($slug)  $gp->slug       = $slug;
+                }
+            }
+        } catch (\Throwable) {
+            // IGDB unavailable — names stay as-is, will retry next page load
+        }
     }
 
     public function updateOverride(Request $request, int $igdbGameId, int $platformId): JsonResponse

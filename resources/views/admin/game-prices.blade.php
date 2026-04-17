@@ -9,13 +9,6 @@
             <h1 class="admin-title">Game Prices</h1>
             <p class="admin-subtitle"><a href="{{ route('admin.settings') }}" style="color:var(--accent);">← Settings</a></p>
         </div>
-        <form method="POST" action="{{ route('admin.game-prices.sync-names') }}">
-            @csrf
-            <button type="submit" class="btn btn--outline btn--sm"
-                data-confirm="Fetch missing game names from IGDB? This may take a few seconds.">
-                Sync Missing Names
-            </button>
-        </form>
     </div>
 
     @if(session('flash_success'))

@@ -135,7 +135,6 @@ Route::middleware(['auth', 'track.active', 'admin'])->prefix('admin')->name('adm
 
     // Game prices table
     Route::get('/game-prices', [AdminGamePricesController::class, 'index'])->name('game-prices');
-    Route::post('/game-prices/sync-names', [AdminGamePricesController::class, 'syncNames'])->name('game-prices.sync-names');
     Route::patch('/game-prices/{igdbGameId}/{platformId}/override', [AdminGamePricesController::class, 'updateOverride'])
         ->name('game-prices.override')
         ->where(['igdbGameId' => '[0-9]+', 'platformId' => '[0-9]+']);
