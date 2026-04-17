@@ -65,7 +65,7 @@
         <div class="rv-row">
             {{-- Title & platforms --}}
             <div class="rv-row__main">
-                <a href="{{ route('game.show', $gameId) }}" class="rv-row__title">{{ $name }}</a>
+                <a href="{{ \App\Models\GamePrice::urlForId($gameId) }}" class="rv-row__title">{{ $name }}</a>
                 @if($platformNames->isNotEmpty())
                 <div class="rv-row__platforms">
                     @foreach($platformNames as $pname)

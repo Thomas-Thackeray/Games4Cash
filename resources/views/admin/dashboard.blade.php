@@ -113,6 +113,15 @@
             </div>
 
             <div class="admin-action-card">
+                <div class="admin-action-card__icon">📝</div>
+                <div class="admin-action-card__body">
+                    <h3>Blog</h3>
+                    <p>Write and publish blog posts — gaming news, reviews, and selling guides.</p>
+                </div>
+                <a href="{{ route('admin.blog.index') }}" class="btn btn--outline btn--sm">Open</a>
+            </div>
+
+            <div class="admin-action-card">
                 <div class="admin-action-card__icon">💰</div>
                 <div class="admin-action-card__body">
                     <h3>Cash Orders</h3>

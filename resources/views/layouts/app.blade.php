@@ -61,7 +61,7 @@
                     <a href="#" class="nav-link">Platforms <span class="chevron">▾</span></a>
                     <div class="dropdown">
                         @foreach(config('igdb.platforms') as $pName => $pData)
-                        <a href="{{ route('platform.show', ['id' => $pData['id'], 'name' => $pName]) }}" class="dropdown-item">
+                        <a href="{{ route('platform.show', ['id' => $pData['id'], 'name' => $pData['slug'] ?? $pName]) }}" class="dropdown-item">
                             <span class="di-icon">{{ $pData['icon'] }}</span>
                             {{ $pName }}
                         </a>
@@ -81,6 +81,11 @@
                 <li class="nav-item">
                     <a href="{{ route('search') }}" class="nav-link {{ ($activePage ?? '') === 'search' ? 'active' : '' }}">Browse</a>
                 </li>
+                @if(\App\Models\Setting::get('blog_visible', true))
+                <li class="nav-item">
+                    <a href="{{ route('blog.index') }}" class="nav-link {{ ($activePage ?? '') === 'blog' ? 'active' : '' }}">Blog</a>
+                </li>
+                @endif
             </ul>
         </nav>
 
@@ -169,7 +174,7 @@
                 <h4 class="footer-heading">Platforms</h4>
                 <ul>
                     @foreach(config('igdb.platforms') as $pName => $pData)
-                    <li><a href="{{ route('platform.show', ['id' => $pData['id'], 'name' => $pName]) }}">{{ $pName }}</a></li>
+                    <li><a href="{{ route('platform.show', ['id' => $pData['id'], 'name' => $pData['slug'] ?? $pName]) }}">{{ $pName }}</a></li>
                     @endforeach
                 </ul>
             </div>
@@ -225,9 +230,15 @@
     <a href="{{ route('login') }}">🔑 Log In</a>
     <a href="{{ route('register') }}">📝 Register</a>
     @endauth
+    <span class="m-section-title">EXPLORE</span>
+    <a href="{{ route('search') }}">🎮 Browse Games</a>
+    @if(\App\Models\Setting::get('blog_visible', true))
+    <a href="{{ route('blog.index') }}">📝 Blog</a>
+    @endif
+    <a href="{{ route('contact') }}">✉️ Contact Us</a>
     <span class="m-section-title">PLATFORMS</span>
     @foreach(config('igdb.platforms') as $pName => $pData)
-    <a href="{{ route('platform.show', ['id' => $pData['id'], 'name' => $pName]) }}">{{ $pData['icon'] }} {{ $pName }}</a>
+    <a href="{{ route('platform.show', ['id' => $pData['id'], 'name' => $pData['slug'] ?? $pName]) }}">{{ $pData['icon'] }} {{ $pName }}</a>
     @endforeach
     <span class="m-section-title">GENRES</span>
     @foreach(config('igdb.genres') as $gName => $gId)
@@ -275,6 +286,7 @@
 <div id="cash-dropdown-backdrop" class="cash-dropdown-backdrop" hidden></div>
 
 <script src="{{ asset('js/main.js') }}?v={{ filemtime(public_path('js/main.js')) }}"></script>
+@stack('scripts')
 <script>
 (function () {
     if (!localStorage.getItem('cookies_accepted')) {

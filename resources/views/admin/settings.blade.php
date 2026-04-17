@@ -9,7 +9,10 @@
             <h1 class="admin-title">Site Settings</h1>
             <p class="admin-subtitle"><a href="{{ route('admin.dashboard') }}" style="color:var(--accent);">← Dashboard</a></p>
         </div>
-        <button type="submit" form="settings-form" class="btn btn--primary">Save Settings</button>
+        <div style="display:flex; gap:0.75rem; align-items:center;">
+            <a href="{{ route('admin.game-prices') }}" class="btn btn--outline btn--sm">Game Prices ↗</a>
+            <button type="submit" form="settings-form" class="btn btn--primary">Save Settings</button>
+        </div>
     </div>
 
     {{-- Pricing Formula Explainer --}}
@@ -24,29 +27,31 @@
             <div>
                 <strong>Step 1 — Find the base price</strong>
                 <p class="settings-hint" style="margin-top:0.25rem;">
-                    The system first checks the current <strong>Steam GBP price</strong> for the game.
-                    If Steam has no data, it falls back to <strong>CheapShark</strong> (all-time historical lowest sale price, in USD —
-                    converted to GBP using the <strong>USD → GBP Exchange Rate</strong> setting).
-                    If neither source has data, it uses the <strong>Base Price (GBP)</strong> setting below as a last resort.
+                    The system first checks <strong>CeX</strong> for a real-world cash buy price for this game and platform.
+                    CeX prices are fetched live and cached for 24 hours; see the <em>CeX Pricing</em> setting to control the margin applied.
+                    If CeX has no data, it falls back to the current <strong>Steam GBP price</strong>, then to
+                    <strong>CheapShark</strong> (all-time historical lowest, in USD — converted using the
+                    <strong>USD → GBP Exchange Rate</strong>), and finally to the <strong>Base Price (GBP)</strong> setting as a last resort.
                 </p>
             </div>
 
             <div>
-                <strong>Step 2 — Apply the franchise adjustment</strong>
+                <strong>Step 2 — Apply margin or discount</strong>
                 <p class="settings-hint" style="margin-top:0.25rem;">
-                    If the game belongs to a franchise with an adjustment set, that flat <strong>£ amount is added or subtracted
-                    from the base price</strong> before any discounting.
-                    For example: Call of Duty +£0.20 increases the base; a low-demand series −£1.00 reduces it.
-                    Manage franchise adjustments in the section at the bottom of this page.
+                    <strong>CeX path:</strong> the CeX cash price is multiplied by the <strong>CeX Margin %</strong> (e.g. 90% means
+                    we offer slightly below what CeX pays). Platform modifiers are skipped because CeX prices are already platform-specific.<br>
+                    <strong>Fallback path:</strong> the franchise adjustment is added to the base, then the <strong>Discount %</strong>
+                    is applied, then the platform modifier.
+                    Manage franchise adjustments at the bottom of this page.
                 </p>
             </div>
 
             <div>
-                <strong>Step 3 — Apply the discount</strong>
+                <strong>Step 3 — Apply the discount (fallback only)</strong>
                 <p class="settings-hint" style="margin-top:0.25rem;">
-                    The (franchise-adjusted) base price is multiplied by <code>(100% − Discount%)</code>.
+                    When not using CeX data, the (franchise-adjusted) base price is multiplied by <code>(100% − Discount%)</code>.
                     At 85% discount, only <strong>15%</strong> of the base price remains.
-                    Increasing this setting makes all cash offers lower; decreasing it makes them higher.
+                    This setting has no effect on games priced via CeX.
                 </p>
             </div>
 
@@ -112,10 +117,15 @@
             </div>
 
             <div style="background:rgba(255,255,255,0.04); border-radius:6px; padding:0.75rem 1rem; font-family:monospace; font-size:0.85rem; color:var(--text-muted);">
-                base = steam_gbp &nbsp;OR&nbsp; (cheapshark_usd ÷ rate) &nbsp;OR&nbsp; base_price_gbp
+                <em style="color:var(--accent);">When CeX data is available for this platform:</em>
+                <br>offer = cex_cash_price × cex_margin%
+                <br><br><em style="color:var(--text-dim);">Fallback (no CeX data):</em>
+                <br>base = steam_gbp &nbsp;OR&nbsp; (cheapshark_usd ÷ rate) &nbsp;OR&nbsp; base_price_gbp
                 <br>base += franchise_adj
-                <br>offer = base × (1 − discount%) [× (1 + platform%) &nbsp;OR&nbsp; + platform_£] − (age_years × £age_reduction)
-                <br>if offer &lt; £0.10 → offer += £0.20
+                <br>offer = base × (1 − discount%) [× (1 + platform%) &nbsp;OR&nbsp; + platform_£]
+                <br><br><em style="color:var(--text-dim);">Both paths then apply:</em>
+                <br>offer −= age_years × £age_reduction
+                <br>if offer &lt; £0.10 → offer += £low_boost
                 <br>if is_bundle → offer += £bundle_gbp
                 <br>if offer &gt; £10.00 → offer × (1 − high_price%)
                 <br>final = offer × (1 + condition%)
@@ -133,6 +143,18 @@
             {{-- Pricing --}}
             <div class="settings-card">
                 <h2 class="settings-card__title">Pricing</h2>
+
+                <div class="form-group">
+                    <label class="form-label">CeX Margin (%)</label>
+                    <p class="settings-hint">Percentage of the CeX cash buy price to offer. 90% means we offer slightly below what CeX pays. Only applies when CeX data is available for the game.</p>
+                    <div class="settings-input-row">
+                        <input type="number" name="cex_margin_pct"
+                            value="{{ old('cex_margin_pct', $settings['cex_margin_pct']) }}"
+                            min="1" max="150" step="1" class="form-input settings-input--sm">
+                        <span class="settings-unit">%</span>
+                    </div>
+                    @error('cex_margin_pct')<p class="form-error">{{ $message }}</p>@enderror
+                </div>
 
                 <div class="form-group">
                     <label class="form-label">USD → GBP Exchange Rate</label>
@@ -376,72 +398,76 @@
         </form>
     </div>
 
-    {{-- Game Name Price Adjustments --}}
+    {{-- CeX Priced Games --}}
     <div class="settings-card settings-card--wide" style="margin-top:1.5rem;">
-        <h2 class="settings-card__title">Game Name Price Adjustments</h2>
-        <p class="settings-hint" style="margin-bottom:1.5rem;">
-            Add or deduct a flat £ amount from any game whose title contains the keyword (case-insensitive).
-            For example, keyword <em>Elden Ring</em> matches "Elden Ring" and "Elden Ring: Shadow of the Erdtree".
-            Positive values increase the cash offer; negative values reduce it.
-        </p>
-
-        {{-- Existing adjustments --}}
-        @if($gameNameAdjustments->isNotEmpty())
-        <div style="display:flex; flex-direction:column; gap:0.5rem; margin-bottom:1.5rem;">
-            @foreach($gameNameAdjustments as $gna)
-            <form method="POST" action="{{ route('admin.game-name-adjustments.update', $gna->id) }}"
-                  style="display:flex; align-items:center; gap:0.75rem; flex-wrap:wrap;">
+        <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:1rem; flex-wrap:wrap; margin-bottom:1.5rem;">
+            <div>
+                <h2 class="settings-card__title" style="margin-bottom:0.25rem;">Games with CeX Prices ({{ $cexGames->count() }})</h2>
+                <p class="settings-hint">
+                    Games listed here are priced using live CeX cash buy data. Click <strong>Sync Now</strong> to fetch prices
+                    for all known games at once. Prices refresh automatically every 24 hours during normal browsing.
+                </p>
+            </div>
+            <form method="POST" action="{{ route('admin.settings.sync-cex') }}" style="flex-shrink:0;">
                 @csrf
-                @method('PATCH')
-                <span style="flex:1; min-width:160px; font-weight:500; color:var(--text);">{{ $gna->keyword }}</span>
-                <div class="settings-input-row">
-                    <span class="settings-unit">£</span>
-                    <input type="number" name="adjustment_gbp"
-                           value="{{ $gna->adjustment_gbp }}"
-                           min="-999.99" max="999.99" step="0.01"
-                           class="form-input settings-input--sm"
-                           style="width:90px;">
-                </div>
-                <button type="submit" class="btn btn--outline btn--sm">Save</button>
-                <button type="button"
-                    class="btn btn--sm" style="background:rgba(230,57,70,0.12); color:var(--accent); border:1px solid rgba(230,57,70,0.3);"
-                    data-confirm="Remove game name adjustment for &quot;{{ e($gna->keyword) }}&quot;?"
-                    form="gna-destroy-{{ $gna->id }}">
-                    Remove
+                <button type="submit" class="btn btn--primary btn--sm"
+                    data-confirm="This will fetch CeX prices for all known games. It may take a minute — proceed?">
+                    Sync CeX Now
                 </button>
             </form>
-            <form id="gna-destroy-{{ $gna->id }}" method="POST"
-                  action="{{ route('admin.game-name-adjustments.destroy', $gna->id) }}" style="display:none;">
-                @csrf
-                @method('DELETE')
-            </form>
-            @endforeach
+        </div>
+
+        @if($cexGames->isEmpty())
+        <p style="color:var(--text-dim); padding:0.5rem 0;">No CeX prices yet. Click <strong>Sync CeX Now</strong> above to fetch prices for all known games.</p>
+        @else
+        @php $allPlatforms = config('igdb.all_platforms'); @endphp
+        <div class="admin-table-wrap">
+            <table class="admin-table">
+                <thead>
+                    <tr>
+                        <th>Game</th>
+                        <th>CeX Platforms &amp; Cash Prices</th>
+                        <th>Fetched</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach($cexGames as $gp)
+                    @php
+                        $gameSlug  = $gp->slug ?? null;
+                        $gameName  = $gameSlug
+                            ? ucwords(str_replace('-', ' ', $gameSlug))
+                            : 'Game #' . $gp->igdb_game_id;
+                        $gameUrl   = $gameSlug
+                            ? route('game.show', ['slug' => $gameSlug])
+                            : url('/game/' . $gp->igdb_game_id);
+                        $prices    = $gp->cex_prices ?? [];
+                    @endphp
+                    <tr>
+                        <td>
+                            <a href="{{ $gameUrl }}" style="color:var(--accent); text-decoration:none;" target="_blank">
+                                {{ $gameName }}
+                            </a>
+                        </td>
+                        <td>
+                            <div style="display:flex; flex-wrap:wrap; gap:0.4rem;">
+                                @foreach($prices as $platformId => $priceData)
+                                @php $platformName = $allPlatforms[$platformId] ?? 'Platform ' . $platformId; @endphp
+                                <span style="display:inline-flex; align-items:center; gap:0.3rem; background:rgba(255,255,255,0.06); border:1px solid var(--border); border-radius:4px; padding:0.2rem 0.5rem; font-size:0.8rem; white-space:nowrap;">
+                                    {{ $platformName }}
+                                    <strong style="color:var(--accent-2);">£{{ number_format($priceData['cash'], 2) }}</strong>
+                                </span>
+                                @endforeach
+                            </div>
+                        </td>
+                        <td style="color:var(--text-muted); font-size:0.82rem; white-space:nowrap;">
+                            {{ $gp->cex_fetched_at ? $gp->cex_fetched_at->diffForHumans() : '—' }}
+                        </td>
+                    </tr>
+                    @endforeach
+                </tbody>
+            </table>
         </div>
         @endif
-
-        {{-- Add new --}}
-        <form method="POST" action="{{ route('admin.game-name-adjustments.store') }}"
-              style="display:flex; align-items:flex-end; gap:0.75rem; flex-wrap:wrap;">
-            @csrf
-            <div class="form-group" style="flex:1; min-width:180px; margin:0;">
-                <label class="form-label">Game Name / Keyword</label>
-                <input type="text" name="keyword" value="{{ old('keyword') }}"
-                       class="form-input" placeholder="e.g. Elden Ring"
-                       autocomplete="off">
-                @error('keyword')<p class="form-error">{{ $message }}</p>@enderror
-            </div>
-            <div class="form-group" style="margin:0;">
-                <label class="form-label">Adjustment (£)</label>
-                <div class="settings-input-row">
-                    <span class="settings-unit">£</span>
-                    <input type="number" name="adjustment_gbp" value="{{ old('adjustment_gbp', '0.00') }}"
-                           min="-999.99" max="999.99" step="0.01"
-                           class="form-input settings-input--sm" style="width:90px;">
-                </div>
-                @error('adjustment_gbp')<p class="form-error">{{ $message }}</p>@enderror
-            </div>
-            <button type="submit" class="btn btn--primary btn--sm" style="margin-bottom:1px;">Add Keyword</button>
-        </form>
     </div>
 
 </div>

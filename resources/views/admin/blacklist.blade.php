@@ -42,8 +42,8 @@
         @endif
     </form>
 
-    {{-- Table --}}
-    <div class="admin-table-wrap">
+    {{-- Table (hidden on mobile) --}}
+    <div class="admin-table-wrap admin-table-wrap--desktop-only">
         <table class="admin-table">
             <thead>
                 <tr>
@@ -79,6 +79,30 @@
                 @endforelse
             </tbody>
         </table>
+    </div>
+
+    {{-- Mobile cards --}}
+    <div class="admin-mobile-cards">
+        @forelse($passwords as $entry)
+        <div class="admin-mobile-card">
+            <div class="admin-mobile-card__header">
+                <code style="background:var(--bg-3); padding:0.2rem 0.5rem; border-radius:4px; font-size:0.9rem; word-break:break-all;">{{ $entry->password }}</code>
+                <form method="POST" action="{{ route('admin.blacklist.remove', $entry->id) }}">
+                    @csrf
+                    @method('DELETE')
+                    <button type="submit" class="btn btn--danger btn--xs"
+                        data-confirm="Remove this password from the blacklist?">Remove</button>
+                </form>
+            </div>
+            <div class="admin-mobile-card__meta">
+                <span>Added {{ $entry->created_at ? $entry->created_at->format('d M Y') : '—' }}</span>
+            </div>
+        </div>
+        @empty
+        <p style="color:var(--text-dim); text-align:center; padding:2rem 0;">
+            {{ $search ? 'No passwords match your search.' : 'The blacklist is empty.' }}
+        </p>
+        @endforelse
     </div>
 
     {{-- Pagination --}}

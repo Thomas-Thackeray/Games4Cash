@@ -20,7 +20,7 @@
     <div class="wishlist-grid">
         @foreach($items as $item)
         <div class="wishlist-card">
-            <a href="{{ route('game.show', $item->igdb_game_id) }}" class="wishlist-card__cover-link">
+            <a href="{{ \App\Models\GamePrice::urlForId($item->igdb_game_id) }}" class="wishlist-card__cover-link">
                 @if($item->cover_url)
                 <img src="{{ $item->cover_url }}" alt="{{ $item->game_title }}" class="wishlist-card__cover">
                 @else
@@ -28,7 +28,7 @@
                 @endif
             </a>
             <div class="wishlist-card__body">
-                <a href="{{ route('game.show', $item->igdb_game_id) }}" class="wishlist-card__title">
+                <a href="{{ \App\Models\GamePrice::urlForId($item->igdb_game_id) }}" class="wishlist-card__title">
                     {{ $item->game_title }}
                 </a>
                 <span class="wishlist-card__date">Added {{ $item->created_at->diffForHumans() }}</span>

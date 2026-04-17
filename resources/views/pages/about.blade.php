@@ -1,15 +1,25 @@
 @extends('layouts.app')
 @section('title', 'About Us')
-@section('meta_description', 'Learn about ' . config('app.name') . ' — the easiest way to sell your unwanted games for cash with free door-to-door collection.')
+@section('meta_description', config('app.name') . ' is a UK game buying service offering instant cash prices for PS5, PS4, Xbox, Switch, and PC games — with free door-to-door collection and fast payment.')
 @section('canonical', route('about'))
 @section('content')
 
 <div class="container" style="max-width:860px; padding:4rem 1rem 5rem;">
 
     <h1 style="font-size:2.5rem; margin-bottom:0.5rem;">About Us</h1>
-    <p style="color:var(--text-muted); font-size:1.1rem; margin-bottom:3rem;">
+    <p style="color:var(--text-muted); font-size:1.1rem; margin-bottom:2rem;">
         Turning your unwanted games into cash — quickly, fairly, and hassle-free.
     </p>
+
+    {{-- Who we are --}}
+    <section style="margin-bottom:3rem;">
+        <p style="font-size:1rem; line-height:1.9; color:var(--text-muted); margin-bottom:1rem;">
+            {{ config('app.name') }} is a UK-based game buying service built around one idea: getting you a fair price for your physical game collection without the hassle of listings, postage, or waiting for a buyer. We price every game using real market data — combining live retail prices, age of release, platform demand, and game condition — so you always know the offer is grounded in what your games are actually worth.
+        </p>
+        <p style="font-size:1rem; line-height:1.9; color:var(--text-muted);">
+            We cover all major platforms including PlayStation 5, PlayStation 4, Xbox Series X|S, Xbox One, Nintendo Switch, and PC. Whether you have a single title or a collection of hundreds, you can get an instant quote, submit your basket, and arrange a free door-to-door collection — all from your account dashboard. No packing, no post office queues, no surprises.
+        </p>
+    </section>
 
     {{-- How it works --}}
     <section style="margin-bottom:3rem;">
@@ -49,6 +59,40 @@
             </div>
             @endforeach
         </div>
+    </section>
+
+    {{-- What we accept --}}
+    <section style="margin-bottom:3rem;">
+        <h2 style="font-size:1.5rem; margin-bottom:1rem;">What We Accept</h2>
+        <p style="font-size:0.95rem; line-height:1.8; color:var(--text-muted); margin-bottom:1.25rem;">
+            We buy physical game discs and cartridges across all major platforms. Games do not need to be in perfect condition — we accept them in three states:
+        </p>
+        <div style="display:flex; flex-direction:column; gap:0.75rem; margin-bottom:1.25rem;">
+            @foreach([
+                ['label'=>'Brand New','desc'=>'Sealed, unopened. Commands the highest cash offer.'],
+                ['label'=>'Complete (In Case)','desc'=>'Disc or cartridge with its original case and cover art. Minor wear is fine.'],
+                ['label'=>'Disc / Cartridge Only','desc'=>'No case required. We still buy disc-only titles, though the offer will reflect the missing packaging.'],
+            ] as $cond)
+            <div style="display:flex; gap:1rem; align-items:flex-start; background:var(--bg-2); border:1px solid var(--border); border-radius:var(--radius); padding:1rem 1.25rem;">
+                <span style="font-weight:700; color:var(--white); white-space:nowrap; min-width:160px;">{{ $cond['label'] }}</span>
+                <span style="color:var(--text-muted); font-size:0.9rem; line-height:1.6;">{{ $cond['desc'] }}</span>
+            </div>
+            @endforeach
+        </div>
+        <p style="font-size:0.9rem; color:var(--text-muted); line-height:1.7;">
+            We do not currently buy digital codes, DLC vouchers, or accessories. All games are subject to a brief physical inspection upon collection — if a disc is heavily scratched or a cartridge is faulty, we will contact you before adjusting the offer.
+        </p>
+    </section>
+
+    {{-- Pricing transparency --}}
+    <section style="margin-bottom:3rem;">
+        <h2 style="font-size:1.5rem; margin-bottom:1rem;">How Our Prices Work</h2>
+        <p style="font-size:0.95rem; line-height:1.8; color:var(--text-muted); margin-bottom:1rem;">
+            Every cash offer on {{ config('app.name') }} is calculated automatically using a formula that accounts for the current retail price of the game on Steam and other storefronts, a platform-specific demand factor, how old the game is, and its condition. We apply a consistent margin across all titles — no individual haggling, no hidden deductions after collection.
+        </p>
+        <p style="font-size:0.95rem; line-height:1.8; color:var(--text-muted);">
+            Prices are refreshed regularly to reflect the market. The estimate you see when browsing is the same figure we use when your order is confirmed. If we ever need to adjust an offer following physical inspection we will always get in touch first — you are never obligated to accept.
+        </p>
     </section>
 
     {{-- CTA --}}

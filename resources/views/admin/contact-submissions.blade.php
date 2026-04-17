@@ -24,8 +24,8 @@
             class="btn btn--sm {{ $filter === 'read' ? 'btn--primary' : 'btn--outline' }}">Read</a>
     </div>
 
-    {{-- Table --}}
-    <div class="admin-table-wrap">
+    {{-- Table (hidden on mobile) --}}
+    <div class="admin-table-wrap admin-table-wrap--desktop-only">
         <table class="admin-table">
             <thead>
                 <tr>
@@ -76,6 +76,42 @@
                 @endforelse
             </tbody>
         </table>
+    </div>
+
+    {{-- Mobile cards --}}
+    <div class="admin-mobile-cards">
+        @forelse($submissions as $sub)
+        <div class="admin-mobile-card" style="{{ $sub->isRead() ? '' : 'border-left:3px solid var(--accent);' }}">
+            <div class="admin-mobile-card__header">
+                <div>
+                    <div class="admin-mobile-card__title">{{ $sub->name }}</div>
+                    <div class="admin-mobile-card__sub">{{ $sub->email }}</div>
+                </div>
+                @if($sub->isRead())
+                <span class="admin-badge admin-badge--ok">Read</span>
+                @else
+                <span class="admin-badge admin-badge--warning">Unread</span>
+                @endif
+            </div>
+            <div class="admin-mobile-card__meta">
+                <span>{{ $sub->created_at->format('d M Y, H:i') }}</span>
+            </div>
+            <p style="font-size:0.85rem; color:var(--text-muted); margin-top:0.5rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+                {{ Str::limit($sub->message, 100) }}
+            </p>
+            <div class="admin-mobile-card__actions">
+                <a href="{{ route('admin.contact-submissions.view', $sub->id) }}" class="btn btn--outline btn--xs">View</a>
+                <form method="POST" action="{{ route('admin.contact-submissions.delete', $sub->id) }}">
+                    @csrf
+                    @method('DELETE')
+                    <button type="submit" class="btn btn--danger btn--xs"
+                        data-confirm="Delete this submission?">Delete</button>
+                </form>
+            </div>
+        </div>
+        @empty
+        <p style="color:var(--text-dim); text-align:center; padding:2rem 0;">No submissions found.</p>
+        @endforelse
     </div>
 
     {{-- Pagination --}}

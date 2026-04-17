@@ -6,25 +6,80 @@ use App\Models\GamePrice;
 use App\Models\Setting;
 use App\Services\IgdbService;
 use App\Services\PricingService;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
 
 class GameController extends Controller
 {
-    public function show(int $id): View
+    /**
+     * Legacy numeric-ID route: /game/1942
+     * Redirects permanently to the slug URL when known, renders directly otherwise.
+     */
+    public function show(int $id): RedirectResponse|View
     {
-        $igdb    = new IgdbService();
-        $game    = null;
+        // Fast path: slug already stored in DB
+        $slug = GamePrice::where('igdb_game_id', $id)->value('slug');
+        if ($slug) {
+            return redirect()->route('game.show', ['slug' => $slug], 301);
+        }
+
+        // Fetch from IGDB to get the slug, then redirect
+        $igdb = new IgdbService();
+        try {
+            $game = $igdb->getGame($id);
+        } catch (\RuntimeException) {
+            $game = null;
+        }
+
+        if ($game && !empty($game['slug'])) {
+            return redirect()->route('game.show', ['slug' => $game['slug']], 301);
+        }
+
+        // Slug not available — render the page in-place (rare/fallback)
+        return $this->render($id, $game);
+    }
+
+    /**
+     * Canonical slug route: /game/elden-ring
+     */
+    public function showBySlug(string $slug): View
+    {
+        $igdb = new IgdbService();
+        $game = null;
+        $id   = null;
+
+        // Try DB first for known slug → IGDB ID mapping
+        $gp = GamePrice::where('slug', $slug)->first();
+        if ($gp) {
+            $id = $gp->igdb_game_id;
+            try {
+                $game = $igdb->getGame($id);
+            } catch (\RuntimeException) {}
+        }
+
+        // Fallback: query IGDB directly by slug
+        if (!$game) {
+            try {
+                $game = $igdb->getGameBySlug($slug);
+            } catch (\RuntimeException) {}
+            if (!$game) {
+                abort(404);
+            }
+            $id = $game['id'];
+        }
+
+        return $this->render($id, $game);
+    }
+
+    // ── Shared rendering logic ────────────────────────────────────────────────
+
+    private function render(int $id, ?array $game): View
+    {
         $error   = null;
         $pricing = null;
 
-        try {
-            $game = $igdb->getGame($id);
-        } catch (\RuntimeException $e) {
-            $error = $e->getMessage();
-        }
-
-        if (! $game && ! $error) {
-            abort(404);
+        if (!$game) {
+            $error = 'Could not load game data.';
         }
 
         $steamAppId     = null;
@@ -39,20 +94,17 @@ class GameController extends Controller
 
         if ($game) {
             try {
-                $steamAppId = $igdb->getSteamAppId($id);
+                $steamAppId = (new IgdbService())->getSteamAppId($id);
                 if ($steamAppId) {
                     $releaseTimestamp = $game['first_release_date'] ?? null;
 
-                    // Populate the raw-price cache (6-hour TTL)
                     PricingService::getForSteamApp($steamAppId, $releaseTimestamp);
 
-                    // Persist raw prices so game cards can display them without API calls
                     $raw = PricingService::getRawCached($steamAppId);
                     if ($raw !== null) {
                         $platformIds = array_values(array_filter(
                             array_column($game['platforms'] ?? [], 'id')
                         ));
-                        // IGDB category 3 = bundle
                         $isBundle = ($game['category'] ?? 0) === 3;
                         GamePrice::record(
                             $id,
@@ -64,22 +116,27 @@ class GameController extends Controller
                             $platformIds,
                             $franchiseNames,
                             $isBundle,
+                            $game['slug'] ?? null,
                         );
                     }
                 }
             } catch (\Throwable) {
                 // Pricing is best-effort — never break the page
             }
+
+            // Also store slug even when no Steam ID exists
+            if (!empty($game['slug'])) {
+                GamePrice::where('igdb_game_id', $id)
+                    ->whereNull('slug')
+                    ->update(['slug' => $game['slug']]);
+            }
         }
 
-        // Always compute display pricing from the DB record so the game detail page,
-        // game cards, and the cash basket all use the same formula and data.
         if ($game) {
             $gamePrice = GamePrice::where('igdb_game_id', $id)->first();
             if ($gamePrice) {
                 $pricing = $gamePrice->getComputedPrice($franchiseNames, $game['name'] ?? null);
             } else {
-                // No DB record yet — compute from base price setting directly
                 $basePriceGbp = (float) Setting::get('base_price_gbp', 0);
                 if ($basePriceGbp > 0) {
                     $discountPct        = (float) Setting::get('pricing_discount_percent', 85);
@@ -101,7 +158,7 @@ class GameController extends Controller
                     if ($highPricePct > 0 && $computed > 10.00) {
                         $computed = round($computed * (1 - ($highPricePct / 100)), 2);
                     }
-                    $pricing  = [
+                    $pricing = [
                         'is_free'       => false,
                         'display_price' => '£' . number_format($computed, 2),
                         'price_numeric' => $computed,
@@ -118,7 +175,6 @@ class GameController extends Controller
             $inCashBasket = $user->cashBasketItems()->where('igdb_game_id', $id)->exists();
         }
 
-        // Track recently viewed (session array of IDs, most recent first, max 20)
         if ($game) {
             $viewed = session('recently_viewed', []);
             $viewed = array_values(array_filter($viewed, fn($v) => $v !== $id));

@@ -1,8 +1,8 @@
 @extends('layouts.app')
 
-@section('title', $platformName . ' Games')
-@section('meta_description', 'Browse ' . $platformName . ' games, check what they\'re worth, and get cash for your collection. Free pickup, fast quotes.')
-@section('canonical', route('platform.show', ['id' => $id, 'name' => $platformName]))
+@section('title', $platformName . ' Games — Sell for Cash')
+@section('meta_description', $platformConfig['meta'] ?? 'Browse ' . $platformName . ' games, check what they\'re worth, and get cash for your collection. Free pickup, fast quotes.')
+@section('canonical', route('platform.show', ['id' => $id, 'name' => $platformSlug]))
 
 @section('content')
 
@@ -16,8 +16,12 @@
                     Platform
                 </p>
                 <h1 class="section-title">{{ $platformName }}</h1>
-                @if(!empty($platform['summary']))
-                <p style="color:var(--text-muted); max-width:600px; margin-top:0.75rem; font-size:0.95rem; line-height:1.7;">
+                @if(!empty($platformConfig['desc']))
+                <p style="color:var(--text-muted); max-width:620px; margin-top:0.75rem; font-size:0.95rem; line-height:1.7;">
+                    {{ $platformConfig['desc'] }}
+                </p>
+                @elseif(!empty($platform['summary']))
+                <p style="color:var(--text-muted); max-width:620px; margin-top:0.75rem; font-size:0.95rem; line-height:1.7;">
                     {{ e(truncate_text($platform['summary'], 200)) }}
                 </p>
                 @endif
@@ -27,7 +31,7 @@
         <!-- Platform nav chips -->
         <div style="display:flex; gap:0.75rem; margin-top:2rem; flex-wrap:wrap;">
             @foreach(config('igdb.platforms') as $pName => $pData)
-            <a href="{{ route('platform.show', ['id' => $pData['id'], 'name' => $pName]) }}"
+            <a href="{{ route('platform.show', ['id' => $pData['id'], 'name' => $pData['slug'] ?? $pName]) }}"
                class="chip {{ $pData['id'] === $id ? 'active' : '' }}">
                 {{ $pData['icon'] }} {{ $pName }}
             </a>
@@ -62,16 +66,16 @@
         <!-- Pagination -->
         <div class="pagination">
             @if($page > 1)
-            <a href="{{ route('platform.show', ['id' => $id, 'name' => $platformName, 'page' => $page - 1]) }}" class="page-btn">← Prev</a>
+            <a href="{{ route('platform.show', ['id' => $id, 'name' => $platformSlug, 'page' => $page - 1]) }}" class="page-btn">← Prev</a>
             @endif
             @for($i = max(1, $page - 2); $i <= min(20, $page + 4); $i++)
-            <a href="{{ route('platform.show', ['id' => $id, 'name' => $platformName, 'page' => $i]) }}"
+            <a href="{{ route('platform.show', ['id' => $id, 'name' => $platformSlug, 'page' => $i]) }}"
                class="page-btn {{ $i === $page ? 'active' : '' }}">
                 {{ $i }}
             </a>
             @endfor
             @if(count($games) === $limit)
-            <a href="{{ route('platform.show', ['id' => $id, 'name' => $platformName, 'page' => $page + 1]) }}" class="page-btn">Next →</a>
+            <a href="{{ route('platform.show', ['id' => $id, 'name' => $platformSlug, 'page' => $page + 1]) }}" class="page-btn">Next →</a>
             @endif
         </div>
         @endif

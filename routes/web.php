@@ -1,7 +1,10 @@
 <?php
 
+use App\Http\Controllers\AdminBlogController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AdminFaqController;
+use App\Http\Controllers\AdminGamePricesController;
+use App\Http\Controllers\BlogController;
 use App\Http\Controllers\PasswordResetController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CashBasketController;
@@ -27,8 +30,13 @@ Route::get('/img/{encoded}', [ImageProxyController::class, 'show'])
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
 
-Route::get('/game/{id}', [GameController::class, 'show'])
+// Canonical slug URL — /game/elden-ring
+Route::get('/game/{slug}', [GameController::class, 'showBySlug'])
     ->name('game.show')
+    ->where('slug', '[a-z][a-z0-9\-]*');
+
+// Legacy numeric ID — 301 redirects to slug URL
+Route::get('/game/{id}', [GameController::class, 'show'])
     ->where('id', '[0-9]+');
 
 Route::get('/search', [SearchController::class, 'index'])->name('search');
@@ -125,15 +133,19 @@ Route::middleware(['auth', 'track.active', 'admin'])->prefix('admin')->name('adm
     Route::get('/settings', [AdminController::class, 'showSettings'])->name('settings');
     Route::post('/settings', [AdminController::class, 'updateSettings'])->name('settings.update');
 
+    // Game prices table
+    Route::get('/game-prices', [AdminGamePricesController::class, 'index'])->name('game-prices');
+    Route::patch('/game-prices/{igdbGameId}/{platformId}/override', [AdminGamePricesController::class, 'updateOverride'])
+        ->name('game-prices.override')
+        ->where(['igdbGameId' => '[0-9]+', 'platformId' => '[0-9]+']);
+
+    // CeX sync
+    Route::post('/settings/sync-cex-prices', [AdminController::class, 'syncCexPrices'])->name('settings.sync-cex');
+
     // Franchise adjustments
     Route::post('/settings/franchise-adjustments', [AdminController::class, 'storeFranchiseAdjustment'])->name('franchise-adjustments.store');
     Route::patch('/settings/franchise-adjustments/{id}', [AdminController::class, 'updateFranchiseAdjustment'])->name('franchise-adjustments.update')->where('id', '[0-9]+');
     Route::delete('/settings/franchise-adjustments/{id}', [AdminController::class, 'destroyFranchiseAdjustment'])->name('franchise-adjustments.destroy')->where('id', '[0-9]+');
-
-    // Game name adjustments
-    Route::post('/settings/game-name-adjustments', [AdminController::class, 'storeGameNameAdjustment'])->name('game-name-adjustments.store');
-    Route::patch('/settings/game-name-adjustments/{id}', [AdminController::class, 'updateGameNameAdjustment'])->name('game-name-adjustments.update')->where('id', '[0-9]+');
-    Route::delete('/settings/game-name-adjustments/{id}', [AdminController::class, 'destroyGameNameAdjustment'])->name('game-name-adjustments.destroy')->where('id', '[0-9]+');
 
     // Email templates
     Route::get('/email-templates', [AdminController::class, 'showEmailTemplates'])->name('email-templates');
@@ -151,7 +163,20 @@ Route::middleware(['auth', 'track.active', 'admin'])->prefix('admin')->name('adm
     Route::get('/faqs/{id}/edit', [AdminFaqController::class, 'edit'])->name('faqs.edit')->where('id', '[0-9]+');
     Route::patch('/faqs/{id}', [AdminFaqController::class, 'update'])->name('faqs.update')->where('id', '[0-9]+');
     Route::delete('/faqs/{id}', [AdminFaqController::class, 'destroy'])->name('faqs.destroy')->where('id', '[0-9]+');
+
+    // Blog management
+    Route::get('/blog', [AdminBlogController::class, 'index'])->name('blog.index');
+    Route::post('/blog/toggle-visibility', [AdminBlogController::class, 'toggleVisibility'])->name('blog.toggle-visibility');
+    Route::get('/blog/create', [AdminBlogController::class, 'create'])->name('blog.create');
+    Route::post('/blog', [AdminBlogController::class, 'store'])->name('blog.store');
+    Route::get('/blog/{id}/edit', [AdminBlogController::class, 'edit'])->name('blog.edit')->where('id', '[0-9]+');
+    Route::patch('/blog/{id}', [AdminBlogController::class, 'update'])->name('blog.update')->where('id', '[0-9]+');
+    Route::delete('/blog/{id}', [AdminBlogController::class, 'destroy'])->name('blog.destroy')->where('id', '[0-9]+');
 });
+
+// Blog
+Route::get('/blog', [BlogController::class, 'index'])->name('blog.index');
+Route::get('/blog/{slug}', [BlogController::class, 'show'])->name('blog.show');
 
 // Static pages
 Route::view('/about', 'pages.about')->name('about');

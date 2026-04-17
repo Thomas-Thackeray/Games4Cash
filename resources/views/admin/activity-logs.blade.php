@@ -52,7 +52,7 @@
     </div>
 
     {{-- Desktop table --}}
-    <div class="admin-table-wrap">
+    <div class="admin-table-wrap admin-table-wrap--log">
         <table class="admin-table">
             <thead>
                 <tr>

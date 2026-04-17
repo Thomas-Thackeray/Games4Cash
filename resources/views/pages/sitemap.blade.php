@@ -18,7 +18,7 @@
             <h3 style="font-size:1.1rem; margin-bottom:1rem; color:var(--accent);">Platforms</h3>
             <ul style="list-style:none; padding:0; display:flex; flex-direction:column; gap:0.5rem;">
                 @foreach(config('igdb.platforms') as $pName => $pData)
-                <li><a href="{{ route('platform.show', ['id' => $pData['id'], 'name' => $pName]) }}" style="color:var(--text-muted);">{{ $pName }}</a></li>
+                <li><a href="{{ route('platform.show', ['id' => $pData['id'], 'name' => $pData['slug'] ?? $pName]) }}" style="color:var(--text-muted);">{{ $pName }}</a></li>
                 @endforeach
             </ul>
         </div>
@@ -38,6 +38,7 @@
                 <li><a href="{{ route('about') }}" style="color:var(--text-muted);">About Us</a></li>
                 <li><a href="{{ route('contact') }}" style="color:var(--text-muted);">Contact Us</a></li>
                 <li><a href="{{ route('faq') }}" style="color:var(--text-muted);">FAQ</a></li>
+                <li><a href="{{ route('blog.index') }}" style="color:var(--text-muted);">Blog</a></li>
                 <li><a href="{{ route('terms') }}" style="color:var(--text-muted);">Terms &amp; Conditions</a></li>
                 <li><a href="{{ route('privacy') }}" style="color:var(--text-muted);">Privacy Policy</a></li>
             </ul>

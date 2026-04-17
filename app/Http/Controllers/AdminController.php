@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\ActivityLog;
 use App\Models\BlacklistedPassword;
 use App\Models\FranchiseAdjustment;
-use App\Models\GameNameAdjustment;
+use App\Services\CexService;
 use App\Models\CashBasketItem;
 use App\Models\CashOrder;
 use App\Models\ContactSubmission;
@@ -419,6 +419,7 @@ class AdminController extends Controller
     public function showSettings(): View
     {
         $settings = [
+            'cex_margin_pct'           => Setting::get('cex_margin_pct', 90),
             'pricing_discount_percent' => Setting::get('pricing_discount_percent', 85),
             'usd_to_gbp_rate'          => Setting::get('usd_to_gbp_rate', 1.36),
             'age_reduction_per_year'   => Setting::get('age_reduction_per_year', 1),
@@ -439,10 +440,20 @@ class AdminController extends Controller
             ]);
         }, self::PLATFORMS);
 
-        $franchiseAdjustments  = FranchiseAdjustment::orderBy('franchise_name')->get();
-        $gameNameAdjustments   = GameNameAdjustment::orderBy('keyword')->get();
+        $franchiseAdjustments = FranchiseAdjustment::orderBy('franchise_name')->get();
 
-        return view('admin.settings', compact('settings', 'platforms', 'franchiseAdjustments', 'gameNameAdjustments'));
+        try {
+            $cexGames = GamePrice::whereNotNull('cex_prices')
+                ->where('cex_prices', '!=', '[]')
+                ->where('cex_prices', '!=', '{}')
+                ->orderByDesc('cex_fetched_at')
+                ->get(['igdb_game_id', 'slug', 'cex_prices', 'cex_fetched_at']);
+        } catch (\Throwable) {
+            // Column may not exist yet if migration hasn't been run on this environment
+            $cexGames = collect();
+        }
+
+        return view('admin.settings', compact('settings', 'platforms', 'franchiseAdjustments', 'cexGames'));
     }
 
     // ----------------------------------------------------------------
@@ -492,6 +503,7 @@ class AdminController extends Controller
     public function updateSettings(Request $request): RedirectResponse
     {
         $request->validate([
+            'cex_margin_pct'            => ['required', 'numeric', 'min:1', 'max:150'],
             'pricing_discount_percent'  => ['required', 'numeric', 'min:0', 'max:99'],
             'usd_to_gbp_rate'           => ['required', 'numeric', 'min:0.01', 'max:99.99'],
             'age_reduction_per_year'    => ['required', 'numeric', 'min:0', 'max:9.99'],
@@ -513,6 +525,7 @@ class AdminController extends Controller
             'base_price_gbp.max'           => 'Base price cannot exceed £999.99.',
         ]);
 
+        Setting::set('cex_margin_pct', $request->input('cex_margin_pct'));
         Setting::set('pricing_discount_percent', $request->input('pricing_discount_percent'));
         Setting::set('usd_to_gbp_rate', $request->input('usd_to_gbp_rate'));
         Setting::set('age_reduction_per_year', $request->input('age_reduction_per_year'));
@@ -575,41 +588,34 @@ class AdminController extends Controller
     }
 
     // ----------------------------------------------------------------
-    //  Game name price adjustments
+    //  CeX price sync
     // ----------------------------------------------------------------
 
-    public function storeGameNameAdjustment(Request $request): RedirectResponse
+    public function syncCexPrices(): RedirectResponse
     {
-        $request->validate([
-            'keyword'        => ['required', 'string', 'max:200', 'unique:game_name_adjustments,keyword'],
-            'adjustment_gbp' => ['required', 'numeric', 'min:-999.99', 'max:999.99'],
-        ]);
+        $games = GamePrice::whereNotNull('slug')->get(['igdb_game_id', 'slug', 'cex_prices', 'cex_fetched_at']);
 
-        GameNameAdjustment::create([
-            'keyword'        => trim($request->input('keyword')),
-            'adjustment_gbp' => $request->input('adjustment_gbp'),
-        ]);
+        $priced = 0;
+        $total  = $games->count();
 
-        return back()->with('flash_success', 'Game name adjustment added.');
-    }
+        foreach ($games as $gp) {
+            // Derive a human title from the slug: "elden-ring" → "Elden Ring"
+            $title  = ucwords(str_replace('-', ' ', $gp->slug));
+            $prices = CexService::fetchDirect($title);
 
-    public function updateGameNameAdjustment(Request $request, int $id): RedirectResponse
-    {
-        $request->validate([
-            'adjustment_gbp' => ['required', 'numeric', 'min:-999.99', 'max:999.99'],
-        ]);
+            GamePrice::where('igdb_game_id', $gp->igdb_game_id)->update([
+                'cex_prices'     => empty($prices) ? null : json_encode($prices),
+                'cex_fetched_at' => now(),
+            ]);
 
-        GameNameAdjustment::findOrFail($id)->update([
-            'adjustment_gbp' => $request->input('adjustment_gbp'),
-        ]);
+            if (! empty($prices)) {
+                $priced++;
+            }
+        }
 
-        return back()->with('flash_success', 'Game name adjustment updated.');
-    }
-
-    public function destroyGameNameAdjustment(int $id): RedirectResponse
-    {
-        GameNameAdjustment::findOrFail($id)->delete();
-
-        return back()->with('flash_success', 'Game name adjustment removed.');
+        return back()->with(
+            'flash_success',
+            "CeX sync complete: found prices for {$priced} of {$total} games."
+        );
     }
 }
