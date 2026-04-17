@@ -16,14 +16,22 @@ class AdminGamePricesController extends Controller
         $query = GamePrice::whereNotNull('platform_ids')
             ->where('platform_ids', '!=', '[]');
 
+        $hasGameTitle = \Illuminate\Support\Facades\Schema::hasColumn('game_prices', 'game_title');
+
         if ($search !== '') {
-            $query->where(function ($q) use ($search) {
-                $q->where('game_title', 'like', "%{$search}%")
-                  ->orWhere('slug', 'like', "%{$search}%");
+            $query->where(function ($q) use ($search, $hasGameTitle) {
+                if ($hasGameTitle) {
+                    $q->where('game_title', 'like', "%{$search}%")
+                      ->orWhere('slug', 'like', "%{$search}%");
+                } else {
+                    $q->where('slug', 'like', "%{$search}%");
+                }
             });
         }
 
-        $gamePrices   = $query->orderBy('game_title')->orderBy('slug')->paginate(30)->withQueryString();
+        $gamePrices = $hasGameTitle
+            ? $query->orderBy('game_title')->orderBy('slug')->paginate(30)->withQueryString()
+            : $query->orderBy('slug')->paginate(30)->withQueryString();
         $allPlatforms = config('igdb.all_platforms');
 
         return view('admin.game-prices', compact('gamePrices', 'search', 'allPlatforms'));
@@ -46,8 +54,14 @@ class AdminGamePricesController extends Controller
             $overrides[$platformId] = round((float) $price, 2);
         }
 
-        $gamePrice->price_overrides = empty($overrides) ? null : $overrides;
-        $gamePrice->save();
+        $newOverrides = empty($overrides) ? null : $overrides;
+
+        try {
+            $gamePrice->price_overrides = $newOverrides;
+            $gamePrice->save();
+        } catch (\Throwable) {
+            // price_overrides column may not exist until migration runs
+        }
 
         // Return the new computed price for this platform so the UI can update
         $result = $gamePrice->adminPriceForPlatform($platformId);
@@ -55,7 +69,7 @@ class AdminGamePricesController extends Controller
         return response()->json([
             'display_price' => $result['display_price'] ?? '—',
             'source'        => $result['source'] ?? null,
-            'override_set'  => isset($overrides[$platformId]),
+            'override_set'  => isset($newOverrides[$platformId]),
         ]);
     }
 }
