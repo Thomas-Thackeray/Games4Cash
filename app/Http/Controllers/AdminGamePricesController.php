@@ -18,8 +18,14 @@ class AdminGamePricesController extends Controller
             $query = GamePrice::whereNotNull('platform_ids')
                 ->where('platform_ids', '!=', '[]');
 
-            $hasGameTitle = \Illuminate\Support\Facades\Schema::hasColumn('game_prices', 'game_title');
-            $hasCexPrices = \Illuminate\Support\Facades\Schema::hasColumn('game_prices', 'cex_prices');
+            $hasGameTitle     = \Illuminate\Support\Facades\Schema::hasColumn('game_prices', 'game_title');
+            $hasCexPrices     = \Illuminate\Support\Facades\Schema::hasColumn('game_prices', 'cex_prices');
+            $hasPriceOverrides = \Illuminate\Support\Facades\Schema::hasColumn('game_prices', 'price_overrides');
+
+            $noCexClause = fn ($q) => $q->where(fn ($q2) =>
+                $q2->whereNull('cex_prices')
+                   ->orWhere('cex_prices', 'null')
+                   ->orWhere('cex_prices', '{}'));
 
             // Source filter
             match ($source) {
@@ -28,22 +34,21 @@ class AdminGamePricesController extends Controller
                                       ->where('cex_prices', '!=', 'null')
                                       ->where('cex_prices', '!=', '{}')),
                 'cheapshark' => $query->whereNotNull('cheapshark_usd')
-                                      ->when($hasCexPrices, fn ($q) => $q->where(fn ($q2) =>
-                                          $q2->whereNull('cex_prices')
-                                             ->orWhere('cex_prices', 'null')
-                                             ->orWhere('cex_prices', '{}'))),
+                                      ->when($hasCexPrices, $noCexClause),
                 'steam'      => $query->whereNotNull('steam_gbp')
                                       ->whereNull('cheapshark_usd')
-                                      ->when($hasCexPrices, fn ($q) => $q->where(fn ($q2) =>
-                                          $q2->whereNull('cex_prices')
-                                             ->orWhere('cex_prices', 'null')
-                                             ->orWhere('cex_prices', '{}'))),
+                                      ->when($hasCexPrices, $noCexClause),
                 'base'       => $query->whereNull('steam_gbp')
                                       ->whereNull('cheapshark_usd')
-                                      ->when($hasCexPrices, fn ($q) => $q->where(fn ($q2) =>
-                                          $q2->whereNull('cex_prices')
-                                             ->orWhere('cex_prices', 'null')
-                                             ->orWhere('cex_prices', '{}'))),
+                                      ->when($hasCexPrices, $noCexClause),
+                'none'       => $query->whereNull('steam_gbp')
+                                      ->whereNull('cheapshark_usd')
+                                      ->where('is_free', false)
+                                      ->when($hasCexPrices, $noCexClause),
+                'override'   => $query->when($hasPriceOverrides, fn ($q) =>
+                                    $q->whereNotNull('price_overrides')
+                                      ->where('price_overrides', '!=', 'null')
+                                      ->where('price_overrides', '!=', '{}')),
                 default      => null,
             };
 

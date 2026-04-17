@@ -23,6 +23,8 @@
         'cheapshark' => 'CheapShark',
         'steam'      => 'Steam',
         'base'       => 'Base Price',
+        'none'       => 'No Price',
+        'override'   => 'Overridden',
     ];
     @endphp
     <div style="display:flex; gap:0.4rem; flex-wrap:wrap; margin-bottom:1.25rem;">
@@ -35,6 +37,8 @@
                 'cheapshark' => ['bg'=>'rgba(59,130,246,0.15)', 'color'=>'#2563eb', 'border'=>'rgba(59,130,246,0.4)' ],
                 'steam'      => ['bg'=>'rgba(249,115,22,0.15)', 'color'=>'#ea580c', 'border'=>'rgba(249,115,22,0.4)' ],
                 'base'       => ['bg'=>'rgba(100,116,139,0.15)','color'=>'#64748b', 'border'=>'rgba(100,116,139,0.4)'],
+                'none'       => ['bg'=>'rgba(230,57,70,0.12)',  'color'=>'#e63946', 'border'=>'rgba(230,57,70,0.3)'  ],
+                'override'   => ['bg'=>'rgba(168,85,247,0.15)', 'color'=>'#9333ea', 'border'=>'rgba(168,85,247,0.4)' ],
                 ''           => ['bg'=>'var(--bg-card)',        'color'=>'var(--text)','border'=>'var(--border)'      ],
             ];
             $c = $colours[$val];
