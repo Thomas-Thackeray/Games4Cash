@@ -33,6 +33,10 @@ return [
             'slug'  => 'PlayStation-5',
             'desc'  => 'PS5 games hold their value well thanks to a strong exclusive library and continued high demand. Titles like Spider-Man 2, God of War Ragnarök, and Horizon Forbidden West regularly attract competitive cash offers. If you\'ve finished your collection or simply want to free up some shelf space, selling your PS5 games with us is quick and hassle-free.',
             'meta'  => 'Sell your PlayStation 5 games for cash. Get an instant price for PS5 titles including Spider-Man 2, God of War Ragnarök, and more — free door-to-door collection across the UK.',
+            'seo'   => [
+                'heading' => 'Sell Your PlayStation 5 Games for Cash',
+                'body'    => 'The PlayStation 5 has quickly built one of the strongest exclusive libraries of any console generation. Titles like Spider-Man 2, God of War Ragnarök, Demon\'s Souls, Returnal, and Horizon Forbidden West attract strong demand from buyers, which means your PS5 collection can hold real value even after you\'ve finished playing. Rather than letting your games sit on the shelf, sell them for cash and put the money towards your next purchase. We offer instant prices, free door-to-door collection anywhere in the UK, and fast payment once your games have been received and checked. Add your PS5 titles to the basket above, submit your quote, and we\'ll take care of everything else.',
+            ],
         ],
         'PlayStation 4' => [
             'id'    => 48,
@@ -41,6 +45,10 @@ return [
             'slug'  => 'PlayStation-4',
             'desc'  => 'With hundreds of millions of units sold worldwide, PS4 games remain in strong demand and trade in reliably. The platform\'s enormous back catalogue — spanning Red Dead Redemption 2, The Last of Us Part II, and Ghost of Tsushima — means most titles still command fair cash offers. If you\'ve upgraded to PS5, selling your PS4 library is a great way to fund your next purchase.',
             'meta'  => 'Sell your PlayStation 4 games for cash. Browse PS4 titles, get an instant price, and book a free collection. We buy everything from blockbusters to hidden gems.',
+            'seo'   => [
+                'heading' => 'Sell Your PlayStation 4 Games for Cash',
+                'body'    => 'With over 117 million units sold, the PlayStation 4 has one of the largest game libraries ever assembled — and many of those titles are still actively sought after by buyers. From blockbusters like Red Dead Redemption 2, The Last of Us Part II, and Ghost of Tsushima to beloved exclusives like Bloodborne and Persona 5, PS4 games hold their value well, especially for popular or harder-to-find titles. If you\'ve upgraded to PS5 or simply finished your backlog, selling your PS4 collection is an easy way to earn cash without any of the hassle of private selling. We accept all PS4 games in good condition, offer free UK-wide collection, and pay quickly once we\'ve checked your items.',
+            ],
         ],
         'Xbox Series X|S' => [
             'id'    => 169,
@@ -49,6 +57,10 @@ return [
             'slug'  => 'Xbox-Series-X-S',
             'desc'  => 'Xbox Series X|S has a growing library of exclusive titles, and many games support Smart Delivery — we buy them regardless of which version you own. First-party titles from Xbox Game Studios and high-profile third-party releases like Starfield can attract strong cash offers. We make it easy to sell your Series X|S collection with no fuss.',
             'meta'  => 'Sell your Xbox Series X|S games for cash. Get instant prices for Series X and Series S titles — free UK collection, fast payment.',
+            'seo'   => [
+                'heading' => 'Sell Your Xbox Series X|S Games for Cash',
+                'body'    => 'The Xbox Series X|S generation has brought some of Microsoft\'s most ambitious releases to date. Titles like Halo Infinite, Forza Motorsport, Starfield, and a growing catalogue of third-party exclusives mean there\'s a steady market for physical Series X games. Many titles use Smart Delivery and carry value on disc regardless of which version of the console you own. If you\'re clearing space, switching platforms, or just moving on, we\'ll give you a fair cash offer for your Xbox Series X|S games with no seller fees, no listing faff, and free collection straight from your door anywhere in the UK.',
+            ],
         ],
         'Xbox One' => [
             'id'    => 49,
@@ -57,6 +69,10 @@ return [
             'slug'  => 'Xbox-One',
             'desc'  => 'Xbox One has a decade-long library packed with popular titles that still attract solid trade-in interest. Whether you\'ve moved on to the newer Xbox Series X|S or are simply clearing your collection, we buy standard and special editions alike. Games like Forza Horizon 4, Halo 5, and the Gears of War series are always in demand.',
             'meta'  => 'Sell your Xbox One games for cash. We buy the full Xbox One library — get an instant price and arrange a free collection today.',
+            'seo'   => [
+                'heading' => 'Sell Your Xbox One Games for Cash',
+                'body'    => 'The Xbox One library spans a full decade of releases, from the console\'s 2013 launch through to the transition era where titles also appeared on Series X. Popular franchises like Halo, Forza, Gears of War, and Assassin\'s Creed all have strong Xbox One entries that attract consistent interest from buyers. Whether you\'re upgrading to a newer console or simply want to clear your collection, we\'ll give you a straightforward cash offer — no auction, no waiting for a buyer, no posting. Browse the titles above, add your games to the basket, and we\'ll arrange free collection from your address and pay you quickly once we\'ve confirmed everything is in order.',
+            ],
         ],
         'Nintendo Switch' => [
             'id'    => 130,
@@ -65,6 +81,10 @@ return [
             'slug'  => 'Nintendo-Switch',
             'desc'  => 'Nintendo Switch games are famous for holding their value longer than almost any other platform — first-party Nintendo titles rarely drop significantly in price. If you have Zelda, Mario Kart, Pokémon, or Animal Crossing titles sitting unplayed, you could get a surprisingly competitive cash offer. We buy both standard Switch and Switch Lite compatible games.',
             'meta'  => 'Sell your Nintendo Switch games for cash. Switch titles hold their value well — get an instant price for Zelda, Mario Kart, Pokémon, and more.',
+            'seo'   => [
+                'heading' => 'Sell Your Nintendo Switch Games for Cash',
+                'body'    => 'Nintendo Switch games are widely regarded as the best value-holding physical games on the market. First-party titles from Nintendo — The Legend of Zelda: Tears of the Kingdom, Mario Kart 8 Deluxe, Pokémon Scarlet and Violet, Animal Crossing: New Horizons — rarely see the sharp price drops that affect other platforms, meaning your Switch collection is often worth more than you\'d expect. Limited physical print runs and strong collector demand make Switch games a smart sell. We buy Switch games in good condition, offer free UK-wide collection, and pay out promptly — all without the hassle of selling privately. Check what your collection is worth using the games above and get a quote in minutes.',
+            ],
         ],
         'PC' => [
             'id'    => 6,
@@ -73,6 +93,10 @@ return [
             'slug'  => 'PC',
             'desc'  => 'We buy physical PC games and boxed collector\'s editions. While most modern PC gaming has moved to digital storefronts, there is still strong collector interest in older boxed releases and special editions — particularly for classic RPGs, strategy titles, and limited-print games. If you have physical PC games gathering dust, get a quote today.',
             'meta'  => 'Sell your physical PC games for cash. We buy boxed PC titles, collector\'s editions, and classic releases — get an instant price and free collection.',
+            'seo'   => [
+                'heading' => 'Sell Your Physical PC Games for Cash',
+                'body'    => 'Physical PC games occupy a unique space in the collector market. While mainstream PC gaming has largely shifted to digital storefronts like Steam, boxed PC titles — especially older releases, special editions, and games no longer available digitally — can command strong prices from collectors and enthusiasts. Classic boxed RPGs, strategy games, and big-box releases from the 1990s and 2000s are particularly sought after. If you have physical PC games sitting in storage, it\'s worth checking what they could be worth. We offer instant cash prices, free collection from your door, and a simple, straightforward selling process with no hidden fees.',
+            ],
         ],
     ],
 

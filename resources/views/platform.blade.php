@@ -82,4 +82,19 @@
     </div>
 </section>
 
+@if($page === 1 && !empty($platformConfig['seo']))
+<section class="section" style="padding-top:0;">
+    <div class="container">
+        <div style="max-width:780px; border-top:1px solid var(--border); padding-top:2.5rem; margin-top:1rem;">
+            <h2 style="font-size:1.15rem; font-weight:700; color:var(--text); margin-bottom:0.85rem;">
+                {{ $platformConfig['seo']['heading'] }}
+            </h2>
+            <p style="color:var(--text-muted); font-size:0.95rem; line-height:1.75;">
+                {{ $platformConfig['seo']['body'] }}
+            </p>
+        </div>
+    </div>
+</section>
+@endif
+
 @endsection
