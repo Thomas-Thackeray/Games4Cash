@@ -20,14 +20,8 @@ class AdminGamePricesController extends Controller
                 ->where('platform_ids', '!=', '[]')
                 ->where('is_free', false);
 
-            $hasGameTitle     = \Illuminate\Support\Facades\Schema::hasColumn('game_prices', 'game_title');
-            $hasCexPrices     = \Illuminate\Support\Facades\Schema::hasColumn('game_prices', 'cex_prices');
+            $hasGameTitle      = \Illuminate\Support\Facades\Schema::hasColumn('game_prices', 'game_title');
             $hasPriceOverrides = \Illuminate\Support\Facades\Schema::hasColumn('game_prices', 'price_overrides');
-
-            $noCexClause = fn ($q) => $q->where(fn ($q2) =>
-                $q2->whereNull('cex_prices')
-                   ->orWhere('cex_prices', 'null')
-                   ->orWhere('cex_prices', '{}'));
 
             $hasHiddenTable = \Illuminate\Support\Facades\Schema::hasTable('hidden_games');
             // IDs of games that have at least one hidden platform row
@@ -38,33 +32,20 @@ class AdminGamePricesController extends Controller
             // Source filter — "hidden" tab shows games with any hidden row;
             // all other tabs show everything (hidden rows are dimmed in the view).
             match ($source) {
-                'cex'        => $query->when($hasCexPrices, fn ($q) =>
-                                    $q->whereNotNull('cex_prices')
-                                      ->where('cex_prices', '!=', 'null')
-                                      ->where('cex_prices', '!=', '{}')),
-                'cheapshark' => $query->whereNotNull('cheapshark_usd')
-                                      ->when($hasCexPrices, $noCexClause),
-                'steam'      => $query->whereNotNull('steam_gbp')
-                                      ->whereNull('cheapshark_usd')
-                                      ->when($hasCexPrices, $noCexClause),
+                'cheapshark' => $query->whereNotNull('cheapshark_usd'),
+                'steam'      => $query->whereNotNull('steam_gbp')->whereNull('cheapshark_usd'),
                 'base'       => $query->whereNull('steam_gbp')
                                       ->whereNull('cheapshark_usd')
-                                      ->when($hasCexPrices, $noCexClause)
                                       ->when($hasPriceOverrides, fn ($q) =>
                                           $q->where(fn ($q2) =>
                                               $q2->whereNull('price_overrides')
                                                  ->orWhere('price_overrides', 'null')
                                                  ->orWhere('price_overrides', '{}'))),
-                'none'       => $query->where(function ($q) use ($hasCexPrices, $noCexClause) {
-                                    $basePriceSet = (float) \App\Models\Setting::get('base_price_gbp', 0) > 0;
-                                    $q->where('is_free', true);
-                                    if (! $basePriceSet) {
-                                        $q->orWhere(function ($q2) use ($hasCexPrices, $noCexClause) {
-                                            $q2->whereNull('steam_gbp')
-                                               ->whereNull('cheapshark_usd')
-                                               ->when($hasCexPrices, $noCexClause);
-                                        });
-                                    }
+                'none'       => $query->where(function ($q) {
+                                    $q->where('is_free', true)
+                                      ->orWhere(function ($q2) {
+                                          $q2->whereNull('steam_gbp')->whereNull('cheapshark_usd');
+                                      });
                                 }),
                 'override'   => $query->when($hasPriceOverrides, fn ($q) =>
                                     $q->whereNotNull('price_overrides')

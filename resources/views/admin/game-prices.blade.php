@@ -19,7 +19,6 @@
     @php
     $filters = [
         ''           => 'All',
-        'cex'        => 'CeX',
         'cheapshark' => 'CheapShark',
         'steam'      => 'Steam',
         'base'       => 'Base Price',
@@ -35,7 +34,6 @@
             $active  = $source === $val;
             $href    = route('admin.game-prices', array_filter(['source' => $val ?: null, 'search' => $search ?: null]));
             $colours = [
-                'cex'        => ['bg'=>'rgba(34,197,94,0.15)',  'color'=>'#16a34a', 'border'=>'rgba(34,197,94,0.4)'  ],
                 'cheapshark' => ['bg'=>'rgba(59,130,246,0.15)', 'color'=>'#2563eb', 'border'=>'rgba(59,130,246,0.4)' ],
                 'steam'      => ['bg'=>'rgba(249,115,22,0.15)', 'color'=>'#ea580c', 'border'=>'rgba(249,115,22,0.4)' ],
                 'base'       => ['bg'=>'rgba(100,116,139,0.15)','color'=>'#64748b', 'border'=>'rgba(100,116,139,0.4)'],

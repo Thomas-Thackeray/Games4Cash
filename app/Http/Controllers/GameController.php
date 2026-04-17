@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\GamePrice;
-use App\Models\Setting;
 use App\Services\IgdbService;
 use App\Services\PricingService;
 use Illuminate\Http\RedirectResponse;
@@ -136,34 +135,6 @@ class GameController extends Controller
             $gamePrice = GamePrice::where('igdb_game_id', $id)->first();
             if ($gamePrice) {
                 $pricing = $gamePrice->getComputedPrice($franchiseNames, $game['name'] ?? null);
-            } else {
-                $basePriceGbp = (float) Setting::get('base_price_gbp', 0);
-                if ($basePriceGbp > 0) {
-                    $discountPct        = (float) Setting::get('pricing_discount_percent', 85);
-                    $discountMultiplier = 1 - ($discountPct / 100);
-                    $releaseTs = $game['first_release_date'] ?? null;
-                    $computed  = max(0.01, round($basePriceGbp * $discountMultiplier, 2));
-                    if ($releaseTs !== null) {
-                        $ageReductionGbp = (float) Setting::get('age_reduction_per_year', 0);
-                        if ($ageReductionGbp > 0) {
-                            $ageYears = max(0, (int) floor((time() - $releaseTs) / (365.25 * 86400)));
-                            $computed = max(0.01, $computed - ($ageYears * $ageReductionGbp));
-                        }
-                    }
-                    $lowPriceBoost = (float) Setting::get('low_price_boost_gbp', 0.20);
-                    if ($computed < 0.10 && $lowPriceBoost > 0) {
-                        $computed = round($computed + $lowPriceBoost, 2);
-                    }
-                    $highPricePct = (float) Setting::get('high_price_reduction_pct', 0);
-                    if ($highPricePct > 0 && $computed > 10.00) {
-                        $computed = round($computed * (1 - ($highPricePct / 100)), 2);
-                    }
-                    $pricing = [
-                        'is_free'       => false,
-                        'display_price' => '£' . number_format($computed, 2),
-                        'price_numeric' => $computed,
-                    ];
-                }
             }
         }
 

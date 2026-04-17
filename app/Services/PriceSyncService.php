@@ -3,10 +3,12 @@
 namespace App\Services;
 
 use App\Models\GamePrice;
-use App\Services\CexService;
+use App\Models\NoPriceReview;
+use App\Models\Setting;
 use Illuminate\Http\Client\Pool;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Schema;
 
 class PriceSyncService
 {
@@ -85,7 +87,6 @@ class PriceSyncService
         }
 
         if (empty($missingIds)) {
-            self::syncCex($igdbGames);
             return;
         }
 
@@ -93,27 +94,40 @@ class PriceSyncService
         $igdb     = new IgdbService();
         $steamMap = $igdb->getSteamAppIds($missingIds); // [igdbId => steamAppId]
 
+        $hasnoPriceTable = Schema::hasTable('no_price_reviews');
+        $usdToGbp        = (float) Setting::get('usd_to_gbp_rate', 1.36);
+
         // Games with no Steam App ID — store a placeholder so we don't retry
-        // until 6 hours have passed
+        // until 6 hours have passed; flag as no-price for admin review
         $noSteamIds = array_diff($missingIds, array_keys($steamMap));
         foreach ($noSteamIds as $igdbId) {
             $values = [
-                'steam_app_id'   => null,
-                'release_date'   => $releaseDates[$igdbId] ?? null,
-                'platform_ids'   => self::encodePlatformIds($platformMap[$igdbId] ?? []),
-                'is_free'        => false,
-                'steam_gbp'      => null,
-                'cheapshark_usd' => null,
-                'updated_at'     => now(),
+                'steam_app_id'    => null,
+                'release_date'    => $releaseDates[$igdbId] ?? null,
+                'platform_ids'    => self::encodePlatformIds($platformMap[$igdbId] ?? []),
+                'is_free'         => false,
+                'steam_gbp'       => null,
+                'cheapshark_usd'  => null,
+                'base_price_gbp'  => null,
+                'updated_at'      => now(),
             ];
             if (! empty($titleMap[$igdbId])) {
                 $values['game_title'] = $titleMap[$igdbId];
             }
             GamePrice::updateOrCreate(['igdb_game_id' => (int) $igdbId], $values);
+
+            // Queue for admin no-price review
+            if ($hasnoPriceTable) {
+                foreach ($platformMap[$igdbId] ?? [] as $platformId) {
+                    NoPriceReview::firstOrCreate([
+                        'igdb_game_id' => (int) $igdbId,
+                        'platform_id'  => (int) $platformId,
+                    ]);
+                }
+            }
         }
 
         if (empty($steamMap)) {
-            self::syncCex($igdbGames);
             return;
         }
 
@@ -121,97 +135,49 @@ class PriceSyncService
         $rawPrices = self::fetchRawBatch(array_values($steamMap));
 
         foreach ($steamMap as $igdbId => $steamAppId) {
-            $raw    = $rawPrices[$steamAppId] ?? null;
+            $raw           = $rawPrices[$steamAppId] ?? null;
+            $isFree        = $raw['is_free']        ?? false;
+            $steamGbp      = $raw['steam_gbp']      ?? null;
+            $cheapsharkUsd = $raw['cheapshark_usd'] ?? null;
+
+            // Compute base_price_gbp: CheapShark USD → GBP first, then Steam GBP
+            if ($cheapsharkUsd !== null) {
+                $basePriceGbp = round($cheapsharkUsd / $usdToGbp, 4);
+            } elseif ($steamGbp !== null) {
+                $basePriceGbp = round($steamGbp, 4);
+            } else {
+                $basePriceGbp = null;
+            }
+
             $values = [
-                'steam_app_id'   => $steamAppId,
-                'release_date'   => $releaseDates[$igdbId] ?? null,
-                'platform_ids'   => self::encodePlatformIds($platformMap[$igdbId] ?? []),
-                'is_free'        => $raw['is_free']        ?? false,
-                'steam_gbp'      => $raw['steam_gbp']      ?? null,
-                'cheapshark_usd' => $raw['cheapshark_usd'] ?? null,
-                'updated_at'     => now(),
+                'steam_app_id'    => $steamAppId,
+                'release_date'    => $releaseDates[$igdbId] ?? null,
+                'platform_ids'    => self::encodePlatformIds($platformMap[$igdbId] ?? []),
+                'is_free'         => $isFree,
+                'steam_gbp'       => $steamGbp,
+                'cheapshark_usd'  => $cheapsharkUsd,
+                'base_price_gbp'  => $basePriceGbp,
+                'updated_at'      => now(),
             ];
             if (! empty($titleMap[$igdbId])) {
                 $values['game_title'] = $titleMap[$igdbId];
             }
             GamePrice::updateOrCreate(['igdb_game_id' => (int) $igdbId], $values);
-        }
 
-        self::syncCex($igdbGames);
-    }
-
-    // -----------------------------------------------------------------------
-
-    /**
-     * Parallel-fetch CeX cash prices for all games whose data is missing or stale (>24 h).
-     * Runs after the Steam/CheapShark sync so game_prices records exist.
-     */
-    private static function syncCex(array $igdbGames): void
-    {
-        if (empty($igdbGames)) {
-            return;
-        }
-
-        // Build name map from IGDB data
-        $nameMap = [];
-        foreach ($igdbGames as $g) {
-            if (! empty($g['name'])) {
-                $nameMap[(int) $g['id']] = $g['name'];
+            if ($hasnoPriceTable) {
+                if (! $isFree && $steamGbp === null && $cheapsharkUsd === null) {
+                    // Still no price — ensure review entries exist for each platform
+                    foreach ($platformMap[$igdbId] ?? [] as $platformId) {
+                        NoPriceReview::firstOrCreate([
+                            'igdb_game_id' => (int) $igdbId,
+                            'platform_id'  => (int) $platformId,
+                        ]);
+                    }
+                } else {
+                    // We have a price now — clear any pending reviews
+                    NoPriceReview::where('igdb_game_id', (int) $igdbId)->delete();
+                }
             }
-        }
-
-        if (empty($nameMap)) {
-            return;
-        }
-
-        $allIds = array_keys($nameMap);
-
-        // Never fetch CeX prices for free-to-play games — they can't be traded
-        $freeIds = GamePrice::whereIn('igdb_game_id', $allIds)
-            ->where('is_free', true)
-            ->pluck('igdb_game_id')
-            ->all();
-        $allIds = array_values(array_diff($allIds, $freeIds));
-
-        if (empty($allIds)) {
-            return;
-        }
-
-        // Only re-fetch when cex_fetched_at is null or older than 24 hours
-        $freshIds = GamePrice::whereIn('igdb_game_id', $allIds)
-            ->where('cex_fetched_at', '>', now()->subHours(24))
-            ->pluck('igdb_game_id')
-            ->all();
-
-        $staleIds = array_values(array_diff($allIds, $freshIds));
-
-        if (empty($staleIds)) {
-            return;
-        }
-
-        // Parallel CeX search requests
-        $responses = Http::pool(function (Pool $pool) use ($staleIds, $nameMap) {
-            foreach ($staleIds as $igdbId) {
-                $pool->as((string) $igdbId)
-                    ->timeout(8)
-                    ->withHeaders(['User-Agent' => 'Mozilla/5.0'])
-                    ->get('https://wss2.cex.io/api/search', ['q' => $nameMap[$igdbId]]);
-            }
-        });
-
-        foreach ($staleIds as $igdbId) {
-            $name = $nameMap[$igdbId];
-            try {
-                $boxes  = $responses[(string) $igdbId]?->json('response.data.boxes') ?? [];
-                $prices = CexService::parseBoxes($name, $boxes);
-            } catch (\Throwable) {
-                $prices = [];
-            }
-
-            GamePrice::where('igdb_game_id', $igdbId)->update([
-                'cex_prices'     => empty($prices) ? null : json_encode($prices),
-                'cex_fetched_at' => now(),
-            ]);
         }
     }
 

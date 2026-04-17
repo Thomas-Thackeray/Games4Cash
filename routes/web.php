@@ -146,8 +146,10 @@ Route::middleware(['auth', 'track.active', 'admin'])->prefix('admin')->name('adm
         ->name('game-prices.hide')
         ->where(['igdbGameId' => '[0-9]+', 'platformId' => '[0-9]+']);
 
-    // CeX sync
-    Route::post('/settings/sync-cex-prices', [AdminController::class, 'syncCexPrices'])->name('settings.sync-cex');
+    // No-price review
+    Route::get('/no-price-review', [\App\Http\Controllers\AdminNoPriceController::class, 'index'])->name('no-price-review');
+    Route::post('/no-price-review/{igdbGameId}/set-price', [\App\Http\Controllers\AdminNoPriceController::class, 'setPrice'])->name('no-price-review.set-price')->where('igdbGameId', '[0-9]+');
+    Route::delete('/no-price-review/{igdbGameId}/dismiss', [\App\Http\Controllers\AdminNoPriceController::class, 'dismiss'])->name('no-price-review.dismiss')->where('igdbGameId', '[0-9]+');
 
     // Franchise adjustments
     Route::post('/settings/franchise-adjustments', [AdminController::class, 'storeFranchiseAdjustment'])->name('franchise-adjustments.store');
