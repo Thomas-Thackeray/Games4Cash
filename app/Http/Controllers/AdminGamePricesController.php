@@ -41,7 +41,12 @@ class AdminGamePricesController extends Controller
                                       ->when($hasCexPrices, $noCexClause),
                 'base'       => $query->whereNull('steam_gbp')
                                       ->whereNull('cheapshark_usd')
-                                      ->when($hasCexPrices, $noCexClause),
+                                      ->when($hasCexPrices, $noCexClause)
+                                      ->when($hasPriceOverrides, fn ($q) =>
+                                          $q->where(fn ($q2) =>
+                                              $q2->whereNull('price_overrides')
+                                                 ->orWhere('price_overrides', 'null')
+                                                 ->orWhere('price_overrides', '{}'))),
                 'none'       => $query->where(function ($q) use ($hasCexPrices, $noCexClause) {
                                     $basePriceSet = (float) \App\Models\Setting::get('base_price_gbp', 0) > 0;
                                     $q->where('is_free', true);
