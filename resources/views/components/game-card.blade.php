@@ -14,9 +14,14 @@
     $gamePrice = \App\Models\GamePrice::where('igdb_game_id', $cardId)->first();
     $pricing   = $gamePrice?->getComputedPrice($franchiseNames, $name);
 
-    // Don't show free-to-play games in the actions bar
+    // Don't show free-to-play games or unpriced games
     if ($pricing && $pricing['is_free']) {
         $pricing = null;
+    }
+
+    // If there's no price at all, don't render the card
+    if (! $pricing) {
+        return;
     }
 
     // Per-platform rows for the Get Cash dropdown (card uses DB-stored prices)
