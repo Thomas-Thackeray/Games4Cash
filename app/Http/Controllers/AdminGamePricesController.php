@@ -13,11 +13,39 @@ class AdminGamePricesController extends Controller
     {
         try {
             $search = trim($request->input('search', ''));
+            $source = $request->input('source', ''); // cex|cheapshark|steam|base|none
 
             $query = GamePrice::whereNotNull('platform_ids')
                 ->where('platform_ids', '!=', '[]');
 
             $hasGameTitle = \Illuminate\Support\Facades\Schema::hasColumn('game_prices', 'game_title');
+            $hasCexPrices = \Illuminate\Support\Facades\Schema::hasColumn('game_prices', 'cex_prices');
+
+            // Source filter
+            match ($source) {
+                'cex'        => $query->when($hasCexPrices, fn ($q) =>
+                                    $q->whereNotNull('cex_prices')
+                                      ->where('cex_prices', '!=', 'null')
+                                      ->where('cex_prices', '!=', '{}')),
+                'cheapshark' => $query->whereNotNull('cheapshark_usd')
+                                      ->when($hasCexPrices, fn ($q) => $q->where(fn ($q2) =>
+                                          $q2->whereNull('cex_prices')
+                                             ->orWhere('cex_prices', 'null')
+                                             ->orWhere('cex_prices', '{}'))),
+                'steam'      => $query->whereNotNull('steam_gbp')
+                                      ->whereNull('cheapshark_usd')
+                                      ->when($hasCexPrices, fn ($q) => $q->where(fn ($q2) =>
+                                          $q2->whereNull('cex_prices')
+                                             ->orWhere('cex_prices', 'null')
+                                             ->orWhere('cex_prices', '{}'))),
+                'base'       => $query->whereNull('steam_gbp')
+                                      ->whereNull('cheapshark_usd')
+                                      ->when($hasCexPrices, fn ($q) => $q->where(fn ($q2) =>
+                                          $q2->whereNull('cex_prices')
+                                             ->orWhere('cex_prices', 'null')
+                                             ->orWhere('cex_prices', '{}'))),
+                default      => null,
+            };
 
             if ($search !== '') {
                 $query->where(function ($q) use ($search, $hasGameTitle) {
@@ -39,7 +67,7 @@ class AdminGamePricesController extends Controller
 
             $allPlatforms = config('igdb.all_platforms');
 
-            return view('admin.game-prices', compact('gamePrices', 'search', 'allPlatforms'));
+            return view('admin.game-prices', compact('gamePrices', 'search', 'source', 'allPlatforms'));
 
         } catch (\Throwable $e) {
             return view('admin.error-debug', [

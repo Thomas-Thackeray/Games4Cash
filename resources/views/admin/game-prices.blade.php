@@ -15,14 +15,52 @@
     <div class="alert alert--success" style="margin-bottom:1.5rem;">{{ session('flash_success') }}</div>
     @endif
 
+    {{-- Source filter tabs --}}
+    @php
+    $filters = [
+        ''           => 'All',
+        'cex'        => 'CeX',
+        'cheapshark' => 'CheapShark',
+        'steam'      => 'Steam',
+        'base'       => 'Base Price',
+    ];
+    @endphp
+    <div style="display:flex; gap:0.4rem; flex-wrap:wrap; margin-bottom:1.25rem;">
+        @foreach($filters as $val => $label)
+        @php
+            $active  = $source === $val;
+            $href    = route('admin.game-prices', array_filter(['source' => $val ?: null, 'search' => $search ?: null]));
+            $colours = [
+                'cex'        => ['bg'=>'rgba(34,197,94,0.15)',  'color'=>'#16a34a', 'border'=>'rgba(34,197,94,0.4)'  ],
+                'cheapshark' => ['bg'=>'rgba(59,130,246,0.15)', 'color'=>'#2563eb', 'border'=>'rgba(59,130,246,0.4)' ],
+                'steam'      => ['bg'=>'rgba(249,115,22,0.15)', 'color'=>'#ea580c', 'border'=>'rgba(249,115,22,0.4)' ],
+                'base'       => ['bg'=>'rgba(100,116,139,0.15)','color'=>'#64748b', 'border'=>'rgba(100,116,139,0.4)'],
+                ''           => ['bg'=>'var(--bg-card)',        'color'=>'var(--text)','border'=>'var(--border)'      ],
+            ];
+            $c = $colours[$val];
+        @endphp
+        <a href="{{ $href }}"
+           style="display:inline-block; padding:0.3rem 0.85rem; border-radius:999px; font-size:0.8rem; font-weight:600; text-decoration:none;
+                  background:{{ $active ? ($val ? $c['bg'] : 'var(--accent)') : 'var(--bg-card)' }};
+                  color:{{ $active ? ($val ? $c['color'] : '#fff') : 'var(--text-muted)' }};
+                  border:1px solid {{ $active ? $c['border'] : 'var(--border)' }};
+                  transition:0.15s;">
+            {{ $label }}
+        </a>
+        @endforeach
+    </div>
+
     {{-- Search --}}
     <form method="GET" action="{{ route('admin.game-prices') }}" class="admin-search-form">
+        @if($source)
+        <input type="hidden" name="source" value="{{ $source }}">
+        @endif
         <input type="search" name="search" value="{{ $search }}"
             class="form-input admin-search-input"
             placeholder="Search by game name or slug…">
         <button type="submit" class="btn btn--outline btn--sm">Search</button>
         @if($search)
-        <a href="{{ route('admin.game-prices') }}" class="btn btn--outline btn--sm">Clear</a>
+        <a href="{{ route('admin.game-prices', array_filter(['source' => $source ?: null])) }}" class="btn btn--outline btn--sm">Clear</a>
         @endif
     </form>
 
