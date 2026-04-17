@@ -405,7 +405,7 @@
                     for all known games at once. Prices refresh automatically every 24 hours during normal browsing.
                 </p>
             </div>
-            <form method="POST" action="{{ route('admin.sync-cex-prices') }}" style="flex-shrink:0;">
+            <form method="POST" action="{{ route('admin.settings.sync-cex') }}" style="flex-shrink:0;">
                 @csrf
                 <button type="submit" class="btn btn--primary btn--sm"
                     data-confirm="This will fetch CeX prices for all known games. It may take a minute — proceed?">

@@ -133,7 +133,7 @@ Route::middleware(['auth', 'track.active', 'admin'])->prefix('admin')->name('adm
     Route::post('/settings', [AdminController::class, 'updateSettings'])->name('settings.update');
 
     // CeX sync
-    Route::post('/settings/sync-cex-prices', [AdminController::class, 'syncCexPrices'])->name('admin.sync-cex-prices');
+    Route::post('/settings/sync-cex-prices', [AdminController::class, 'syncCexPrices'])->name('settings.sync-cex');
 
     // Franchise adjustments
     Route::post('/settings/franchise-adjustments', [AdminController::class, 'storeFranchiseAdjustment'])->name('franchise-adjustments.store');
