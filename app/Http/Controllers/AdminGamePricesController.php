@@ -71,6 +71,10 @@ class AdminGamePricesController extends Controller
                                       ->where('price_overrides', '!=', 'null')
                                       ->where('price_overrides', '!=', '{}')),
                 'hidden'     => $query->whereIn('igdb_game_id', $gamesWithHiddenRows),
+                'over10'     => $query->where(function ($q) {
+                                    $q->where('steam_gbp', '>', 10)
+                                      ->orWhere('cheapshark_usd', '>', 13); // ~£10 at 1.3 USD/GBP
+                                }),
                 default      => null,
             };
 

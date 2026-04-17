@@ -25,6 +25,7 @@
         'base'       => 'Base Price',
         'none'       => 'No Price',
         'override'   => 'Overridden',
+        'over10'     => 'Over £10',
         'hidden'     => 'Hidden',
     ];
     @endphp
@@ -40,6 +41,7 @@
                 'base'       => ['bg'=>'rgba(100,116,139,0.15)','color'=>'#64748b', 'border'=>'rgba(100,116,139,0.4)'],
                 'none'       => ['bg'=>'rgba(230,57,70,0.12)',  'color'=>'#e63946', 'border'=>'rgba(230,57,70,0.3)'  ],
                 'override'   => ['bg'=>'rgba(168,85,247,0.15)', 'color'=>'#9333ea', 'border'=>'rgba(168,85,247,0.4)' ],
+                'over10'     => ['bg'=>'rgba(234,179,8,0.15)',  'color'=>'#ca8a04', 'border'=>'rgba(234,179,8,0.4)'  ],
                 'hidden'     => ['bg'=>'rgba(30,30,30,0.6)',    'color'=>'#94a3b8', 'border'=>'rgba(100,116,139,0.4)'],
                 ''           => ['bg'=>'var(--bg-card)',        'color'=>'var(--text)','border'=>'var(--border)'      ],
             ];
