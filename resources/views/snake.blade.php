@@ -89,7 +89,7 @@
     }
     .leaderboard-row {
         display: grid;
-        grid-template-columns: 28px 1fr auto;
+        grid-template-columns: 28px 1fr auto auto;
         gap: 0.5rem;
         align-items: center;
         padding: 0.65rem 1.25rem;
@@ -191,6 +191,7 @@
                         </span>
                         <span class="lb-name">{{ $s->name }}</span>
                         <span class="lb-score">{{ number_format($s->score) }}</span>
+                        <span style="color:var(--text-muted); font-size:0.75rem; white-space:nowrap;">{{ $s->created_at->format('d M Y') }}</span>
                     </div>
                     @empty
                     <div class="lb-empty">No scores yet — be the first!</div>
@@ -468,6 +469,7 @@
                 <span class="lb-rank ${rankCls}">${rankLabel}</span>
                 <span class="lb-name">${escHtml(s.name)}</span>
                 <span class="lb-score">${s.score.toLocaleString()}</span>
+                <span style="color:var(--text-muted);font-size:0.75rem;white-space:nowrap;">${s.date}</span>
             </div>`;
         }).join('');
     }
