@@ -195,6 +195,7 @@
                     <li><a href="{{ route('faq') }}">FAQ</a></li>
                     <li><a href="{{ route('privacy') }}">Privacy Policy</a></li>
                     <li><a href="{{ route('sitemap') }}">Site Map</a></li>
+                    <li><a href="{{ route('snake') }}">🐍 Play Snake</a></li>
                 </ul>
             </div>
         </div>
