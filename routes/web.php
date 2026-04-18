@@ -48,6 +48,8 @@ Route::get('/platform/{id}/{name}', [PlatformController::class, 'show'])
     ->name('platform.show')
     ->where('id', '[0-9]+');
 
+Route::get('/genres', [\App\Http\Controllers\GenresController::class, 'index'])->name('genres.index');
+
 Route::get('/genre/{id}/{name}', [GenreController::class, 'show'])
     ->name('genre.show')
     ->where('id', '[0-9]+');

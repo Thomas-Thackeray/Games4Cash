@@ -69,7 +69,7 @@
                     </div>
                 </li>
                 <li class="nav-item has-dropdown">
-                    <a href="#" class="nav-link">Genres <span class="chevron">▾</span></a>
+                    <a href="{{ route('genres.index') }}" class="nav-link">Genres <span class="chevron">▾</span></a>
                     <div class="dropdown">
                         @foreach(config('igdb.genres') as $gName => $gId)
                         <a href="{{ route('genre.show', ['id' => $gId, 'name' => $gName]) }}" class="dropdown-item">
