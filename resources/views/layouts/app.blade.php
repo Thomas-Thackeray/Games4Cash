@@ -58,7 +58,7 @@
                     <a href="{{ route('home') }}" class="nav-link {{ ($activePage ?? '') === 'home' ? 'active' : '' }}">Home</a>
                 </li>
                 <li class="nav-item has-dropdown">
-                    <a href="#" class="nav-link">Platforms <span class="chevron">▾</span></a>
+                    <a href="{{ route('platforms.index') }}" class="nav-link">Platforms <span class="chevron">▾</span></a>
                     <div class="dropdown">
                         @foreach(config('igdb.platforms') as $pName => $pData)
                         <a href="{{ route('platform.show', ['id' => $pData['id'], 'name' => $pData['slug'] ?? $pName]) }}" class="dropdown-item">

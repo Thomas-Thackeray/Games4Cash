@@ -42,6 +42,8 @@ Route::get('/game/{id}', [GameController::class, 'show'])
 
 Route::get('/search', [SearchController::class, 'index'])->name('search');
 
+Route::get('/platforms', [\App\Http\Controllers\PlatformsController::class, 'index'])->name('platforms.index');
+
 Route::get('/platform/{id}/{name}', [PlatformController::class, 'show'])
     ->name('platform.show')
     ->where('id', '[0-9]+');
