@@ -482,4 +482,47 @@
     init();
 })();
 </script>
+<!-- ===== SNAKE HISTORY ===== -->
+<section class="section" style="border-top:1px solid var(--border); padding-top:3rem;">
+    <div class="container">
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:3.5rem; align-items:start; max-width:900px;">
+            <div>
+                <h2 style="font-size:1.2rem; font-weight:700; color:var(--text); margin-bottom:1rem;">The History of Snake</h2>
+                <p style="color:var(--text-muted); font-size:0.93rem; line-height:1.8; margin-bottom:1rem;">
+                    Snake traces its roots back to 1976, when Gremlin Industries released <em>Blockade</em> — a two-player arcade game where each player controlled a line that grew as it moved, with the goal of forcing your opponent into a wall or your own trail. It was simple, addictive, and laid the foundation for everything that followed.
+                </p>
+                <p style="color:var(--text-muted); font-size:0.93rem; line-height:1.8;">
+                    Variants appeared throughout the late 70s and 80s under names like <em>Worm</em> and <em>Nibbler</em>, but the concept truly exploded into mainstream culture in 1997 when Nokia developer Taneli Armanto wrote a version for the Nokia 6110. Pre-installed on hundreds of millions of phones worldwide, Nokia Snake became one of the most-played video games in history — not because people sought it out, but because it was simply <em>there</em>, on the device everyone carried.
+                </p>
+            </div>
+            <div>
+                <h2 style="font-size:1.2rem; font-weight:700; color:var(--text); margin-bottom:1rem;">A Game That Never Gets Old</h2>
+                <p style="color:var(--text-muted); font-size:0.93rem; line-height:1.8; margin-bottom:1rem;">
+                    What makes Snake so enduring is its perfect balance of simplicity and tension. The rules take seconds to learn — move, eat, grow, don't hit anything — but mastery is genuinely hard. As your snake gets longer, the available space shrinks and every turn becomes a calculated risk. The game gets harder the better you do, which is a rare and elegant design quality.
+                </p>
+                <p style="color:var(--text-muted); font-size:0.93rem; line-height:1.8;">
+                    Thousands of Snake clones and remakes have been made across virtually every platform imaginable. Google famously hid a playable version in Google Maps and Search. The game has been rebuilt in every programming language as a learning exercise. Decades on, it remains a benchmark of good game design — proof that you don't need cutting-edge graphics or deep mechanics to create something genuinely compelling.
+                </p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ===== RECENTLY VIEWED ===== -->
+@if(!empty($recentGames))
+<section class="section" style="border-top:1px solid var(--border);">
+    <div class="container">
+        <div class="section-header fade-up">
+            <h2 class="section-title">Recently Viewed</h2>
+            <a href="{{ route('search') }}" class="section-link">Browse All →</a>
+        </div>
+        <div class="games-grid games-grid--large fade-up">
+            @foreach($recentGames as $game)
+            <x-game-card :game="$game" />
+            @endforeach
+        </div>
+    </div>
+</section>
+@endif
+
 @endsection
