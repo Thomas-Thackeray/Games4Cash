@@ -199,6 +199,7 @@ Route::get('/blog/{slug}', [BlogController::class, 'show'])->name('blog.show');
 
 // Static pages
 Route::get('/gaming-timeline', [\App\Http\Controllers\GamingTimelineController::class, 'index'])->name('gaming-timeline');
+Route::get('/gaming-legends', [\App\Http\Controllers\GamingLegendsController::class, 'index'])->name('gaming-legends');
 Route::view('/about', 'pages.about')->name('about');
 Route::view('/terms', 'pages.terms')->name('terms');
 Route::get('/contact', fn () => view('pages.contact'))->name('contact');

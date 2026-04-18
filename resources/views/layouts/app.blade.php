@@ -196,6 +196,7 @@
                     <li><a href="{{ route('privacy') }}">Privacy Policy</a></li>
                     <li><a href="{{ route('sitemap') }}">Site Map</a></li>
                     <li><a href="{{ route('gaming-timeline') }}">Gaming Timeline</a></li>
+                    <li><a href="{{ route('gaming-legends') }}">Gaming Legends</a></li>
                     <li><a href="{{ route('snake') }}">🐍 Play Snake</a></li>
                 </ul>
             </div>
