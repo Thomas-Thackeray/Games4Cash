@@ -31,6 +31,9 @@ Route::get('/img/{encoded}', [ImageProxyController::class, 'show'])
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
 
+Route::get('/snake', [\App\Http\Controllers\SnakeController::class, 'index'])->name('snake');
+Route::post('/snake/score', [\App\Http\Controllers\SnakeController::class, 'store'])->name('snake.score');
+
 // Canonical slug URL — /game/elden-ring
 Route::get('/game/{slug}', [GameController::class, 'showBySlug'])
     ->name('game.show')
