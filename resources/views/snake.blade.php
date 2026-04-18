@@ -384,6 +384,7 @@
 
     // Keyboard
     document.addEventListener('keydown', e => {
+        if (document.activeElement === nameIn) return;
         const map = {
             ArrowUp:'up', ArrowDown:'down', ArrowLeft:'left', ArrowRight:'right',
             w:'up', s:'down', a:'left', d:'right',
