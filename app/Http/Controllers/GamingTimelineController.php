@@ -14,7 +14,7 @@ class GamingTimelineController extends Controller
 
         $slugs = array_filter(array_column($events, 'igdb_slug'));
 
-        $imageMap = Cache::remember('gaming_timeline_images', now()->addHours(24), function () use ($slugs) {
+        $imageMap = Cache::remember('gaming_timeline_images_v2', now()->addHours(24), function () use ($slugs) {
             if (empty($slugs)) {
                 return [];
             }
@@ -27,7 +27,7 @@ class GamingTimelineController extends Controller
                 $map = [];
                 foreach ($results as $game) {
                     if (!empty($game['cover']['image_id'])) {
-                        $map[$game['slug']] = 'https://images.igdb.com/igdb/image/upload/t_cover_big/' . $game['cover']['image_id'] . '.jpg';
+                        $map[$game['slug']] = $game['cover']['image_id'];
                     }
                 }
                 return $map;
@@ -54,7 +54,7 @@ class GamingTimelineController extends Controller
             ['year' => '1984', 'tag' => 'game',     'title' => 'Tetris',                            'igdb_slug' => 'tetris',                                    'desc' => 'Soviet software engineer Alexey Pajitnov creates Tetris on a Soviet Elektronika 60. The game spreads rapidly across the USSR before making its way west, eventually becoming the pack-in game for the Game Boy and one of the best-selling games of all time.'],
             ['year' => '1985', 'tag' => 'console',  'title' => 'Nintendo NES & Super Mario Bros',   'igdb_slug' => 'super-mario-bros',                          'desc' => 'Nintendo releases the NES in North America, single-handedly reviving the video game market after the 1983 crash. Bundled with Super Mario Bros, it sets new standards for platform game design and redefines what home gaming can be.'],
             ['year' => '1986', 'tag' => 'game',     'title' => 'The Legend of Zelda',               'igdb_slug' => 'the-legend-of-zelda',                       'desc' => 'Nintendo\'s The Legend of Zelda introduces open-world exploration, non-linear gameplay, and save functionality to home consoles. Its influence on action-adventure game design is still felt in virtually every open-world game made today.'],
-            ['year' => '1989', 'tag' => 'console',  'title' => 'Game Boy',                          'igdb_slug' => 'tetris--1',                                 'desc' => 'Nintendo releases the Game Boy — a handheld console with a long battery life, durable build, and a killer app in Tetris. It dominates portable gaming for over a decade and launches a lineage that continues through the Nintendo DS and 3DS.'],
+            ['year' => '1989', 'tag' => 'console',  'title' => 'Game Boy',                          'igdb_slug' => 'tetris',                                    'desc' => 'Nintendo releases the Game Boy — a handheld console with a long battery life, durable build, and a killer app in Tetris. It dominates portable gaming for over a decade and launches a lineage that continues through the Nintendo DS and 3DS.'],
             ['year' => '1991', 'tag' => 'game',     'title' => 'Sonic the Hedgehog',                'igdb_slug' => 'sonic-the-hedgehog',                        'desc' => 'Sega launches Sonic the Hedgehog alongside the Mega Drive (Genesis), setting up one of gaming\'s greatest console rivalries. Sonic\'s speed-focused gameplay and attitude-heavy marketing challenge Nintendo\'s dominance for the first time.'],
             ['year' => '1992', 'tag' => 'game',     'title' => 'Mortal Kombat & the ESRB',          'igdb_slug' => 'mortal-kombat',                             'desc' => 'Mortal Kombat\'s graphic violence sparks congressional hearings in the United States, leading directly to the creation of the ESRB ratings system in 1994. Gaming would never be treated as purely children\'s entertainment again.'],
             ['year' => '1993', 'tag' => 'game',     'title' => 'Doom',                              'igdb_slug' => 'doom',                                      'desc' => 'id Software releases Doom and effectively invents the modern first-person shooter. Distributed via shareware, it reaches millions of players and introduces concepts — modding, online multiplayer, level editors — that remain central to gaming culture.'],

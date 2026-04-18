@@ -180,8 +180,9 @@
 
         @foreach($events as $event)
         @php
-            $tagLabel   = match($event['tag']) { 'game' => 'Landmark Game', 'tech' => 'Technology', 'mobile' => 'Mobile', default => ucfirst($event['tag']) };
-            $coverUrl   = (!empty($event['igdb_slug']) && isset($imageMap[$event['igdb_slug']])) ? $imageMap[$event['igdb_slug']] : null;
+            $tagLabel  = match($event['tag']) { 'game' => 'Landmark Game', 'tech' => 'Technology', 'mobile' => 'Mobile', default => ucfirst($event['tag']) };
+            $imageId   = (!empty($event['igdb_slug']) && isset($imageMap[$event['igdb_slug']])) ? $imageMap[$event['igdb_slug']] : null;
+            $coverUrl  = $imageId ? igdb_img($imageId, 'cover_big') : null;
         @endphp
         <div class="tl-item fade-up">
             @if($loop->odd)
