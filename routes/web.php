@@ -198,6 +198,7 @@ Route::get('/blog', [BlogController::class, 'index'])->name('blog.index');
 Route::get('/blog/{slug}', [BlogController::class, 'show'])->name('blog.show');
 
 // Static pages
+Route::view('/gaming-timeline', 'pages.gaming-timeline')->name('gaming-timeline');
 Route::view('/about', 'pages.about')->name('about');
 Route::view('/terms', 'pages.terms')->name('terms');
 Route::get('/contact', fn () => view('pages.contact'))->name('contact');
