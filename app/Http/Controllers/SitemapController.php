@@ -3,7 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\BlogPost;
+use App\Models\CustomGame;
+use App\Models\GamePrice;
 use Illuminate\Http\Response;
+use Illuminate\Support\Str;
 
 class SitemapController extends Controller
 {
@@ -11,8 +14,11 @@ class SitemapController extends Controller
     {
         $pages = $this->staticPages();
         $pages = array_merge($pages, $this->platformPages());
+        $pages = array_merge($pages, $this->platformSellPages());
         $pages = array_merge($pages, $this->genrePages());
         $pages = array_merge($pages, $this->blogPages());
+        $pages = array_merge($pages, $this->gamePages());
+        $pages = array_merge($pages, $this->customGamePages());
 
         $xml = $this->buildXml($pages);
 
@@ -67,6 +73,48 @@ class SitemapController extends Controller
                 'mod'      => now()->toAtomString(),
             ];
         }
+        return $pages;
+    }
+
+    private function platformSellPages(): array
+    {
+        $pages = [];
+        foreach (config('igdb.platforms', []) as $name => $data) {
+            $pages[] = [
+                'url'      => route('sell.platform', Str::slug($name)),
+                'priority' => '0.85',
+                'freq'     => 'weekly',
+                'mod'      => now()->toAtomString(),
+            ];
+        }
+        return $pages;
+    }
+
+    private function gamePages(): array
+    {
+        $pages = [];
+        GamePrice::whereNotNull('slug')->where('slug', '!=', '')->orderBy('id')->each(function (GamePrice $gp) use (&$pages) {
+            $pages[] = [
+                'url'      => route('game.show', $gp->slug),
+                'priority' => '0.6',
+                'freq'     => 'weekly',
+                'mod'      => $gp->updated_at->toAtomString(),
+            ];
+        });
+        return $pages;
+    }
+
+    private function customGamePages(): array
+    {
+        $pages = [];
+        CustomGame::where('published', true)->orderBy('id')->each(function (CustomGame $cg) use (&$pages) {
+            $pages[] = [
+                'url'      => route('game.show', $cg->slug),
+                'priority' => '0.65',
+                'freq'     => 'weekly',
+                'mod'      => $cg->updated_at->toAtomString(),
+            ];
+        });
         return $pages;
     }
 

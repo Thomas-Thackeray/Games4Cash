@@ -4,6 +4,8 @@ use App\Http\Controllers\AdminAnalyticsController;
 use App\Http\Controllers\AdminBlogController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AdminCustomGameController;
+use App\Http\Controllers\AdminCustomGameImportController;
+use App\Http\Controllers\PlatformSellController;
 use App\Http\Controllers\AdminEvaluationController;
 use App\Http\Controllers\AdminFaqController;
 use App\Http\Controllers\AdminGamePricesController;
@@ -74,6 +76,8 @@ Route::get('/platforms', [\App\Http\Controllers\PlatformsController::class, 'ind
 Route::get('/platform/{id}/{name}', [PlatformController::class, 'show'])
     ->name('platform.show')
     ->where('id', '[0-9]+');
+
+Route::get('/sell-{slug}-games', [PlatformSellController::class, 'show'])->name('sell.platform');
 
 Route::get('/genres', [\App\Http\Controllers\GenresController::class, 'index'])->name('genres.index');
 
@@ -226,6 +230,8 @@ Route::middleware(['auth', 'track.active', 'admin'])->prefix('admin')->name('adm
     Route::get('/custom-games', [AdminCustomGameController::class, 'index'])->name('custom-games.index');
     Route::get('/custom-games/create', [AdminCustomGameController::class, 'create'])->name('custom-games.create');
     Route::post('/custom-games', [AdminCustomGameController::class, 'store'])->name('custom-games.store');
+    Route::get('/custom-games/import', [AdminCustomGameImportController::class, 'create'])->name('custom-games.import');
+    Route::post('/custom-games/import', [AdminCustomGameImportController::class, 'store'])->name('custom-games.import.store');
     Route::get('/custom-games/{id}/edit', [AdminCustomGameController::class, 'edit'])->name('custom-games.edit')->where('id', '[0-9]+');
     Route::patch('/custom-games/{id}', [AdminCustomGameController::class, 'update'])->name('custom-games.update')->where('id', '[0-9]+');
     Route::delete('/custom-games/{id}', [AdminCustomGameController::class, 'destroy'])->name('custom-games.destroy')->where('id', '[0-9]+');

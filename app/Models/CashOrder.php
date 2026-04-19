@@ -75,9 +75,11 @@ class CashOrder extends Model
     public function statusLabel(): string
     {
         return match ($this->status) {
-            'pending'   => 'Pending',
-            'contacted' => 'Contacted',
-            'completed' => 'Completed',
+            'pending'   => 'Booked',
+            'contacted' => 'Collection Arranged',
+            'collected' => 'Collected',
+            'inspected' => 'Inspected',
+            'completed' => 'Paid',
             'cancelled' => 'Cancelled',
             default     => ucfirst($this->status),
         };
@@ -88,9 +90,41 @@ class CashOrder extends Model
         return match ($this->status) {
             'pending'   => 'status-badge--pending',
             'contacted' => 'status-badge--contacted',
+            'collected' => 'status-badge--contacted',
+            'inspected' => 'status-badge--contacted',
             'completed' => 'status-badge--completed',
             'cancelled' => 'status-badge--cancelled',
             default     => '',
         };
+    }
+
+    /**
+     * Returns the ordered tracking steps and which one is currently active.
+     * Each step: ['label', 'description', 'done', 'active']
+     */
+    public function trackingSteps(): array
+    {
+        if ($this->status === 'cancelled') {
+            return [];
+        }
+
+        $order = ['pending', 'contacted', 'collected', 'inspected', 'completed'];
+        $pos   = array_search($this->status, $order);
+        if ($pos === false) $pos = 0;
+
+        $steps = [
+            ['key' => 'pending',   'label' => 'Booked',              'desc' => 'Order received and confirmed.'],
+            ['key' => 'contacted', 'label' => 'Collection Arranged', 'desc' => 'We\'ve been in touch to arrange collection.'],
+            ['key' => 'collected', 'label' => 'Collected',           'desc' => 'Games collected from your address.'],
+            ['key' => 'inspected', 'label' => 'Inspected',           'desc' => 'Games checked and prices confirmed.'],
+            ['key' => 'completed', 'label' => 'Paid',                'desc' => 'Payment sent to you. All done!'],
+        ];
+
+        foreach ($steps as $i => &$step) {
+            $step['done']   = $i < $pos;
+            $step['active'] = $i === $pos;
+        }
+
+        return $steps;
     }
 }

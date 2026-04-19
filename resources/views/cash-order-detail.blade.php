@@ -31,6 +31,49 @@
         </div>
     </div>
 
+    {{-- ===== ORDER TRACKING TIMELINE ===== --}}
+    @php $steps = $order->trackingSteps(); @endphp
+    @if(!empty($steps))
+    <div class="account-card" style="margin-bottom:1.5rem;">
+        <h2 style="font-size:1rem; font-weight:600; margin-bottom:1.25rem; color:var(--text-muted);">ORDER PROGRESS</h2>
+        <div style="display:flex; flex-direction:column; gap:0;">
+            @foreach($steps as $i => $step)
+            @php $isLast = $i === count($steps) - 1; @endphp
+            <div style="display:flex; gap:1rem; align-items:flex-start;">
+                {{-- Icon + line --}}
+                <div style="display:flex; flex-direction:column; align-items:center; flex-shrink:0;">
+                    <div style="
+                        width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+                        font-size:0.85rem; font-weight:700; flex-shrink:0;
+                        {{ $step['done'] ? 'background:var(--accent); color:#fff;' : ($step['active'] ? 'background:var(--accent-2); color:#fff; box-shadow:0 0 0 4px rgba(var(--accent-2-rgb,249,168,38),0.2);' : 'background:var(--card-bg); border:2px solid var(--border); color:var(--text-dim);') }}
+                    ">
+                        @if($step['done']) ✓
+                        @elseif($step['active']) {{ $i + 1 }}
+                        @else {{ $i + 1 }}
+                        @endif
+                    </div>
+                    @if(!$isLast)
+                    <div style="width:2px; height:32px; {{ $step['done'] ? 'background:var(--accent);' : 'background:var(--border);' }} margin:2px 0;"></div>
+                    @endif
+                </div>
+                {{-- Label + desc --}}
+                <div style="padding-top:6px; padding-bottom:{{ $isLast ? '0' : '0.75rem' }};">
+                    <p style="font-weight:{{ $step['active'] ? '700' : '600' }}; font-size:0.9rem; margin:0; color:{{ $step['done'] ? 'var(--text-muted)' : ($step['active'] ? 'var(--text)' : 'var(--text-dim)') }};">
+                        {{ $step['label'] }}
+                        @if($step['active'])<span style="font-size:0.72rem; font-weight:500; background:rgba(249,168,38,0.12); color:var(--accent-2); border-radius:4px; padding:1px 6px; margin-left:6px; vertical-align:middle;">Current</span>@endif
+                    </p>
+                    <p style="font-size:0.8rem; color:var(--text-dim); margin:0.15rem 0 0;">{{ $step['desc'] }}</p>
+                </div>
+            </div>
+            @endforeach
+        </div>
+    </div>
+    @elseif($order->status === 'cancelled')
+    <div class="account-card" style="margin-bottom:1.5rem; border-color:rgba(230,57,70,0.3); background:rgba(230,57,70,0.04);">
+        <p style="margin:0; font-size:0.9rem; color:var(--accent);">This order was cancelled.</p>
+    </div>
+    @endif
+
     <div class="account-card" style="margin-bottom:1.5rem;">
         <h2 style="font-size:1rem; font-weight:600; margin-bottom:1rem; color:var(--text-muted);">SUBMITTED GAMES</h2>
         @foreach($order->items as $item)

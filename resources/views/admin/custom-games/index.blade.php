@@ -9,7 +9,10 @@
             <h1 class="admin-title">Custom Games</h1>
             <p class="admin-subtitle"><a href="{{ route('admin.dashboard') }}" style="color:var(--accent);">← Dashboard</a></p>
         </div>
-        <a href="{{ route('admin.custom-games.create') }}" class="btn btn--primary btn--sm">+ New Game</a>
+        <div style="display:flex; gap:0.5rem;">
+            <a href="{{ route('admin.custom-games.import') }}" class="btn btn--outline btn--sm">↑ Bulk Import</a>
+            <a href="{{ route('admin.custom-games.create') }}" class="btn btn--primary btn--sm">+ New Game</a>
+        </div>
     </div>
 
     @if($games->isEmpty())

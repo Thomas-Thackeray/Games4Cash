@@ -130,7 +130,7 @@
                         <div class="form-group">
                             <label class="form-label">Status</label>
                             <select name="status" class="form-input" style="width:100%;">
-                                @foreach(['pending' => 'Pending', 'contacted' => 'Contacted', 'completed' => 'Completed', 'cancelled' => 'Cancelled'] as $val => $label)
+                                @foreach(['pending' => 'Booked', 'contacted' => 'Collection Arranged', 'collected' => 'Collected', 'inspected' => 'Inspected', 'completed' => 'Paid', 'cancelled' => 'Cancelled'] as $val => $label)
                                 <option value="{{ $val }}" {{ $order->status === $val ? 'selected' : '' }}>
                                     {{ $label }}
                                 </option>
