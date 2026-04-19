@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\CustomGame;
 use App\Models\GamePrice;
 use App\Services\IgdbService;
 use App\Services\PricingService;
@@ -61,7 +62,13 @@ class GameController extends Controller
             try {
                 $game = $igdb->getGameBySlug($slug);
             } catch (\RuntimeException) {}
+
+            // Fall back to a published custom game with this slug
             if (!$game) {
+                $customGame = CustomGame::where('slug', $slug)->where('published', true)->first();
+                if ($customGame) {
+                    return $this->renderCustomGame($customGame);
+                }
                 abort(404);
             }
             $id = $game['id'];
@@ -154,5 +161,25 @@ class GameController extends Controller
         }
 
         return view('game', compact('game', 'error', 'pricing', 'steamAppId', 'inWishlist', 'inCashBasket', 'gamePrice', 'franchiseNames'));
+    }
+
+    private function renderCustomGame(CustomGame $game): View
+    {
+        $platforms   = config('igdb.all_platforms', []);
+        $pricingRows = [];
+
+        foreach ($platforms as $platformId => $platformName) {
+            $price = $game->priceForPlatform($platformId);
+            if ($price !== null) {
+                $pricingRows[] = [
+                    'platform_id'   => $platformId,
+                    'platform_name' => $platformName,
+                    'display_price' => '£' . number_format($price, 2),
+                    'price_numeric' => $price,
+                ];
+            }
+        }
+
+        return view('custom-game', compact('game', 'pricingRows', 'platforms'));
     }
 }

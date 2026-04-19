@@ -39,8 +39,8 @@ Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::get('/snake', [\App\Http\Controllers\SnakeController::class, 'index'])->name('snake');
 Route::post('/snake/score', [\App\Http\Controllers\SnakeController::class, 'store'])->name('snake.score');
 
-// Custom game public page
-Route::get('/custom-game/{slug}', [CustomGameController::class, 'show'])
+// Custom game — redirect old URL to canonical /game/{slug}
+Route::get('/custom-game/{slug}', fn (string $slug) => redirect()->route('game.show', $slug, 301))
     ->name('custom-game.show')
     ->where('slug', '[a-z][a-z0-9\-]*');
 

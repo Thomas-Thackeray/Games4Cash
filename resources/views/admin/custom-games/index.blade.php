@@ -43,7 +43,7 @@
                     </td>
                     <td>
                         <div class="admin-row-actions">
-                            <a href="{{ route('custom-game.show', $game->slug) }}" target="_blank" class="btn btn--outline btn--xs">View</a>
+                            <a href="{{ route('game.show', $game->slug) }}" target="_blank" class="btn btn--outline btn--xs">View</a>
                             <a href="{{ route('admin.custom-games.edit', $game->id) }}" class="btn btn--outline btn--xs">Edit</a>
                             <form method="POST" action="{{ route('admin.custom-games.destroy', $game->id) }}">
                                 @csrf

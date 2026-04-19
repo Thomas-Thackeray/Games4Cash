@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\CustomGame;
 use App\Models\GamePrice;
 use App\Models\HiddenGame;
 use App\Models\NoPriceReview;
@@ -58,6 +59,16 @@ class SearchController extends Controller
         $games = NoPriceReview::strip($games);
         PriceSyncService::ensureForGames($games);
 
-        return view('search', compact('games', 'query', 'franchise', 'page', 'limit', 'error'));
+        // Include published custom games — prepend to results on page 1 when searching or browsing
+        $customGames = collect();
+        if ($page === 1) {
+            $customQuery = CustomGame::where('published', true);
+            if ($query !== '') {
+                $customQuery->where('title', 'like', '%' . $query . '%');
+            }
+            $customGames = $customQuery->orderBy('title')->get();
+        }
+
+        return view('search', compact('games', 'query', 'franchise', 'page', 'limit', 'error', 'customGames'));
     }
 }

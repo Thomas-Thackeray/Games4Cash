@@ -10,7 +10,7 @@
             <p class="admin-subtitle"><a href="{{ route('admin.custom-games.index') }}" style="color:var(--accent);">← Custom Games</a></p>
         </div>
         @if($game)
-        <a href="{{ route('custom-game.show', $game->slug) }}" target="_blank" class="btn btn--outline btn--sm">View Page ↗</a>
+        <a href="{{ route('game.show', $game->slug) }}" target="_blank" class="btn btn--outline btn--sm">View Page ↗</a>
         @endif
     </div>
 

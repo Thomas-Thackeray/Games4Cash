@@ -1,11 +1,15 @@
 @extends('layouts.app')
 
+@php
+    $coverUrl    = $game->cover_image_path ? asset('storage/' . $game->cover_image_path) : asset('img/placeholder.jpg');
+    $backdropUrl = $game->cover_image_path ? asset('storage/' . $game->cover_image_path) : '';
+@endphp
+
 @section('title', $game->title)
 @section('meta_description', $game->summary ? \Illuminate\Support\Str::limit(strip_tags($game->summary), 160) : $game->title . ' — browse game info and get a cash trade-in quote.')
 @section('og_type', 'game')
-@if($game->cover_image_path)
-@section('og_image', Storage::url($game->cover_image_path))
-@endif
+@section('og_image', $coverUrl)
+@section('canonical', route('game.show', $game->slug))
 
 @section('content')
 
@@ -22,14 +26,13 @@
 
 <!-- ===== HERO ===== -->
 <div class="game-detail-hero">
+    @if($backdropUrl)
+    <div class="gd-backdrop" style="background-image:url('{{ $backdropUrl }}')"></div>
+    @endif
     <div class="container">
         <div class="gd-inner">
             <div class="gd-cover">
-                @if($game->cover_image_path)
-                <img src="{{ Storage::url($game->cover_image_path) }}" alt="{{ $game->title }} cover">
-                @else
-                <img src="{{ asset('img/placeholder.jpg') }}" alt="No cover available">
-                @endif
+                <img src="{{ $coverUrl }}" alt="{{ $game->title }} cover">
             </div>
 
             <div class="gd-info">
@@ -85,24 +88,34 @@
                                 <span class="cash-dropdown__item-name">{{ $row['platform_name'] }}</span>
                                 <span class="cash-dropdown__item-price">{{ $row['display_price'] }}</span>
                             </div>
-                            @php
-                                $platformId = array_search($row['platform_name'], $platforms);
-                            @endphp
                             <form method="POST" action="{{ route('cash-basket.store') }}">
                                 @csrf
                                 <input type="hidden" name="custom_game_id" value="{{ $game->id }}">
-                                <input type="hidden" name="platform_id"    value="{{ $platformId }}">
+                                <input type="hidden" name="platform_id"    value="{{ $row['platform_id'] }}">
                                 <input type="hidden" name="game_title"     value="{{ $game->title }}">
-                                @if($game->cover_image_path)
-                                <input type="hidden" name="cover_url"      value="{{ Storage::url($game->cover_image_path) }}">
-                                @endif
+                                <input type="hidden" name="cover_url"      value="{{ $coverUrl }}">
                                 <button type="submit" class="btn btn--primary btn--xs">Add</button>
                             </form>
                         </div>
                         @endforeach
                     </template>
                     @else
-                    <a href="{{ route('login') }}" class="btn gd-cash-btn">💰 Get Cash</a>
+                    <button type="button"
+                        class="btn gd-cash-btn js-cash-btn"
+                        data-tpl="ctpl-custom-{{ $game->id }}">
+                        💰 Get Cash
+                    </button>
+                    <template id="ctpl-custom-{{ $game->id }}" data-title="{{ $game->title }}">
+                        @foreach($pricingRows as $row)
+                        <div class="cash-dropdown__item">
+                            <div class="cash-dropdown__item-info">
+                                <span class="cash-dropdown__item-name">{{ $row['platform_name'] }}</span>
+                                <span class="cash-dropdown__item-price">{{ $row['display_price'] }}</span>
+                            </div>
+                            <a href="{{ route('login') }}" class="btn btn--primary btn--xs">Sign In</a>
+                        </div>
+                        @endforeach
+                    </template>
                     @endauth
                 </div>
                 @endif
@@ -113,6 +126,7 @@
 
 <!-- ===== BODY ===== -->
 <div class="container" style="padding-top:2.5rem; padding-bottom:3rem;">
+
     @if($game->summary)
     <section style="max-width:800px; margin-bottom:2.5rem;">
         <h2 style="font-size:1.2rem; font-weight:700; margin-bottom:0.75rem;">About This Game</h2>
@@ -141,6 +155,7 @@
         </p>
     </section>
     @endif
+
 </div>
 
 @endsection
