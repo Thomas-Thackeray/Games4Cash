@@ -53,27 +53,15 @@ class AuthController extends Controller
             'password.confirmed'     => 'Passwords do not match.',
         ]);
 
-        // Resolve referrer from session (set by /ref/{code} visit)
-        $referrerId = null;
-        if ($request->session()->has('referral_code')) {
-            $referrer = User::where('referral_code', $request->session()->get('referral_code'))->first();
-            if ($referrer) {
-                $referrerId = $referrer->id;
-            }
-        }
-
         $user = User::create([
-            'first_name'          => $request->first_name,
-            'surname'             => $request->surname,
-            'name'                => $request->first_name . ' ' . $request->surname,
-            'username'            => $request->username,
-            'email'               => $request->email,
-            'contact_number'      => $request->contact_number,
-            'password'            => Hash::make($request->password),
-            'referred_by_user_id' => $referrerId,
+            'first_name'     => $request->first_name,
+            'surname'        => $request->surname,
+            'name'           => $request->first_name . ' ' . $request->surname,
+            'username'       => $request->username,
+            'email'          => $request->email,
+            'contact_number' => $request->contact_number,
+            'password'       => Hash::make($request->password),
         ]);
-
-        $request->session()->forget('referral_code');
 
         Auth::login($user);
         $request->session()->regenerate();

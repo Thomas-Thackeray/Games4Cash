@@ -82,12 +82,6 @@ Route::get('/platform/{id}/{name}', [PlatformController::class, 'show'])
 
 Route::get('/sell-{slug}-games', [PlatformSellController::class, 'show'])->name('sell.platform');
 
-// Referral landing — store code in session then redirect to register
-Route::get('/ref/{code}', function (string $code, \Illuminate\Http\Request $request) {
-    $request->session()->put('referral_code', strtoupper($code));
-    return redirect()->route('register')->with('flash_success', 'Referral applied! Create your account to get started.');
-})->name('referral.landing')->where('code', '[A-Za-z0-9]+');
-
 // How much is my game worth
 Route::get('/how-much-is-my-game-worth', [HowMuchController::class, 'index'])->name('game.worth');
 Route::get('/how-much-is-my-game-worth/search', [HowMuchController::class, 'search'])->name('game.worth.search')->middleware('throttle:60,1');

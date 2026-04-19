@@ -124,15 +124,6 @@ class CashOrderController extends Controller
 
         $user->cashBasketItems()->delete();
 
-        // Credit referrer bonus on the user's very first order
-        if ($user->referred_by_user_id && $user->cashOrders()->count() === 1) {
-            $bonus = (float) \App\Models\Setting::get('referral_bonus_gbp', 5.00);
-            if ($bonus > 0) {
-                \App\Models\User::where('id', $user->referred_by_user_id)
-                    ->increment('referral_bonus_gbp', $bonus);
-            }
-        }
-
         Mail::to($user->email)->send(new OrderConfirmationMail($user, $order));
 
         $adminEmail = Setting::get('admin_notification_email', 'thomasthackeray0@gmail.com');
