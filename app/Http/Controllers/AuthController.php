@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\AdminNewUserMail;
 use App\Mail\WelcomeEmail;
 use App\Models\LoginAttempt;
+use App\Models\Setting;
 use App\Models\User;
 use App\Rules\NotCommonPassword;
 use App\Services\ActivityLogger;
@@ -65,6 +67,13 @@ class AuthController extends Controller
         $request->session()->regenerate();
 
         Mail::to($user->email)->send(new WelcomeEmail($user));
+
+        $adminEmail = Setting::get('admin_notification_email', 'thomasthackeray0@gmail.com');
+        try {
+            Mail::to($adminEmail)->send(new AdminNewUserMail($user));
+        } catch (\Throwable) {
+            // Non-critical — don't fail registration if admin email fails
+        }
 
         return redirect()->route('home')
             ->with('flash_success', 'Welcome to ' . config('app.name') . ', ' . $user->first_name . '! Your account has been created and a confirmation email is on its way.');

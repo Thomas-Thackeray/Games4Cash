@@ -319,12 +319,14 @@ class AdminController extends Controller
     // ----------------------------------------------------------------
 
     private const EMAIL_TEMPLATE_DEFAULTS = [
-        'email_order_intro'          => "Your cash quote has been received and we're reviewing it now.\nA member of our team will be in touch shortly with further information about your collection and payment.",
-        'email_order_packaging_note' => "Please ensure your games are ready and packaged securely before the collection date. All prices are estimates and may be adjusted upon physical inspection.",
-        'email_welcome_intro'        => "Thank you for creating an account on {site_name}. Your account is all set — you can now explore thousands of games, browse by platform and genre, and discover your next favourite title.",
-        'email_welcome_footer_note'  => "If you did not create this account, you can safely ignore this email — no action is required.",
-        'email_reset_intro'          => "Hi {first_name}, we received a request to reset the password for your {site_name} account. Click the button below to choose a new password. This link will expire in 60 minutes.",
-        'email_reset_footer_note'    => "If you did not request a password reset, no action is required — your password will remain unchanged.",
+        'email_order_intro'            => "Your cash quote has been received and we're reviewing it now.\nA member of our team will be in touch shortly with further information about your collection and payment.",
+        'email_order_packaging_note'   => "Please ensure your games are ready and packaged securely before the collection date. All prices are estimates and may be adjusted upon physical inspection.",
+        'email_welcome_intro'          => "Thank you for creating an account on {site_name}. Your account is all set — you can now explore thousands of games, browse by platform and genre, and discover your next favourite title.",
+        'email_welcome_footer_note'    => "If you did not create this account, you can safely ignore this email — no action is required.",
+        'email_reset_intro'            => "Hi {first_name}, we received a request to reset the password for your {site_name} account. Click the button below to choose a new password. This link will expire in 60 minutes.",
+        'email_reset_footer_note'      => "If you did not request a password reset, no action is required — your password will remain unchanged.",
+        'email_admin_new_user_body'    => "A new user has just registered on {site_name}.\n\nUsername: {username}\nName: {first_name} {surname}\nEmail: {email}",
+        'email_admin_new_quote_body'   => "A new cash quote has been submitted on {site_name}.\n\nOrder: {order_ref}\nCustomer: {username}\nTotal: {total}\nGames: {items_count}",
     ];
 
     public function showEmailTemplates(): View
@@ -333,14 +335,16 @@ class AdminController extends Controller
         foreach (self::EMAIL_TEMPLATE_DEFAULTS as $key => $default) {
             $templates[$key] = Setting::get($key, $default);
         }
-        return view('admin.email-templates', compact('templates'));
+        $adminNotificationEmail = Setting::get('admin_notification_email', 'thomasthackeray0@gmail.com');
+        return view('admin.email-templates', compact('templates', 'adminNotificationEmail'));
     }
 
     private const EMAIL_TEST_ADDRESS = 'thomasthackeray0@gmail.com';
 
     public function testEmailTemplate(Request $request): RedirectResponse
     {
-        $template = $request->input('template');
+        $template  = $request->input('template');
+        $adminEmail = Setting::get('admin_notification_email', self::EMAIL_TEST_ADDRESS);
 
         $testUser = new \App\Models\User([
             'first_name' => 'Thomas',
@@ -349,58 +353,65 @@ class AdminController extends Controller
             'email'      => self::EMAIL_TEST_ADDRESS,
         ]);
 
+        $testOrder = new \App\Models\CashOrder([
+            'order_ref'         => 'TEST-0001',
+            'status'            => 'pending',
+            'total_gbp'         => 12.50,
+            'house_name_number' => '42',
+            'address_line1'     => 'Example Street',
+            'address_line2'     => null,
+            'address_line3'     => null,
+            'city'              => 'Manchester',
+            'county'            => 'Greater Manchester',
+            'postcode'          => 'M1 1AA',
+            'items'             => [
+                ['game_title' => 'Grand Theft Auto V', 'platform_name' => 'PlayStation 5', 'condition_label' => 'Complete (In Case)', 'display_price' => '£7.50'],
+                ['game_title' => 'Assassin\'s Creed Valhalla', 'platform_name' => 'Xbox Series X|S', 'condition_label' => 'Just Disk', 'display_price' => '£5.00'],
+            ],
+        ]);
+
         try {
             match ($template) {
-                'order' => \Illuminate\Support\Facades\Mail::to(self::EMAIL_TEST_ADDRESS)
-                    ->send(new \App\Mail\OrderConfirmationMail(
-                        $testUser,
-                        new \App\Models\CashOrder([
-                            'order_ref'          => 'TEST-0001',
-                            'status'             => 'pending',
-                            'total_gbp'          => 12.50,
-                            'house_name_number'  => '42',
-                            'address_line1'      => 'Example Street',
-                            'address_line2'      => null,
-                            'address_line3'      => null,
-                            'city'               => 'Manchester',
-                            'county'             => 'Greater Manchester',
-                            'postcode'           => 'M1 1AA',
-                            'items'              => [
-                                ['game_title' => 'Grand Theft Auto V', 'platform_name' => 'PlayStation 5', 'condition_label' => 'Complete (In Case)', 'display_price' => '£7.50'],
-                                ['game_title' => 'Assassin\'s Creed Valhalla', 'platform_name' => 'Xbox Series X|S', 'condition_label' => 'Just Disk', 'display_price' => '£5.00'],
-                            ],
-                        ])
-                    )),
-                'welcome' => \Illuminate\Support\Facades\Mail::to(self::EMAIL_TEST_ADDRESS)
-                    ->send(new \App\Mail\WelcomeEmail($testUser)),
-                'reset' => \Illuminate\Support\Facades\Mail::to(self::EMAIL_TEST_ADDRESS)
-                    ->send(new \App\Mail\PasswordResetMail($testUser, 'test-token-preview-only')),
-                default => throw new \InvalidArgumentException("Unknown template: {$template}"),
+                'order'           => \Illuminate\Support\Facades\Mail::to(self::EMAIL_TEST_ADDRESS)->send(new \App\Mail\OrderConfirmationMail($testUser, $testOrder)),
+                'welcome'         => \Illuminate\Support\Facades\Mail::to(self::EMAIL_TEST_ADDRESS)->send(new \App\Mail\WelcomeEmail($testUser)),
+                'reset'           => \Illuminate\Support\Facades\Mail::to(self::EMAIL_TEST_ADDRESS)->send(new \App\Mail\PasswordResetMail($testUser, 'test-token-preview-only')),
+                'admin_new_user'  => \Illuminate\Support\Facades\Mail::to($adminEmail)->send(new \App\Mail\AdminNewUserMail($testUser)),
+                'admin_new_quote' => \Illuminate\Support\Facades\Mail::to($adminEmail)->send(new \App\Mail\AdminNewQuoteMail($testUser, $testOrder)),
+                default           => throw new \InvalidArgumentException("Unknown template: {$template}"),
             };
         } catch (\Throwable $e) {
             return back()->with('flash_error', 'Failed to send test email: ' . $e->getMessage());
         }
 
         $label = match ($template) {
-            'order'   => 'Order Confirmation',
-            'welcome' => 'Welcome',
-            'reset'   => 'Password Reset',
-            default   => $template,
+            'order'           => 'Order Confirmation',
+            'welcome'         => 'Welcome',
+            'reset'           => 'Password Reset',
+            'admin_new_user'  => 'Admin New Registration',
+            'admin_new_quote' => 'Admin New Quote',
+            default           => $template,
         };
 
-        return back()->with('flash_success', "{$label} test email sent to " . self::EMAIL_TEST_ADDRESS . '.');
+        $sentTo = in_array($template, ['admin_new_user', 'admin_new_quote']) ? $adminEmail : self::EMAIL_TEST_ADDRESS;
+
+        return back()->with('flash_success', "{$label} test email sent to {$sentTo}.");
     }
 
     public function updateEmailTemplates(Request $request): RedirectResponse
     {
         $request->validate([
-            'email_order_intro'          => ['required', 'string', 'max:2000'],
-            'email_order_packaging_note' => ['required', 'string', 'max:2000'],
-            'email_welcome_intro'        => ['required', 'string', 'max:2000'],
-            'email_welcome_footer_note'  => ['required', 'string', 'max:2000'],
-            'email_reset_intro'          => ['required', 'string', 'max:2000'],
-            'email_reset_footer_note'    => ['required', 'string', 'max:2000'],
+            'admin_notification_email'     => ['required', 'email', 'max:255'],
+            'email_order_intro'            => ['required', 'string', 'max:2000'],
+            'email_order_packaging_note'   => ['required', 'string', 'max:2000'],
+            'email_welcome_intro'          => ['required', 'string', 'max:2000'],
+            'email_welcome_footer_note'    => ['required', 'string', 'max:2000'],
+            'email_reset_intro'            => ['required', 'string', 'max:2000'],
+            'email_reset_footer_note'      => ['required', 'string', 'max:2000'],
+            'email_admin_new_user_body'    => ['required', 'string', 'max:2000'],
+            'email_admin_new_quote_body'   => ['required', 'string', 'max:2000'],
         ]);
+
+        Setting::set('admin_notification_email', $request->input('admin_notification_email'));
 
         foreach (array_keys(self::EMAIL_TEMPLATE_DEFAULTS) as $key) {
             Setting::set($key, $request->input($key));
