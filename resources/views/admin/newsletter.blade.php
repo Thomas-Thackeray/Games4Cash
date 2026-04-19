@@ -40,8 +40,7 @@
         @if($activeCount === 0)
         <div class="alert alert--error">No active subscribers to send to yet.</div>
         @else
-        <form method="POST" action="{{ route('admin.newsletter.send') }}"
-              data-confirm="Send this newsletter to {{ $activeCount }} subscriber(s)?">
+        <form method="POST" action="{{ route('admin.newsletter.send') }}">
             @csrf
             <div style="margin-bottom:1rem;">
                 <label class="form-label">Subject Line</label>
@@ -56,9 +55,8 @@
                           required>{{ old('body') }}</textarea>
                 @error('body')<p class="form-error">{{ $message }}</p>@enderror
             </div>
-            <button type="button" class="btn btn--primary"
-                    data-confirm="Send this newsletter to {{ $activeCount }} subscriber(s)? This cannot be undone."
-                    onclick="if(confirm(this.dataset.confirm)){this.closest('form').submit();}">
+            <button type="submit" class="btn btn--primary"
+                    data-confirm="Send this newsletter to {{ $activeCount }} subscriber(s)? This cannot be undone.">
                 Send Newsletter to {{ number_format($activeCount) }} Subscriber(s)
             </button>
         </form>
