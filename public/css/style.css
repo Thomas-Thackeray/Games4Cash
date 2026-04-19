@@ -795,10 +795,12 @@ h1,h2,h3,h4,h5,h6 { line-height: 1.2; }
 .gd-cover {
     flex-shrink: 0;
     width: 220px;
+    min-height: 293px;
     border-radius: var(--radius-lg);
     overflow: hidden;
     box-shadow: 0 20px 60px rgba(0,0,0,0.7);
     border: 1px solid rgba(255,255,255,0.1);
+    background: var(--card-bg);
 }
 .gd-cover img { width: 100%; display: block; }
 

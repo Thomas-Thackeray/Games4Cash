@@ -32,7 +32,8 @@
     <div class="container">
         <div class="gd-inner">
             <div class="gd-cover">
-                <img src="{{ $coverUrl }}" alt="{{ $game->title }} cover">
+                <img src="{{ $coverUrl }}" alt="{{ $game->title }} cover"
+                     onerror="this.onerror=null;this.src='{{ asset('img/placeholder.jpg') }}'">
             </div>
 
             <div class="gd-info">
