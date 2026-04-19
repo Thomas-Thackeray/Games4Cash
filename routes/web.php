@@ -43,7 +43,7 @@ Route::get('/game/{slug}', [GameController::class, 'showBySlug'])
 Route::get('/game/{id}', [GameController::class, 'show'])
     ->where('id', '[0-9]+');
 
-Route::get('/search', [SearchController::class, 'index'])->name('search');
+Route::get('/search', [SearchController::class, 'index'])->name('search')->middleware('throttle:60,1');
 
 Route::get('/platforms', [\App\Http\Controllers\PlatformsController::class, 'index'])->name('platforms.index');
 
@@ -134,6 +134,7 @@ Route::middleware(['auth', 'track.active', 'admin'])->prefix('admin')->name('adm
 
     // Activity logs
     Route::get('/activity-logs', [AdminController::class, 'activityLogs'])->name('activity-logs');
+    Route::get('/activity-logs/export', [AdminController::class, 'exportActivityLogs'])->name('activity-logs.export');
     Route::delete('/activity-logs/clear', [AdminController::class, 'clearActivityLogs'])->name('activity-logs.clear');
     Route::delete('/activity-logs/{id}', [AdminController::class, 'deleteActivityLog'])->name('activity-logs.delete')->where('id', '[0-9]+');
 

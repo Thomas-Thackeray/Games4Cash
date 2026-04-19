@@ -165,6 +165,18 @@
                     </div>
                     @error('min_order_gbp')<p class="form-error">{{ $message }}</p>@enderror
                 </div>
+
+                <div class="form-group">
+                    <label class="form-label">Order Cancellation Window (minutes)</label>
+                    <p class="settings-hint">How long customers have to cancel a pending quote after submission. Set to <strong>0</strong> to disable cancellations. Default: 120 (2 hours).</p>
+                    <div class="settings-input-row">
+                        <input type="number" name="cancel_window_minutes"
+                            value="{{ old('cancel_window_minutes', $settings['cancel_window_minutes']) }}"
+                            min="0" max="10080" step="1" class="form-input settings-input--sm">
+                        <span class="settings-unit" style="border-left:none; border-right:1px solid var(--border); border-radius:0 6px 6px 0; padding: 0 0.75rem;">min</span>
+                    </div>
+                    @error('cancel_window_minutes')<p class="form-error">{{ $message }}</p>@enderror
+                </div>
             </div>
 
             {{-- Game Condition Modifiers --}}

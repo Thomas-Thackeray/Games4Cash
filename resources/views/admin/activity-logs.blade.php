@@ -9,22 +9,28 @@
             <h1 class="admin-title">Activity Logs</h1>
             <p class="admin-subtitle"><a href="{{ route('admin.dashboard') }}" style="color:var(--accent);">← Dashboard</a></p>
         </div>
-        <form method="POST" action="{{ route('admin.activity-logs.clear') }}">
-            @csrf
-            @method('DELETE')
-            @if($type !== 'all')
-                <input type="hidden" name="type" value="{{ $type }}">
-                <button type="button" class="btn btn--danger btn--sm"
-                    data-confirm="Clear all {{ $type }} logs? This cannot be undone.">
-                    Clear {{ ucfirst($type) }} Logs
-                </button>
-            @else
-                <button type="button" class="btn btn--danger btn--sm"
-                    data-confirm="Clear ALL activity logs? This cannot be undone.">
-                    Clear All Logs
-                </button>
-            @endif
-        </form>
+        <div style="display:flex; gap:0.5rem; flex-wrap:wrap; align-items:center;">
+            <a href="{{ route('admin.activity-logs.export', array_filter(['type' => $type !== 'all' ? $type : null, 'search' => $search ?: null])) }}"
+               class="btn btn--outline btn--sm">
+                ↓ Export CSV
+            </a>
+            <form method="POST" action="{{ route('admin.activity-logs.clear') }}">
+                @csrf
+                @method('DELETE')
+                @if($type !== 'all')
+                    <input type="hidden" name="type" value="{{ $type }}">
+                    <button type="button" class="btn btn--danger btn--sm"
+                        data-confirm="Clear all {{ $type }} logs? This cannot be undone.">
+                        Clear {{ ucfirst($type) }} Logs
+                    </button>
+                @else
+                    <button type="button" class="btn btn--danger btn--sm"
+                        data-confirm="Clear ALL activity logs? This cannot be undone.">
+                        Clear All Logs
+                    </button>
+                @endif
+            </form>
+        </div>
     </div>
 
     {{-- Filter tabs --}}

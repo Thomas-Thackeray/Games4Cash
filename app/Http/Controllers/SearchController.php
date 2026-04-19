@@ -9,6 +9,7 @@ use App\Services\ActivityLogger;
 use App\Services\IgdbService;
 use App\Services\PriceSyncService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\View\View;
 
 class SearchController extends Controller
@@ -37,11 +38,15 @@ class SearchController extends Controller
             $igdb = new IgdbService();
 
             if ($query !== '') {
+                // User-specific search — not cached (every query is unique)
                 $games = $igdb->searchGames($query, $limit, $offset);
             } elseif ($franchise !== '') {
-                $games = $igdb->getGamesByFranchise($franchise, $limit, $offset);
+                // Franchise browse — same results for everyone, cache 10 min
+                $cacheKey = 'search_franchise_' . md5($franchise) . '_p' . $page;
+                $games = Cache::remember($cacheKey, now()->addMinutes(10), fn () => $igdb->getGamesByFranchise($franchise, $limit, $offset));
             } else {
-                $games = $igdb->getTrendingGames($limit);
+                // Trending page — same for everyone, cache 10 min
+                $games = Cache::remember('search_trending_p' . $page, now()->addMinutes(10), fn () => $igdb->getTrendingGames($limit));
             }
 
         } catch (\RuntimeException $e) {

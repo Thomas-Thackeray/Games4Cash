@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Str;
+use App\Models\Setting;
 
 class CashOrder extends Model
 {
@@ -53,12 +54,13 @@ class CashOrder extends Model
     }
 
     /**
-     * Users may cancel a pending order within 2 hours of placing it.
+     * Users may cancel a pending order within the configurable window.
      */
     public function canCancel(): bool
     {
+        $window = (int) Setting::get('cancel_window_minutes', 120);
         return $this->status === 'pending'
-            && $this->created_at->diffInMinutes(now()) < 120;
+            && $this->created_at->diffInMinutes(now()) < $window;
     }
 
     /**
@@ -66,7 +68,8 @@ class CashOrder extends Model
      */
     public function cancelMinutesRemaining(): int
     {
-        return max(0, 120 - (int) $this->created_at->diffInMinutes(now()));
+        $window = (int) Setting::get('cancel_window_minutes', 120);
+        return max(0, $window - (int) $this->created_at->diffInMinutes(now()));
     }
 
     public function statusLabel(): string

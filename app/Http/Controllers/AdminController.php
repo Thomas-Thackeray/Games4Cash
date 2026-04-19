@@ -286,6 +286,50 @@ class AdminController extends Controller
     }
 
     // ----------------------------------------------------------------
+    //  Activity logs – export CSV
+    // ----------------------------------------------------------------
+
+    public function exportActivityLogs(Request $request): \Symfony\Component\HttpFoundation\StreamedResponse
+    {
+        $type   = $request->input('type', 'all');
+        $search = $request->input('search', '');
+
+        $query = ActivityLog::with('user')->latest('created_at');
+
+        if ($type !== 'all') {
+            $query->where('type', $type);
+        }
+
+        if ($search !== '') {
+            $query->whereHas('user', function ($q) use ($search) {
+                $q->where('username', 'like', "%{$search}%");
+            });
+        }
+
+        $filename = 'activity-logs-' . now()->format('Y-m-d') . ($type !== 'all' ? '-' . $type : '') . '.csv';
+
+        return response()->streamDownload(function () use ($query) {
+            $handle = fopen('php://output', 'w');
+            fputcsv($handle, ['Date', 'Time', 'Type', 'Description', 'Username', 'IP Address']);
+
+            $query->chunk(500, function ($logs) use ($handle) {
+                foreach ($logs as $log) {
+                    fputcsv($handle, [
+                        $log->created_at->format('d/m/Y'),
+                        $log->created_at->format('H:i:s'),
+                        $log->type,
+                        $log->description,
+                        $log->user?->username ?? 'Guest',
+                        $log->ip_address ?? '',
+                    ]);
+                }
+            });
+
+            fclose($handle);
+        }, $filename, ['Content-Type' => 'text/csv']);
+    }
+
+    // ----------------------------------------------------------------
     //  Activity logs – delete single
     // ----------------------------------------------------------------
 
@@ -447,6 +491,7 @@ class AdminController extends Controller
             'usd_to_gbp_rate'          => Setting::get('usd_to_gbp_rate', 1.36),
             'age_reduction_per_year'   => Setting::get('age_reduction_per_year', 1),
             'min_order_gbp'            => Setting::get('min_order_gbp', 20),
+            'cancel_window_minutes'    => Setting::get('cancel_window_minutes', 120),
             'condition_new_pct'        => Setting::get('condition_new_pct', 20),
             'condition_complete_pct'   => Setting::get('condition_complete_pct', 0),
             'condition_disk_pct'       => Setting::get('condition_disk_pct', -50),
@@ -516,6 +561,7 @@ class AdminController extends Controller
             'usd_to_gbp_rate'           => ['required', 'numeric', 'min:0.01', 'max:99.99'],
             'age_reduction_per_year'    => ['required', 'numeric', 'min:0', 'max:9.99'],
             'min_order_gbp'             => ['required', 'numeric', 'min:0', 'max:999.99'],
+            'cancel_window_minutes'     => ['required', 'integer', 'min:0', 'max:10080'],
             'condition_new_pct'         => ['required', 'numeric', 'min:-100', 'max:100'],
             'condition_complete_pct'    => ['required', 'numeric', 'min:-100', 'max:100'],
             'condition_disk_pct'        => ['required', 'numeric', 'min:-100', 'max:100'],
@@ -533,6 +579,7 @@ class AdminController extends Controller
         Setting::set('usd_to_gbp_rate', $request->input('usd_to_gbp_rate'));
         Setting::set('age_reduction_per_year', $request->input('age_reduction_per_year'));
         Setting::set('min_order_gbp', $request->input('min_order_gbp'));
+        Setting::set('cancel_window_minutes', $request->input('cancel_window_minutes'));
         Setting::set('condition_new_pct', $request->input('condition_new_pct'));
         Setting::set('condition_complete_pct', $request->input('condition_complete_pct'));
         Setting::set('condition_disk_pct', $request->input('condition_disk_pct'));
