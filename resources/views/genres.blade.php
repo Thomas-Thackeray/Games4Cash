@@ -64,7 +64,7 @@ $genreIcons = [
                     <h2 style="font-size:1.4rem; font-weight:800; color:var(--text); margin:0 0 0.35rem;">{{ $gName }}</h2>
                     @if($seo)
                     <p style="color:var(--text-muted); font-size:0.88rem; line-height:1.6; max-width:580px; margin:0;">
-                        {{ \Illuminate\Support\Str::limit($seo['body'], 180) }}
+                        {{ $seo['body'] }}
                     </p>
                     @endif
                 </div>
