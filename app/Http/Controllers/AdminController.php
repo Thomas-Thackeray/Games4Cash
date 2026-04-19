@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Mail\AdminCreatedUserMail;
+use App\Services\ActivityLogger;
 use App\Models\ActivityLog;
 use App\Models\BlacklistedPassword;
 use App\Models\FranchiseAdjustment;
@@ -163,9 +164,13 @@ class AdminController extends Controller
     //  Delete user
     // ----------------------------------------------------------------
 
-    public function deleteUser(int $id): RedirectResponse
+    public function deleteUser(int $id, Request $request): RedirectResponse
     {
-        User::where('role', 'user')->findOrFail($id)->delete();
+        $user = User::where('role', 'user')->findOrFail($id);
+
+        ActivityLogger::account('Admin deleted account for "' . $user->username . '" (' . $user->email . ')', $request);
+
+        $user->delete();
 
         return back()->with('flash_success', 'User account deleted.');
     }
