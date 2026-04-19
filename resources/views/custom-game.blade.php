@@ -135,27 +135,6 @@
     </section>
     @endif
 
-    @if(!empty($pricingRows))
-    <section>
-        <h2 style="font-size:1.2rem; font-weight:700; margin-bottom:1rem;">Cash Trade-in Prices</h2>
-        <div style="display:flex; flex-direction:column; gap:0.5rem; max-width:480px;">
-            @foreach($pricingRows as $row)
-            <div style="display:flex; justify-content:space-between; align-items:center; padding:0.75rem 1rem; background:var(--card-bg); border:1px solid var(--border); border-radius:8px;">
-                <span style="font-size:0.9rem;">{{ $row['platform_name'] }}</span>
-                <span style="font-weight:700; color:var(--accent);">{{ $row['display_price'] }}</span>
-            </div>
-            @endforeach
-        </div>
-        <p style="margin-top:1rem; font-size:0.82rem; color:var(--text-dim);">
-            Prices shown are for games in complete condition. Final offer may vary based on condition.
-            @auth
-            <a href="{{ route('cash-basket.index') }}" style="color:var(--accent);">View your cash basket →</a>
-            @else
-            <a href="{{ route('login') }}" style="color:var(--accent);">Log in to get a quote →</a>
-            @endauth
-        </p>
-    </section>
-    @endif
 
 </div>
 
