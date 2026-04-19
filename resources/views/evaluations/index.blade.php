@@ -2,11 +2,9 @@
 @section('title', 'My Evaluation Requests')
 
 @section('content')
-<div class="account-page">
-    <div class="account-container" style="max-width:800px; margin:0 auto;">
-        <div class="account-main" style="width:100%;">
+<div class="container" style="max-width:800px; padding-top:2.5rem; padding-bottom:3rem;">
 
-            <section class="account-card">
+    <section class="account-card">
                 <div class="account-card__header" style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:0.75rem;">
                     <div>
                         <h2 class="account-card__title">My Evaluation Requests</h2>
@@ -73,7 +71,5 @@
                 @endif
             </section>
 
-        </div>
-    </div>
 </div>
 @endsection

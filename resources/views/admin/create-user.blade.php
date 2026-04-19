@@ -27,15 +27,15 @@
         <form method="POST" action="{{ route('admin.users.store') }}" id="create-user-form">
             @csrf
 
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin-top:1.25rem;">
-                <div class="form-group">
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin-top:1.25rem; align-items:start;">
+                <div class="form-group" style="margin-bottom:0;">
                     <label class="form-label">First Name <span class="required">*</span></label>
                     <input type="text" name="first_name" value="{{ old('first_name') }}"
                         class="form-input {{ $errors->has('first_name') ? 'is-invalid' : '' }}"
                         placeholder="Jane">
                     @error('first_name')<span class="field-error">{{ $message }}</span>@enderror
                 </div>
-                <div class="form-group">
+                <div class="form-group" style="margin-bottom:0;">
                     <label class="form-label">Surname <span class="required">*</span></label>
                     <input type="text" name="surname" value="{{ old('surname') }}"
                         class="form-input {{ $errors->has('surname') ? 'is-invalid' : '' }}"

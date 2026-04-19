@@ -51,20 +51,20 @@
                 @error('summary')<span class="field-error">{{ $message }}</span>@enderror
             </div>
 
-            <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:1rem; margin-top:1rem;">
-                <div class="form-group">
+            <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:1rem; margin-top:1rem; align-items:start;">
+                <div class="form-group" style="margin-bottom:0;">
                     <label class="form-label">Developer</label>
                     <input type="text" name="developer" value="{{ old('developer', $game?->developer) }}"
                         class="form-input" placeholder="e.g. Nintendo">
                     @error('developer')<span class="field-error">{{ $message }}</span>@enderror
                 </div>
-                <div class="form-group">
+                <div class="form-group" style="margin-bottom:0;">
                     <label class="form-label">Publisher</label>
                     <input type="text" name="publisher" value="{{ old('publisher', $game?->publisher) }}"
                         class="form-input" placeholder="e.g. Nintendo">
                     @error('publisher')<span class="field-error">{{ $message }}</span>@enderror
                 </div>
-                <div class="form-group">
+                <div class="form-group" style="margin-bottom:0;">
                     <label class="form-label">Release Year</label>
                     <input type="number" name="release_year" value="{{ old('release_year', $game?->release_year) }}"
                         class="form-input" placeholder="{{ date('Y') }}" min="1950" max="{{ date('Y') + 2 }}">
