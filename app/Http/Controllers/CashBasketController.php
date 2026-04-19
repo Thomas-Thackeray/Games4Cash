@@ -17,7 +17,15 @@ class CashBasketController extends Controller
 
     public function index(): View
     {
-        $items        = auth()->user()->cashBasketItems()->latest('created_at')->get();
+        $user = auth()->user();
+
+        // Remove any basket entries whose custom game has been deleted
+        $user->cashBasketItems()
+            ->whereNotNull('custom_game_id')
+            ->whereDoesntHave('customGame')
+            ->delete();
+
+        $items = $user->cashBasketItems()->latest('created_at')->get();
         $allPlatforms = config('igdb.all_platforms');
         $modifiers    = $this->conditionModifiers();
 

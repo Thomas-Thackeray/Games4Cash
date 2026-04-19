@@ -10,7 +10,15 @@ class WishlistController extends Controller
 {
     public function index(): View
     {
-        $items = auth()->user()->wishlistItems()->with('customGame')->latest('created_at')->get();
+        $user = auth()->user();
+
+        // Remove any wishlist entries whose custom game has been deleted
+        $user->wishlistItems()
+            ->whereNotNull('custom_game_id')
+            ->whereDoesntHave('customGame')
+            ->delete();
+
+        $items = $user->wishlistItems()->with('customGame')->latest('created_at')->get();
 
         return view('wishlist', compact('items'));
     }

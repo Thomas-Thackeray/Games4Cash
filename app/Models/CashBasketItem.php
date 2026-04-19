@@ -29,4 +29,9 @@ class CashBasketItem extends Model
     {
         return $this->belongsTo(User::class);
     }
+
+    public function customGame(): BelongsTo
+    {
+        return $this->belongsTo(CustomGame::class);
+    }
 }
