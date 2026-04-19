@@ -358,5 +358,72 @@
     }
 })();
 </script>
+@auth
+<form id="inactivity-logout-form" method="POST" action="{{ route('logout') }}" style="display:none;">
+    @csrf
+</form>
+<div id="inactivity-warning" style="
+    display:none; position:fixed; bottom:1.5rem; left:50%; transform:translateX(-50%); z-index:9999;
+    background:var(--bg-card); border:1px solid var(--border); border-radius:10px;
+    padding:1rem 1.5rem; box-shadow:0 8px 32px rgba(0,0,0,0.45);
+    text-align:center; min-width:280px; max-width:90vw;">
+    <p style="margin:0 0 0.75rem; font-size:0.9rem; color:var(--text);">
+        You've been inactive. You'll be logged out in <strong id="inactivity-countdown">5:00</strong>.
+    </p>
+    <button type="button" id="inactivity-stay" class="btn btn--primary btn--sm">Stay logged in</button>
+</div>
+<script>
+(function () {
+    var TIMEOUT_MS  = 50 * 60 * 1000;   // 50 minutes — must match SESSION_LIFETIME
+    var WARNING_MS  = 45 * 60 * 1000;   // warn 5 minutes before
+    var countdown   = document.getElementById('inactivity-countdown');
+    var warning     = document.getElementById('inactivity-warning');
+    var stayBtn     = document.getElementById('inactivity-stay');
+    var logoutForm  = document.getElementById('inactivity-logout-form');
+    var lastActive  = Date.now();
+    var warnTimer, logoutTimer, countdownInterval;
+
+    function resetTimers() {
+        lastActive = Date.now();
+        clearTimeout(warnTimer);
+        clearTimeout(logoutTimer);
+        clearInterval(countdownInterval);
+        warning.style.display = 'none';
+
+        warnTimer   = setTimeout(showWarning,  WARNING_MS);
+        logoutTimer = setTimeout(doLogout,     TIMEOUT_MS);
+    }
+
+    function showWarning() {
+        var endsAt = lastActive + TIMEOUT_MS;
+        warning.style.display = 'block';
+
+        function tick() {
+            var remaining = Math.max(0, endsAt - Date.now());
+            var m = Math.floor(remaining / 60000);
+            var s = Math.floor((remaining % 60000) / 1000);
+            countdown.textContent = m + ':' + (s < 10 ? '0' : '') + s;
+            if (remaining === 0) clearInterval(countdownInterval);
+        }
+        tick();
+        countdownInterval = setInterval(tick, 1000);
+    }
+
+    function doLogout() {
+        clearInterval(countdownInterval);
+        logoutForm.submit();
+    }
+
+    // Any real user activity resets the timer
+    ['mousemove', 'mousedown', 'keydown', 'touchstart', 'scroll', 'click'].forEach(function (evt) {
+        document.addEventListener(evt, resetTimers, { passive: true });
+    });
+
+    stayBtn.addEventListener('click', resetTimers);
+
+    resetTimers();
+})();
+</script>
+@endauth
 </body>
 </html>
