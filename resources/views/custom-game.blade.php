@@ -37,10 +37,11 @@
             </div>
 
             <div class="gd-info">
-                @if(!empty($game->genres))
+                {{-- Platform tags: show platforms that have prices set --}}
+                @if(!empty($pricingRows))
                 <div class="gd-platforms">
-                    @foreach($game->genres as $genre)
-                    <span class="gd-platform-tag">{{ $genre }}</span>
+                    @foreach($pricingRows as $row)
+                    <span class="gd-platform-tag">{{ $row['platform_name'] }}</span>
                     @endforeach
                 </div>
                 @endif
@@ -66,10 +67,10 @@
                         <span>{{ $game->publisher }}</span>
                     </div>
                     @endif
-                    @if(!empty($pricingRows))
+                    @if(!empty($game->genres))
                     <div class="gd-meta-item">
-                        <label>Best Cash Price</label>
-                        <span>Up to £{{ number_format(max(array_column($pricingRows, 'price_numeric')), 2) }}</span>
+                        <label>Genre</label>
+                        <span>{{ implode(', ', $game->genres) }}</span>
                     </div>
                     @endif
                 </div>
@@ -120,22 +121,13 @@
                     @endauth
                 </div>
                 @endif
+
+                @if($game->summary)
+                <p class="gd-summary" style="margin-top:1.5rem;">{{ $game->summary }}</p>
+                @endif
             </div>
         </div>
     </div>
-</div>
-
-<!-- ===== BODY ===== -->
-<div class="container" style="padding-top:2.5rem; padding-bottom:3rem;">
-
-    @if($game->summary)
-    <section style="max-width:800px; margin-bottom:2.5rem;">
-        <h2 style="font-size:1.2rem; font-weight:700; margin-bottom:0.75rem;">About This Game</h2>
-        <p style="color:var(--text-muted); line-height:1.8; white-space:pre-wrap;">{{ $game->summary }}</p>
-    </section>
-    @endif
-
-
 </div>
 
 @endsection
