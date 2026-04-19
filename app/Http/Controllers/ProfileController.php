@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Mail\AccountEmailChangedMail;
+use App\Services\ActivityLogger;
 use App\Models\CashBasketItem;
 use App\Models\CashOrder;
 use App\Models\Wishlist;
@@ -155,6 +156,8 @@ class ProfileController extends Controller
         if (! Hash::check($request->input('confirm_password'), $user->password)) {
             return back()->withErrors(['confirm_password' => 'Password is incorrect.'])->withFragment('danger-zone');
         }
+
+        ActivityLogger::account('Account deleted for "' . $user->username . '" (' . $user->email . ')', $request);
 
         Auth::logout();
         $user->delete();

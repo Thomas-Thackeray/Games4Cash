@@ -66,6 +66,8 @@ class AuthController extends Controller
         Auth::login($user);
         $request->session()->regenerate();
 
+        ActivityLogger::account('Account created for "' . $user->username . '" (' . $user->email . ')', $request);
+
         Mail::to($user->email)->send(new WelcomeEmail($user));
 
         $adminEmail = Setting::get('admin_notification_email', 'thomasthackeray0@gmail.com');

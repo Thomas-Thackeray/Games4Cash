@@ -5,8 +5,8 @@
     $backdropUrl = $game->cover_image_path ? asset('storage/' . $game->cover_image_path) : '';
 @endphp
 
-@section('title', $game->title)
-@section('meta_description', $game->summary ? \Illuminate\Support\Str::limit(strip_tags($game->summary), 160) : $game->title . ' — browse game info and get a cash trade-in quote.')
+@section('title', 'Sell ' . $game->title . ' for Cash | ' . config('app.name'))
+@section('meta_description', 'Sell ' . $game->title . ' for cash — get an instant trade-in price. Free doorstep collection. Fast payment.')
 @section('og_type', 'game')
 @section('og_image', $coverUrl)
 @section('canonical', route('game.show', $game->slug))

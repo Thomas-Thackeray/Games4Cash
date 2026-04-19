@@ -13,8 +13,10 @@ class AdminGamePricesController extends Controller
     public function index(Request $request): \Illuminate\Contracts\View\View
     {
         try {
-            $search = trim($request->input('search', ''));
-            $source = $request->input('source', ''); // cex|cheapshark|steam|base|none
+            $search    = trim($request->input('search', ''));
+            $source    = $request->input('source', ''); // cex|cheapshark|steam|base|none
+            $priceMin  = $request->input('price_min') !== null && $request->input('price_min') !== '' ? (float) $request->input('price_min') : null;
+            $priceMax  = $request->input('price_max') !== null && $request->input('price_max') !== '' ? (float) $request->input('price_max') : null;
 
             $query = GamePrice::whereNotNull('platform_ids')
                 ->where('platform_ids', '!=', '[]')
@@ -60,6 +62,21 @@ class AdminGamePricesController extends Controller
                 default      => null,
             };
 
+            // Price range filter — uses base_price_gbp (source price converted to GBP) to
+            // narrow pagination to games in the rough calculated-price range.
+            // Per-platform modifiers are handled client-side (JS hides exact out-of-range rows).
+            if ($priceMin !== null || $priceMax !== null) {
+                $discountPct = (float) \App\Models\Setting::get('pricing_discount_percent', 85);
+                $factor      = max(0.01, 1 - ($discountPct / 100));
+                $query->whereNotNull('base_price_gbp');
+                if ($priceMin !== null) {
+                    $query->where('base_price_gbp', '>=', round($priceMin / $factor, 4));
+                }
+                if ($priceMax !== null) {
+                    $query->where('base_price_gbp', '<=', round($priceMax / $factor, 4));
+                }
+            }
+
             if ($search !== '') {
                 $query->where(function ($q) use ($search, $hasGameTitle) {
                     if ($hasGameTitle) {
@@ -84,7 +101,7 @@ class AdminGamePricesController extends Controller
             $pageIds   = array_column($gamePrices->items(), 'igdb_game_id');
             $hiddenMap = HiddenGame::hiddenMapForGames($pageIds);
 
-            return view('admin.game-prices', compact('gamePrices', 'search', 'source', 'allPlatforms', 'hiddenMap'));
+            return view('admin.game-prices', compact('gamePrices', 'search', 'source', 'allPlatforms', 'hiddenMap', 'priceMin', 'priceMax'));
 
         } catch (\Throwable $e) {
             return view('admin.error-debug', [

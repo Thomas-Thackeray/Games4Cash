@@ -151,5 +151,20 @@
     </div>
     @endif
 
+    {{-- Re-add to basket (cancelled orders only) --}}
+    @if($order->status === 'cancelled')
+    <div class="account-card" style="border-color:var(--border); text-align:center; padding:1.75rem;">
+        <div style="font-size:1.5rem; margin-bottom:0.5rem;">🔄</div>
+        <h3 style="font-size:1rem; font-weight:700; margin:0 0 0.4rem;">Changed your mind?</h3>
+        <p style="font-size:0.85rem; color:var(--text-muted); margin:0 0 1.25rem;">
+            Re-add all games from this order back to your cash basket in one click.
+        </p>
+        <form method="POST" action="{{ route('cash-orders.resubmit', $order->order_ref) }}">
+            @csrf
+            <button type="submit" class="btn btn--primary">Re-add Games to Basket</button>
+        </form>
+    </div>
+    @endif
+
 </div>
 @endsection

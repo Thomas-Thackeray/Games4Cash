@@ -161,6 +161,7 @@ Route::middleware(['auth', 'track.active', 'force.reset'])->group(function () {
     Route::get('/cash-orders/{ref}/confirmation', [CashOrderController::class, 'confirmation'])->name('cash-orders.confirmation');
     Route::get('/cash-orders/{ref}', [CashOrderController::class, 'show'])->name('cash-orders.show');
     Route::post('/cash-orders/{ref}/cancel', [CashOrderController::class, 'cancel'])->name('cash-orders.cancel');
+    Route::post('/cash-orders/{ref}/resubmit', [CashOrderController::class, 'resubmit'])->name('cash-orders.resubmit');
 });
 
 // Forced password reset (auth required, but bypass force.reset check)
@@ -235,6 +236,7 @@ Route::middleware(['auth', 'track.active', 'admin'])->prefix('admin')->name('adm
 
     // Cash orders management
     Route::get('/orders', [AdminController::class, 'cashOrders'])->name('orders');
+    Route::get('/orders/export', [AdminController::class, 'exportOrders'])->name('orders.export');
     Route::get('/orders/{id}', [AdminController::class, 'cashOrderDetail'])->name('orders.detail')->where('id', '[0-9]+');
     Route::patch('/orders/{id}/status', [AdminController::class, 'updateOrderStatus'])->name('orders.update-status')->where('id', '[0-9]+');
 

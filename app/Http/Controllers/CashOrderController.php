@@ -207,6 +207,63 @@ class CashOrderController extends Controller
     // -----------------------------------------------------------------------
 
     /**
+     * Re-add all items from a cancelled order back into the user's cash basket.
+     */
+    public function resubmit(string $ref): RedirectResponse
+    {
+        $order = CashOrder::where('order_ref', $ref)
+            ->where('user_id', auth()->id())
+            ->firstOrFail();
+
+        if ($order->status !== 'cancelled') {
+            return back()->with('flash_error', 'Only cancelled orders can be re-added to your basket.');
+        }
+
+        $user  = auth()->user();
+        $added = 0;
+
+        foreach ($order->items as $item) {
+            if (empty($item['igdb_game_id'])) {
+                continue;
+            }
+
+            // Skip if already in basket for same game + platform
+            $platformId = $item['platform_id'] ?? null;
+            $exists = $user->cashBasketItems()
+                ->where('igdb_game_id', $item['igdb_game_id'])
+                ->where(function ($q) use ($platformId) {
+                    $platformId !== null
+                        ? $q->where('platform_id', $platformId)
+                        : $q->whereNull('platform_id');
+                })
+                ->exists();
+
+            if ($exists) {
+                continue;
+            }
+
+            $user->cashBasketItems()->create([
+                'igdb_game_id' => $item['igdb_game_id'],
+                'platform_id'  => $platformId,
+                'game_title'   => $item['game_title'],
+                'cover_url'    => $item['cover_url'] ?? null,
+            ]);
+
+            $added++;
+        }
+
+        if ($added === 0) {
+            return redirect()->route('cash-basket.index')
+                ->with('flash_error', 'All games from this order are already in your cash basket.');
+        }
+
+        return redirect()->route('cash-basket.index')
+            ->with('flash_success', $added . ' ' . ($added === 1 ? 'game' : 'games') . ' from order ' . $ref . ' added back to your cash basket.');
+    }
+
+    // -----------------------------------------------------------------------
+
+    /**
      * Compute order items and total from the user's basket items.
      * Returns [$orderItems, $total].
      */

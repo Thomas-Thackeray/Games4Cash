@@ -31,7 +31,7 @@
         @foreach($filters as $val => $label)
         @php
             $active  = $source === $val;
-            $href    = route('admin.game-prices', array_filter(['source' => $val ?: null, 'search' => $search ?: null]));
+            $href    = route('admin.game-prices', array_filter(['source' => $val ?: null, 'search' => $search ?: null, 'price_min' => $priceMin ?? null, 'price_max' => $priceMax ?? null]));
             $colours = [
                 'cheapshark' => ['bg'=>'rgba(59,130,246,0.15)', 'color'=>'#2563eb', 'border'=>'rgba(59,130,246,0.4)' ],
                 'steam'      => ['bg'=>'rgba(249,115,22,0.15)', 'color'=>'#ea580c', 'border'=>'rgba(249,115,22,0.4)' ],
@@ -55,7 +55,7 @@
         @endforeach
     </div>
 
-    {{-- Search --}}
+    {{-- Search (server-side) --}}
     <form method="GET" action="{{ route('admin.game-prices') }}" class="admin-search-form">
         @if($source)
         <input type="hidden" name="source" value="{{ $source }}">
@@ -68,6 +68,21 @@
         <a href="{{ route('admin.game-prices', array_filter(['source' => $source ?: null])) }}" class="btn btn--outline btn--sm">Clear</a>
         @endif
     </form>
+
+    {{-- Calculated price filter (client-side — filters rows on the current page instantly) --}}
+    <div style="display:flex; align-items:center; gap:0.5rem; margin-top:0.6rem; flex-wrap:wrap;">
+        <span style="font-size:0.8rem; color:var(--text-muted); white-space:nowrap;">Filter by calc. price:</span>
+        <span style="font-size:0.82rem; color:var(--text-muted);">£</span>
+        <input type="number" id="price-min-filter" min="0" step="0.01" placeholder="Min"
+               class="form-input"
+               style="width:90px; padding:0.4rem 0.6rem; font-size:0.88rem; text-align:center;">
+        <span style="font-size:0.82rem; color:var(--text-muted);">–&nbsp;£</span>
+        <input type="number" id="price-max-filter" min="0" step="0.01" placeholder="Max"
+               class="form-input"
+               style="width:90px; padding:0.4rem 0.6rem; font-size:0.88rem; text-align:center;">
+        <button type="button" id="price-filter-clear" class="btn btn--outline btn--sm" style="display:none;">Clear</button>
+        <span id="price-filter-count" style="font-size:0.8rem; color:var(--text-muted);"></span>
+    </div>
 
     @if($gamePrices->isEmpty())
     <div class="empty-state" style="padding:3rem 0;">
@@ -628,6 +643,69 @@
     });
 
     document.getElementById('breakdown-close')?.addEventListener('click', closeBreakdown);
+
+    // ── Client-side price range filter ───────────────────────────────────────
+    (function () {
+        const minInput  = document.getElementById('price-min-filter');
+        const maxInput  = document.getElementById('price-max-filter');
+        const clearBtn  = document.getElementById('price-filter-clear');
+        const countSpan = document.getElementById('price-filter-count');
+        const tbody     = document.querySelector('#game-prices-table tbody');
+
+        if (!minInput || !maxInput || !tbody) return;
+
+        function applyFilter() {
+            const minVal = minInput.value !== '' ? parseFloat(minInput.value) : null;
+            const maxVal = maxInput.value !== '' ? parseFloat(maxInput.value) : null;
+            const active = minVal !== null || maxVal !== null;
+
+            let hidden = 0;
+            tbody.querySelectorAll('tr').forEach(function (tr) {
+                const cell = tr.querySelector('.js-display-price');
+                if (!cell) { tr.style.display = ''; return; }
+
+                const text = cell.textContent.trim();
+                const num  = parseFloat(text.replace('£', ''));
+                const valid = !isNaN(num);
+
+                let show = true;
+                if (active && valid) {
+                    if (minVal !== null && num < minVal) show = false;
+                    if (maxVal !== null && num > maxVal) show = false;
+                } else if (active && !valid) {
+                    // Row has no price (—); hide when filter is active
+                    show = false;
+                }
+
+                tr.style.display = show ? '' : 'none';
+                if (!show) hidden++;
+            });
+
+            if (clearBtn) clearBtn.style.display = active ? 'inline-flex' : 'none';
+            if (countSpan) {
+                countSpan.textContent = active && hidden > 0
+                    ? hidden + ' row' + (hidden !== 1 ? 's' : '') + ' hidden'
+                    : (active ? '' : '');
+            }
+        }
+
+        minInput.addEventListener('input', applyFilter);
+        maxInput.addEventListener('input', applyFilter);
+
+        clearBtn?.addEventListener('click', function () {
+            minInput.value = '';
+            maxInput.value = '';
+            applyFilter();
+        });
+
+        // Restore filter state from URL params on load
+        const params = new URLSearchParams(window.location.search);
+        const urlMin = params.get('price_min');
+        const urlMax = params.get('price_max');
+        if (urlMin !== null && urlMin !== '') { minInput.value = urlMin; }
+        if (urlMax !== null && urlMax !== '') { maxInput.value = urlMax; }
+        if (urlMin || urlMax) applyFilter();
+    })();
 })();
 </script>
 @endsection
