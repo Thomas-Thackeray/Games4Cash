@@ -21,8 +21,14 @@ class CashBasketController extends Controller
         $allPlatforms = config('igdb.all_platforms');
         $modifiers    = $this->conditionModifiers();
 
+        // Pre-load custom game slugs to avoid N+1
+        $customGameIds = $items->pluck('custom_game_id')->filter()->unique()->values();
+        $customGameSlugs = $customGameIds->isNotEmpty()
+            ? CustomGame::whereIn('id', $customGameIds)->pluck('slug', 'id')
+            : collect();
+
         $total           = 0.0;
-        $itemsWithPrices = $items->map(function ($item) use (&$total, $allPlatforms, $modifiers) {
+        $itemsWithPrices = $items->map(function ($item) use (&$total, $allPlatforms, $modifiers, $customGameSlugs) {
             [$baseNumeric, $baseDisplay, $adjNumeric, $adjDisplay, $adjLabel] =
                 $this->resolveItemPricing($item, $allPlatforms, $modifiers);
 
@@ -32,9 +38,15 @@ class CashBasketController extends Controller
                 $total += $baseNumeric;
             }
 
+            $gameUrl = $item->custom_game_id
+                ? route('game.show', $customGameSlugs[$item->custom_game_id])
+                : GamePrice::urlForId($item->igdb_game_id);
+
             return [
                 'id'               => $item->id,
                 'igdb_game_id'     => $item->igdb_game_id,
+                'custom_game_id'   => $item->custom_game_id,
+                'game_url'         => $gameUrl,
                 'game_title'       => $item->game_title,
                 'cover_url'        => $item->cover_url,
                 'platform_name'    => $item->platform_id ? ($allPlatforms[$item->platform_id] ?? null) : null,

@@ -10,7 +10,7 @@ class WishlistController extends Controller
 {
     public function index(): View
     {
-        $items = auth()->user()->wishlistItems()->latest('created_at')->get();
+        $items = auth()->user()->wishlistItems()->with('customGame')->latest('created_at')->get();
 
         return view('wishlist', compact('items'));
     }

@@ -49,7 +49,7 @@
         <div class="cb-items">
             @foreach($itemsWithPrices as $item)
             <div class="cb-item" id="cb-item-{{ $item['id'] }}">
-                <a href="{{ \App\Models\GamePrice::urlForId($item['igdb_game_id']) }}" class="cb-item__cover-link">
+                <a href="{{ $item['game_url'] }}" class="cb-item__cover-link">
                     @if($item['cover_url'])
                     <img src="{{ $item['cover_url'] }}" alt="{{ $item['game_title'] }}" class="cb-item__cover">
                     @else
@@ -57,7 +57,7 @@
                     @endif
                 </a>
                 <div class="cb-item__body">
-                    <a href="{{ \App\Models\GamePrice::urlForId($item['igdb_game_id']) }}" class="cb-item__title">
+                    <a href="{{ $item['game_url'] }}" class="cb-item__title">
                         {{ $item['game_title'] }}
                     </a>
                     @if($item['platform_name'])

@@ -7,6 +7,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Wishlist extends Model
 {
+    public function customGame(): BelongsTo
+    {
+        return $this->belongsTo(CustomGame::class);
+    }
+
     public $timestamps = false;
 
     protected $fillable = [
