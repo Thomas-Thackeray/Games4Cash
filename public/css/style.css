@@ -3455,3 +3455,17 @@ h1,h2,h3,h4,h5,h6 { line-height: 1.2; }
 
 /* ── Platform logo icon ── */
 [data-theme="light"] .platform-logo { background: rgba(0,0,0,0.05); }
+
+/* ── Admin pages ── */
+[data-theme="light"] .admin-title,
+[data-theme="light"] .stat-card__value,
+[data-theme="light"] .admin-action-card__body h3,
+[data-theme="light"] .admin-user-name { color: #1a1a2e; }
+
+/* Admin table rows — white-transparent borders/hovers are invisible on light bg */
+[data-theme="light"] .admin-table td {
+    border-bottom: 1px solid rgba(0,0,0,0.05);
+}
+[data-theme="light"] .admin-table tr:hover td {
+    background: rgba(0,0,0,0.02);
+}
