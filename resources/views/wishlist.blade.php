@@ -19,8 +19,16 @@
     @else
     <div class="wishlist-grid">
         @foreach($items as $item)
+        @php
+            $gameUrl    = $item->custom_game_id
+                ? ($item->customGame ? route('game.show', $item->customGame->slug) : route('search'))
+                : \App\Models\GamePrice::urlForId($item->igdb_game_id);
+            $removeRoute = $item->custom_game_id
+                ? route('wishlist.destroy.custom', $item->custom_game_id)
+                : route('wishlist.destroy', $item->igdb_game_id);
+        @endphp
         <div class="wishlist-card">
-            <a href="{{ \App\Models\GamePrice::urlForId($item->igdb_game_id) }}" class="wishlist-card__cover-link">
+            <a href="{{ $gameUrl }}" class="wishlist-card__cover-link">
                 @if($item->cover_url)
                 <img src="{{ $item->cover_url }}" alt="{{ $item->game_title }}" class="wishlist-card__cover">
                 @else
@@ -28,12 +36,12 @@
                 @endif
             </a>
             <div class="wishlist-card__body">
-                <a href="{{ \App\Models\GamePrice::urlForId($item->igdb_game_id) }}" class="wishlist-card__title">
+                <a href="{{ $gameUrl }}" class="wishlist-card__title">
                     {{ $item->game_title }}
                 </a>
                 <span class="wishlist-card__date">Added {{ $item->created_at->diffForHumans() }}</span>
             </div>
-            <form method="POST" action="{{ route('wishlist.destroy', $item->igdb_game_id) }}" class="wishlist-card__remove">
+            <form method="POST" action="{{ $removeRoute }}" class="wishlist-card__remove">
                 @csrf
                 @method('DELETE')
                 <button type="submit" class="wishlist-card__remove-btn" title="Remove from wishlist"

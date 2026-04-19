@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\NewsletterSubscriber;
 use App\Models\PageView;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
@@ -83,6 +84,55 @@ class AdminAnalyticsController extends Controller
             ->limit(10)
             ->get();
 
-        return view('admin.analytics', compact('hasTable', 'summary', 'daily', 'topPages', 'topReferrers'));
+        // Most-searched game titles (last 30 days, from activity_logs)
+        $topSearches = DB::table('activity_logs')
+            ->select('description', DB::raw('COUNT(*) as count'))
+            ->where('type', 'search')
+            ->where('created_at', '>=', $now->copy()->subDays(29)->startOfDay())
+            ->groupBy('description')
+            ->orderByDesc('count')
+            ->limit(10)
+            ->get()
+            ->map(fn ($r) => [
+                'term'  => preg_replace('/^Searched for "(.*)"$/', '$1', $r->description),
+                'count' => $r->count,
+            ]);
+
+        // Most-wishlisted games (all time)
+        $topWishlisted = DB::table('wishlists')
+            ->select('game_title', DB::raw('COUNT(*) as count'))
+            ->whereNotNull('game_title')
+            ->groupBy('game_title')
+            ->orderByDesc('count')
+            ->limit(10)
+            ->get();
+
+        // Basket abandonment stats
+        $activeBasketUsers = DB::table('cash_basket_items')
+            ->distinct('user_id')
+            ->count('user_id');
+
+        $abandonedUsers = DB::table('cash_basket_items')
+            ->whereNotIn('user_id', function ($q) {
+                $q->select('user_id')->from('cash_orders');
+            })
+            ->distinct('user_id')
+            ->count('user_id');
+
+        $basketStats = [
+            'active_basket_users' => $activeBasketUsers,
+            'abandoned_users'     => $abandonedUsers,
+            'total_items'         => DB::table('cash_basket_items')->count(),
+        ];
+
+        // Newsletter subscriber count
+        $newsletterCount = \Illuminate\Support\Facades\Schema::hasTable('newsletter_subscribers')
+            ? NewsletterSubscriber::activeCount()
+            : 0;
+
+        return view('admin.analytics', compact(
+            'hasTable', 'summary', 'daily', 'topPages', 'topReferrers',
+            'topSearches', 'topWishlisted', 'basketStats', 'newsletterCount'
+        ));
     }
 }

@@ -12,6 +12,7 @@ class CashBasketItem extends Model
     protected $fillable = [
         'user_id',
         'igdb_game_id',
+        'custom_game_id',
         'platform_id',
         'condition',
         'game_title',
@@ -27,5 +28,10 @@ class CashBasketItem extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function customGame(): BelongsTo
+    {
+        return $this->belongsTo(CustomGame::class);
     }
 }

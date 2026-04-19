@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\CustomGame;
 use App\Models\GamePrice;
 use App\Models\Setting;
 use Illuminate\Http\JsonResponse;
@@ -16,12 +17,26 @@ class CashBasketController extends Controller
 
     public function index(): View
     {
-        $items        = auth()->user()->cashBasketItems()->latest('created_at')->get();
+        $user = auth()->user();
+
+        // Remove any basket entries whose custom game has been deleted
+        $user->cashBasketItems()
+            ->whereNotNull('custom_game_id')
+            ->whereDoesntHave('customGame')
+            ->delete();
+
+        $items = $user->cashBasketItems()->latest('created_at')->get();
         $allPlatforms = config('igdb.all_platforms');
         $modifiers    = $this->conditionModifiers();
 
+        // Pre-load custom game slugs to avoid N+1
+        $customGameIds = $items->pluck('custom_game_id')->filter()->unique()->values();
+        $customGameSlugs = $customGameIds->isNotEmpty()
+            ? CustomGame::whereIn('id', $customGameIds)->pluck('slug', 'id')
+            : collect();
+
         $total           = 0.0;
-        $itemsWithPrices = $items->map(function ($item) use (&$total, $allPlatforms, $modifiers) {
+        $itemsWithPrices = $items->map(function ($item) use (&$total, $allPlatforms, $modifiers, $customGameSlugs) {
             [$baseNumeric, $baseDisplay, $adjNumeric, $adjDisplay, $adjLabel] =
                 $this->resolveItemPricing($item, $allPlatforms, $modifiers);
 
@@ -31,9 +46,15 @@ class CashBasketController extends Controller
                 $total += $baseNumeric;
             }
 
+            $gameUrl = $item->custom_game_id
+                ? ($customGameSlugs->has($item->custom_game_id) ? route('game.show', $customGameSlugs[$item->custom_game_id]) : route('search'))
+                : GamePrice::urlForId($item->igdb_game_id);
+
             return [
                 'id'               => $item->id,
                 'igdb_game_id'     => $item->igdb_game_id,
+                'custom_game_id'   => $item->custom_game_id,
+                'game_url'         => $gameUrl,
                 'game_title'       => $item->game_title,
                 'cover_url'        => $item->cover_url,
                 'platform_name'    => $item->platform_id ? ($allPlatforms[$item->platform_id] ?? null) : null,
@@ -55,45 +76,81 @@ class CashBasketController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
-        $request->validate([
-            'igdb_game_id' => ['required', 'integer', 'min:1'],
-            'platform_id'  => ['nullable', 'integer', 'min:1'],
-            'game_title'   => ['required', 'string', 'max:255'],
-            'cover_url'    => ['nullable', 'string', 'max:500'],
-            'steam_app_id' => ['nullable', 'integer', 'min:1'],
-            'release_date' => ['nullable', 'integer'],
-        ]);
+        $isCustom = $request->filled('custom_game_id');
+
+        if ($isCustom) {
+            $request->validate([
+                'custom_game_id' => ['required', 'integer', 'min:1', 'exists:custom_games,id'],
+                'platform_id'    => ['required', 'integer', 'min:1'],
+                'game_title'     => ['required', 'string', 'max:255'],
+                'cover_url'      => ['nullable', 'string', 'max:500'],
+            ]);
+        } else {
+            $request->validate([
+                'igdb_game_id' => ['required', 'integer', 'min:1'],
+                'platform_id'  => ['nullable', 'integer', 'min:1'],
+                'game_title'   => ['required', 'string', 'max:255'],
+                'cover_url'    => ['nullable', 'string', 'max:500'],
+                'steam_app_id' => ['nullable', 'integer', 'min:1'],
+                'release_date' => ['nullable', 'integer'],
+            ]);
+        }
 
         $user       = auth()->user();
         $platformId = $request->input('platform_id') ? (int) $request->input('platform_id') : null;
 
-        $duplicate = $user->cashBasketItems()
-            ->where('igdb_game_id', $request->igdb_game_id)
-            ->where(function ($q) use ($platformId) {
-                $platformId !== null
-                    ? $q->where('platform_id', $platformId)
-                    : $q->whereNull('platform_id');
-            })
-            ->exists();
+        if ($isCustom) {
+            $customGameId = (int) $request->input('custom_game_id');
 
-        if ($duplicate) {
-            return back()->with('flash_error', '"' . $request->game_title . '" is already in your cash basket.');
+            $duplicate = $user->cashBasketItems()
+                ->where('custom_game_id', $customGameId)
+                ->where(function ($q) use ($platformId) {
+                    $platformId !== null
+                        ? $q->where('platform_id', $platformId)
+                        : $q->whereNull('platform_id');
+                })
+                ->exists();
+
+            if ($duplicate) {
+                return back()->with('flash_error', '"' . $request->game_title . '" is already in your cash basket.');
+            }
+
+            $user->cashBasketItems()->create([
+                'custom_game_id' => $customGameId,
+                'igdb_game_id'   => null,
+                'platform_id'    => $platformId,
+                'game_title'     => $request->game_title,
+                'cover_url'      => $request->cover_url,
+            ]);
+        } else {
+            $duplicate = $user->cashBasketItems()
+                ->where('igdb_game_id', $request->igdb_game_id)
+                ->where(function ($q) use ($platformId) {
+                    $platformId !== null
+                        ? $q->where('platform_id', $platformId)
+                        : $q->whereNull('platform_id');
+                })
+                ->exists();
+
+            if ($duplicate) {
+                return back()->with('flash_error', '"' . $request->game_title . '" is already in your cash basket.');
+            }
+
+            // Block free-to-play games — no cash offer is possible
+            $gamePrice = \App\Models\GamePrice::where('igdb_game_id', $request->igdb_game_id)->first();
+            if ($gamePrice && $gamePrice->is_free) {
+                return back()->with('flash_error', '"' . $request->game_title . '" is free to play and cannot be traded for cash.');
+            }
+
+            $user->cashBasketItems()->create([
+                'igdb_game_id' => $request->igdb_game_id,
+                'platform_id'  => $platformId,
+                'game_title'   => $request->game_title,
+                'cover_url'    => $request->cover_url,
+                'steam_app_id' => $request->steam_app_id,
+                'release_date' => $request->release_date,
+            ]);
         }
-
-        // Block free-to-play games — no cash offer is possible
-        $gamePrice = \App\Models\GamePrice::where('igdb_game_id', $request->igdb_game_id)->first();
-        if ($gamePrice && $gamePrice->is_free) {
-            return back()->with('flash_error', '"' . $request->game_title . '" is free to play and cannot be traded for cash.');
-        }
-
-        $user->cashBasketItems()->create([
-            'igdb_game_id' => $request->igdb_game_id,
-            'platform_id'  => $platformId,
-            'game_title'   => $request->game_title,
-            'cover_url'    => $request->cover_url,
-            'steam_app_id' => $request->steam_app_id,
-            'release_date' => $request->release_date,
-        ]);
 
         return back()->with('flash_success', '"' . $request->game_title . '" added to your cash basket.');
     }
@@ -157,23 +214,42 @@ class CashBasketController extends Controller
      */
     private function resolveItemPricing($item, array $allPlatforms, array $modifiers): array
     {
-        $pricing   = null;
-        $gamePrice = GamePrice::where('igdb_game_id', $item->igdb_game_id)->first();
+        $baseNumeric = null;
+        $baseDisplay = null;
 
-        if ($gamePrice) {
-            try {
-                $pricing = $item->platform_id
-                    ? $gamePrice->getComputedPriceForPlatform((int) $item->platform_id, [], $item->game_title)
-                    : $gamePrice->getComputedPrice([], $item->game_title);
-            } catch (\Throwable) {}
+        if (!empty($item->custom_game_id)) {
+            // Custom game — price set directly per platform
+            $customGame = CustomGame::find($item->custom_game_id);
+            if ($customGame && $item->platform_id) {
+                $price = $customGame->priceForPlatform($item->platform_id);
+                if ($price !== null) {
+                    $baseNumeric = $price;
+                    $baseDisplay = '£' . number_format($price, 2);
+                }
+            }
+        } else {
+            $pricing   = null;
+            $gamePrice = GamePrice::where('igdb_game_id', $item->igdb_game_id)->first();
+
+            if ($gamePrice) {
+                try {
+                    $pricing = $item->platform_id
+                        ? $gamePrice->getComputedPriceForPlatform((int) $item->platform_id, [], $item->game_title)
+                        : $gamePrice->getComputedPrice([], $item->game_title);
+                } catch (\Throwable) {}
+            }
+
+            if (! $pricing || $pricing['is_free']) {
+                return [null, null, null, null, null];
+            }
+
+            $baseNumeric = (float) $pricing['price_numeric'];
+            $baseDisplay = $pricing['display_price'];
         }
 
-        if (! $pricing || $pricing['is_free']) {
+        if ($baseNumeric === null) {
             return [null, null, null, null, null];
         }
-
-        $baseNumeric = (float) $pricing['price_numeric'];
-        $baseDisplay = $pricing['display_price'];
 
         if ($item->condition === null) {
             return [$baseNumeric, $baseDisplay, null, null, null];

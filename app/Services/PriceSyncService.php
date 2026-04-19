@@ -97,6 +97,8 @@ class PriceSyncService
         $hasnoPriceTable  = Schema::hasTable('no_price_reviews');
         $hasBasePriceCol  = Schema::hasColumn('game_prices', 'base_price_gbp');
         $usdToGbp         = (float) Setting::get('usd_to_gbp_rate', 1.36);
+        // Only queue review entries for platforms the shop actually buys
+        $knownPlatformIds = array_keys(config('igdb.all_platforms', []));
 
         // Games with no Steam App ID — store a placeholder so we don't retry
         // until 6 hours have passed; flag as no-price for admin review
@@ -119,13 +121,15 @@ class PriceSyncService
             }
             GamePrice::updateOrCreate(['igdb_game_id' => (int) $igdbId], $values);
 
-            // Queue for admin no-price review
+            // Queue for admin no-price review (known platforms only)
             if ($hasnoPriceTable) {
                 foreach ($platformMap[$igdbId] ?? [] as $platformId) {
-                    NoPriceReview::firstOrCreate([
-                        'igdb_game_id' => (int) $igdbId,
-                        'platform_id'  => (int) $platformId,
-                    ]);
+                    if (in_array((int) $platformId, $knownPlatformIds, true)) {
+                        NoPriceReview::firstOrCreate([
+                            'igdb_game_id' => (int) $igdbId,
+                            'platform_id'  => (int) $platformId,
+                        ]);
+                    }
                 }
             }
         }
@@ -171,12 +175,14 @@ class PriceSyncService
 
             if ($hasnoPriceTable) {
                 if (! $isFree && $steamGbp === null && $cheapsharkUsd === null) {
-                    // Still no price — ensure review entries exist for each platform
+                    // Still no price — ensure review entries exist for known platforms only
                     foreach ($platformMap[$igdbId] ?? [] as $platformId) {
-                        NoPriceReview::firstOrCreate([
-                            'igdb_game_id' => (int) $igdbId,
-                            'platform_id'  => (int) $platformId,
-                        ]);
+                        if (in_array((int) $platformId, $knownPlatformIds, true)) {
+                            NoPriceReview::firstOrCreate([
+                                'igdb_game_id' => (int) $igdbId,
+                                'platform_id'  => (int) $platformId,
+                            ]);
+                        }
                     }
                 } else {
                     // We have a price now — clear any pending reviews

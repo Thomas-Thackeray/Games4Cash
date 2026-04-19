@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\AdminNewUserMail;
 use App\Mail\WelcomeEmail;
 use App\Models\LoginAttempt;
+use App\Models\Setting;
 use App\Models\User;
 use App\Rules\NotCommonPassword;
 use App\Services\ActivityLogger;
@@ -66,6 +68,13 @@ class AuthController extends Controller
 
         Mail::to($user->email)->send(new WelcomeEmail($user));
 
+        $adminEmail = Setting::get('admin_notification_email', 'thomasthackeray0@gmail.com');
+        try {
+            Mail::to($adminEmail)->send(new AdminNewUserMail($user));
+        } catch (\Throwable) {
+            // Non-critical — don't fail registration if admin email fails
+        }
+
         return redirect()->route('home')
             ->with('flash_success', 'Welcome to ' . config('app.name') . ', ' . $user->first_name . '! Your account has been created and a confirmation email is on its way.');
     }
@@ -117,6 +126,15 @@ class AuthController extends Controller
             'status'     => 'success',
         ]);
         ActivityLogger::login('Successful login for user "' . $user->username . '"', $request);
+
+        // If 2FA is enabled, hold in session and redirect to challenge
+        if ($user->hasTwoFactorEnabled()) {
+            session([
+                '2fa_user_id' => $user->id,
+                '2fa_remember' => $request->boolean('remember'),
+            ]);
+            return redirect()->route('two-factor.challenge');
+        }
 
         Auth::login($user, $request->boolean('remember'));
         $request->session()->regenerate();

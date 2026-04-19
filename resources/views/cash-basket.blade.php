@@ -1,6 +1,34 @@
 @extends('layouts.app')
 @section('title', 'Cash Basket')
 
+@push('head_meta')
+<style>
+    .cb-condition-guide {
+        display: flex;
+        flex-direction: column;
+        gap: 0.3rem;
+        margin-top: 0.55rem;
+    }
+    .cb-condition-guide__item {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.45rem;
+        font-size: 0.78rem;
+        color: var(--text-muted);
+        line-height: 1.45;
+        padding: 0.3rem 0.5rem;
+        border-radius: 5px;
+        transition: background 0.15s, color 0.15s;
+    }
+    .cb-condition-guide__item--active {
+        background: rgba(230,57,70,0.07);
+        color: var(--text);
+    }
+    .cb-condition-guide__item--active strong { color: var(--accent); }
+    .cb-condition-guide__icon { flex-shrink: 0; font-size: 0.85rem; margin-top: 1px; }
+</style>
+@endpush
+
 @section('content')
 <div class="container" style="padding: 3rem 0 5rem;">
 
@@ -21,7 +49,7 @@
         <div class="cb-items">
             @foreach($itemsWithPrices as $item)
             <div class="cb-item" id="cb-item-{{ $item['id'] }}">
-                <a href="{{ \App\Models\GamePrice::urlForId($item['igdb_game_id']) }}" class="cb-item__cover-link">
+                <a href="{{ $item['game_url'] }}" class="cb-item__cover-link">
                     @if($item['cover_url'])
                     <img src="{{ $item['cover_url'] }}" alt="{{ $item['game_title'] }}" class="cb-item__cover">
                     @else
@@ -29,7 +57,7 @@
                     @endif
                 </a>
                 <div class="cb-item__body">
-                    <a href="{{ \App\Models\GamePrice::urlForId($item['igdb_game_id']) }}" class="cb-item__title">
+                    <a href="{{ $item['game_url'] }}" class="cb-item__title">
                         {{ $item['game_title'] }}
                     </a>
                     @if($item['platform_name'])
@@ -46,8 +74,22 @@
                             </option>
                             <option value="new"      {{ $item['condition'] === 'new'      ? 'selected' : '' }}>💎 Brand New (Case Unopened)</option>
                             <option value="complete" {{ $item['condition'] === 'complete' ? 'selected' : '' }}>✅ Complete Game (In Case)</option>
-                            <option value="disk"     {{ $item['condition'] === 'disk'     ? 'selected' : '' }}>💿 Just Disk</option>
+                            <option value="disk"     {{ $item['condition'] === 'disk'     ? 'selected' : '' }}>💿 Just Disk (Disc Only)</option>
                         </select>
+                        <div class="cb-condition-guide">
+                            <div class="cb-condition-guide__item {{ $item['condition'] === 'new' ? 'cb-condition-guide__item--active' : '' }}" data-cond="new">
+                                <span class="cb-condition-guide__icon">💎</span>
+                                <span><strong>Brand New</strong> — Factory sealed, shrink wrap fully intact, never opened.</span>
+                            </div>
+                            <div class="cb-condition-guide__item {{ $item['condition'] === 'complete' ? 'cb-condition-guide__item--active' : '' }}" data-cond="complete">
+                                <span class="cb-condition-guide__icon">✅</span>
+                                <span><strong>Complete (In Case)</strong> — Disc, case and any original manual all present. Minor wear is fine.</span>
+                            </div>
+                            <div class="cb-condition-guide__item {{ $item['condition'] === 'disk' ? 'cb-condition-guide__item--active' : '' }}" data-cond="disk">
+                                <span class="cb-condition-guide__icon">💿</span>
+                                <span><strong>Just Disk</strong> — Disc only, no case and no manual included.</span>
+                            </div>
+                        </div>
                     </div>
 
                     {{-- Price (condition-adjusted once selected) --}}
@@ -123,11 +165,25 @@
     var csrfToken = document.querySelector('meta[name="csrf-token"]').content;
     var minOrder  = {{ $minOrder ?? 0 }};
 
+    // Highlight the active condition guide row on page load (for pre-selected conditions)
+    document.querySelectorAll('.cb-condition-select').forEach(function (sel) {
+        if (sel.value) updateConditionGuide(sel.closest('.cb-item__condition-wrap'), sel.value);
+    });
+
+    function updateConditionGuide(wrap, condition) {
+        if (!wrap) return;
+        wrap.querySelectorAll('.cb-condition-guide__item').forEach(function (row) {
+            row.classList.toggle('cb-condition-guide__item--active', row.dataset.cond === condition);
+        });
+    }
+
     document.querySelectorAll('.cb-condition-select').forEach(function (select) {
         select.addEventListener('change', async function () {
             var itemId    = this.dataset.itemId;
             var url       = this.dataset.url;
             var condition = this.value;
+
+            updateConditionGuide(this.closest('.cb-item__condition-wrap'), condition);
             var priceEl   = document.querySelector('[data-price-for="' + itemId + '"]');
             var adjEl     = document.querySelector('[data-adj-for="' + itemId + '"]');
 

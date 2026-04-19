@@ -71,6 +71,24 @@
     if ($seoPlatforms) $videoGameSchema['gamePlatform'] = $seoPlatforms;
     if ($developer)    $videoGameSchema['author']       = ['@type' => 'Organization', 'name' => $developer];
 
+    // Offer schema — cash trade-in price from this site
+    if ($pricing && !$pricing['is_free'] && isset($pricing['price_numeric']) && $pricing['price_numeric'] > 0) {
+        $videoGameSchema['offers'] = [
+            '@type'         => 'Offer',
+            'name'          => 'Cash Trade-In Price',
+            'description'   => 'Sell your copy of ' . $name . ' for cash — instant quote, we collect from you.',
+            'price'         => number_format((float) $pricing['price_numeric'], 2, '.', ''),
+            'priceCurrency' => 'GBP',
+            'url'           => !empty($game['slug']) ? route('game.show', ['slug' => $game['slug']]) : url('/game/' . $game['id']),
+            'availability'  => 'https://schema.org/InStock',
+            'seller'        => [
+                '@type' => 'Organization',
+                'name'  => config('app.name'),
+                'url'   => route('home'),
+            ],
+        ];
+    }
+
     // BreadcrumbList schema — mirrors the visible breadcrumb nav
     $breadcrumbSchema = [
         '@context'        => 'https://schema.org',
@@ -300,7 +318,61 @@
                         @endif
                     @endif
                     @endauth
+
+                    @if(auth()->check() && auth()->user()->isAdmin())
+                    <button type="button" id="edit-price-toggle" class="btn gd-wishlist-btn" style="border-color:var(--accent-2); color:var(--accent-2); font-size:0.82rem;">
+                        ✏️ Edit Price
+                    </button>
+                    @endif
                 </div>
+
+                @if(auth()->check() && auth()->user()->isAdmin())
+                <div id="edit-price-panel" style="display:none; margin-top:1.25rem; background:rgba(255,255,255,0.04); border:1px solid var(--border); border-radius:8px; padding:1.25rem;">
+                    <p style="font-size:0.8rem; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:var(--accent-2); margin-bottom:1rem;">Admin — Set Price Override</p>
+                    <form method="POST" action="{{ route('admin.no-price-review.set-price', $game['id']) }}"
+                          style="display:flex; gap:0.75rem; align-items:center; flex-wrap:wrap;">
+                        @csrf
+                        @php
+                            $__allP     = config('igdb.all_platforms');
+                            $__gamePids = array_map(fn($p) => $p['id'] ?? null, $platforms ?? []);
+                            $__opts     = array_filter($__allP, fn($pid) => in_array($pid, $__gamePids), ARRAY_FILTER_USE_KEY);
+                            if (empty($__opts)) $__opts = $__allP;
+                        @endphp
+                        <select name="platform_id" class="form-input" style="min-width:150px; font-size:0.85rem;">
+                            @foreach($__opts as $pid => $pName)
+                            <option value="{{ $pid }}">{{ $pName }}</option>
+                            @endforeach
+                        </select>
+                        <div style="display:flex; align-items:center; gap:0.35rem;">
+                            <span style="color:var(--text-muted);">£</span>
+                            <input type="number" name="price" min="0.01" max="9999.99" step="0.01"
+                                   class="form-input" style="width:90px; font-size:0.85rem;"
+                                   placeholder="0.00">
+                        </div>
+                        <button type="submit" class="btn btn--primary btn--sm">Save</button>
+                    </form>
+                    @if($gamePrice && !empty($gamePrice->price_overrides))
+                    <div style="margin-top:1rem; border-top:1px solid var(--border); padding-top:0.85rem;">
+                        <p style="font-size:0.78rem; color:var(--text-muted); margin-bottom:0.5rem; font-weight:600;">Current overrides</p>
+                        <div style="display:flex; flex-wrap:wrap; gap:0.4rem;">
+                            @foreach($gamePrice->price_overrides as $pid => $pPrice)
+                            <span style="font-size:0.8rem; background:rgba(255,255,255,0.06); border:1px solid var(--border); border-radius:4px; padding:0.2rem 0.55rem;">
+                                {{ config('igdb.all_platforms')[$pid] ?? 'Platform '.$pid }}: £{{ number_format($pPrice, 2) }}
+                            </span>
+                            @endforeach
+                        </div>
+                    </div>
+                    @endif
+                </div>
+                <script>
+                    document.getElementById('edit-price-toggle').addEventListener('click', function () {
+                        var panel = document.getElementById('edit-price-panel');
+                        var open  = panel.style.display !== 'none';
+                        panel.style.display = open ? 'none' : 'block';
+                        this.textContent   = open ? '✏️ Edit Price' : '✕ Close';
+                    });
+                </script>
+                @endif
 
                 @if($summary)
                 <p class="gd-summary" style="margin-top:1.5rem;">{!! nl2br(e($summary)) !!}</p>

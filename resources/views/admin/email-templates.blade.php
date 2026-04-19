@@ -9,24 +9,49 @@
             <h1 class="admin-title">Email Templates</h1>
             <p class="admin-subtitle"><a href="{{ route('admin.dashboard') }}" style="color:var(--accent);">← Dashboard</a></p>
         </div>
-        <button type="submit" form="email-templates-form" class="btn btn--primary">Save Templates</button>
+        <div style="display:flex; gap:0.75rem; align-items:center; flex-wrap:wrap;">
+            <a href="https://app.brevo.com" target="_blank" rel="noopener noreferrer" class="btn btn--outline btn--sm" style="display:inline-flex; align-items:center; gap:0.4rem;">
+                <span>✉</span> Open Brevo
+            </a>
+            <button type="submit" form="email-templates-form" class="btn btn--primary">Save Templates</button>
+        </div>
     </div>
 
     {{--
-        Three isolated test forms — placed outside the save form so they are
+        Isolated test forms — placed outside the save form so they are
         never nested. Test buttons reference them via the form= attribute.
     --}}
-    <form id="test-form-order"   method="POST" action="{{ route('admin.email-templates.test') }}">@csrf<input type="hidden" name="template" value="order"></form>
-    <form id="test-form-welcome" method="POST" action="{{ route('admin.email-templates.test') }}">@csrf<input type="hidden" name="template" value="welcome"></form>
-    <form id="test-form-reset"   method="POST" action="{{ route('admin.email-templates.test') }}">@csrf<input type="hidden" name="template" value="reset"></form>
+    <form id="test-form-order"          method="POST" action="{{ route('admin.email-templates.test') }}">@csrf<input type="hidden" name="template" value="order"></form>
+    <form id="test-form-welcome"        method="POST" action="{{ route('admin.email-templates.test') }}">@csrf<input type="hidden" name="template" value="welcome"></form>
+    <form id="test-form-reset"          method="POST" action="{{ route('admin.email-templates.test') }}">@csrf<input type="hidden" name="template" value="reset"></form>
+    <form id="test-form-admin-user"     method="POST" action="{{ route('admin.email-templates.test') }}">@csrf<input type="hidden" name="template" value="admin_new_user"></form>
+    <form id="test-form-admin-quote"    method="POST" action="{{ route('admin.email-templates.test') }}">@csrf<input type="hidden" name="template" value="admin_new_quote"></form>
+
+    {{-- Admin notification email --}}
+    <div class="settings-card settings-card--wide" style="margin-bottom:1.5rem; border-left:3px solid var(--accent);">
+        <h2 class="settings-card__title">Admin Notification Email</h2>
+        <p class="settings-hint">Admin alert emails (new registrations and new quotes) are sent to this address. You can change it at any time.</p>
+        <div class="form-group" style="margin-top:1rem; max-width:400px;">
+            <label class="form-label">Notification Email Address</label>
+            <input type="email" name="admin_notification_email" form="email-templates-form"
+                value="{{ old('admin_notification_email', $adminNotificationEmail) }}"
+                class="form-input" style="width:100%;">
+            @error('admin_notification_email')<p class="form-error">{{ $message }}</p>@enderror
+        </div>
+    </div>
 
     {{-- Token reference --}}
-    <div class="settings-card settings-card--wide" style="margin-bottom:1.5rem; border-left:3px solid var(--accent);">
+    <div class="settings-card settings-card--wide" style="margin-bottom:1.5rem;">
         <h2 class="settings-card__title">Available Placeholders</h2>
         <p class="settings-hint">Use these tokens anywhere in the text fields below — they are replaced with real values when the email is sent.</p>
         <div style="display:flex; gap:1.5rem; flex-wrap:wrap; margin-top:0.75rem;">
             <div><code style="background:rgba(255,255,255,0.07); padding:2px 8px; border-radius:4px; font-size:0.85rem;">{first_name}</code> <span class="settings-hint" style="display:inline;">— recipient's first name</span></div>
-            <div><code style="background:rgba(255,255,255,0.07); padding:2px 8px; border-radius:4px; font-size:0.85rem;">{site_name}</code> <span class="settings-hint" style="display:inline;">— your site name ({{ config('app.name') }})</span></div>
+            <div><code style="background:rgba(255,255,255,0.07); padding:2px 8px; border-radius:4px; font-size:0.85rem;">{site_name}</code> <span class="settings-hint" style="display:inline;">— your site name</span></div>
+            <div><code style="background:rgba(255,255,255,0.07); padding:2px 8px; border-radius:4px; font-size:0.85rem;">{username}</code> <span class="settings-hint" style="display:inline;">— user's username (admin emails)</span></div>
+            <div><code style="background:rgba(255,255,255,0.07); padding:2px 8px; border-radius:4px; font-size:0.85rem;">{email}</code> <span class="settings-hint" style="display:inline;">— user's email (admin new user email)</span></div>
+            <div><code style="background:rgba(255,255,255,0.07); padding:2px 8px; border-radius:4px; font-size:0.85rem;">{order_ref}</code> <span class="settings-hint" style="display:inline;">— quote reference (admin new quote email)</span></div>
+            <div><code style="background:rgba(255,255,255,0.07); padding:2px 8px; border-radius:4px; font-size:0.85rem;">{total}</code> <span class="settings-hint" style="display:inline;">— quote total (admin new quote email)</span></div>
+            <div><code style="background:rgba(255,255,255,0.07); padding:2px 8px; border-radius:4px; font-size:0.85rem;">{items_count}</code> <span class="settings-hint" style="display:inline;">— number of games (admin new quote email)</span></div>
         </div>
     </div>
 
@@ -124,6 +149,52 @@
                 <textarea name="email_reset_footer_note" rows="2"
                     class="form-input" style="width:100%; resize:vertical; font-size:0.9rem; line-height:1.6;">{{ old('email_reset_footer_note', $templates['email_reset_footer_note']) }}</textarea>
                 @error('email_reset_footer_note')<p class="form-error">{{ $message }}</p>@enderror
+            </div>
+        </div>
+
+        {{-- Admin: New Registration --}}
+        <div class="settings-card settings-card--wide" style="margin-bottom:1.5rem;">
+            <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:1rem; margin-bottom:0.25rem;">
+                <div>
+                    <h2 class="settings-card__title" style="margin-bottom:0.25rem;">Admin — New Registration Alert</h2>
+                    <p class="settings-hint">Sent to the admin notification email whenever a new user creates an account. Available tokens: <code style="font-size:0.8rem;">{username}</code>, <code style="font-size:0.8rem;">{first_name}</code>, <code style="font-size:0.8rem;">{surname}</code>, <code style="font-size:0.8rem;">{email}</code>, <code style="font-size:0.8rem;">{site_name}</code>.</p>
+                </div>
+                <button type="button" form="test-form-admin-user"
+                    class="btn btn--outline btn--sm" style="flex-shrink:0; margin-top:2px;"
+                    data-confirm="Send a test Admin New Registration email to your notification address?">
+                    Send Test
+                </button>
+            </div>
+
+            <div class="form-group" style="margin-top:1.25rem;">
+                <label class="form-label">Email Body</label>
+                <p class="settings-hint">The introductory paragraph shown above the user details table.</p>
+                <textarea name="email_admin_new_user_body" rows="4"
+                    class="form-input" style="width:100%; resize:vertical; font-size:0.9rem; line-height:1.6;">{{ old('email_admin_new_user_body', $templates['email_admin_new_user_body']) }}</textarea>
+                @error('email_admin_new_user_body')<p class="form-error">{{ $message }}</p>@enderror
+            </div>
+        </div>
+
+        {{-- Admin: New Quote --}}
+        <div class="settings-card settings-card--wide" style="margin-bottom:1.5rem;">
+            <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:1rem; margin-bottom:0.25rem;">
+                <div>
+                    <h2 class="settings-card__title" style="margin-bottom:0.25rem;">Admin — New Quote Alert</h2>
+                    <p class="settings-hint">Sent to the admin notification email whenever a customer submits a cash quote. Available tokens: <code style="font-size:0.8rem;">{order_ref}</code>, <code style="font-size:0.8rem;">{username}</code>, <code style="font-size:0.8rem;">{first_name}</code>, <code style="font-size:0.8rem;">{total}</code>, <code style="font-size:0.8rem;">{items_count}</code>, <code style="font-size:0.8rem;">{site_name}</code>.</p>
+                </div>
+                <button type="button" form="test-form-admin-quote"
+                    class="btn btn--outline btn--sm" style="flex-shrink:0; margin-top:2px;"
+                    data-confirm="Send a test Admin New Quote email to your notification address?">
+                    Send Test
+                </button>
+            </div>
+
+            <div class="form-group" style="margin-top:1.25rem;">
+                <label class="form-label">Email Body</label>
+                <p class="settings-hint">The introductory paragraph shown above the order details and game table.</p>
+                <textarea name="email_admin_new_quote_body" rows="4"
+                    class="form-input" style="width:100%; resize:vertical; font-size:0.9rem; line-height:1.6;">{{ old('email_admin_new_quote_body', $templates['email_admin_new_quote_body']) }}</textarea>
+                @error('email_admin_new_quote_body')<p class="form-error">{{ $message }}</p>@enderror
             </div>
         </div>
 

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\AdminCreatedUserMail;
 use App\Models\ActivityLog;
 use App\Models\BlacklistedPassword;
 use App\Models\FranchiseAdjustment;
@@ -17,6 +18,10 @@ use App\Models\User;
 use App\Models\Wishlist;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Password;
+use Illuminate\Support\Str;
 use Illuminate\View\View;
 
 class AdminController extends Controller
@@ -46,7 +51,13 @@ class AdminController extends Controller
             'views_today'       => $hasPageViews ? PageView::where('created_at', '>=', now()->startOfDay())->count() : null,
             'visitors_today'    => $hasPageViews ? PageView::where('created_at', '>=', now()->startOfDay())->distinct('session_id')->count('session_id') : null,
             'visitors_month'    => $hasPageViews ? PageView::where('created_at', '>=', now()->startOfMonth())->distinct('session_id')->count('session_id') : null,
-            'no_price_count'    => \Illuminate\Support\Facades\Schema::hasTable('no_price_reviews') ? NoPriceReview::distinct('igdb_game_id')->count('igdb_game_id') : 0,
+            'no_price_count'      => GamePrice::where(function ($q) {
+                                        $q->whereNull('steam_gbp')->whereNull('cheapshark_usd');
+                                    })->where(function ($q) {
+                                        $q->whereNull('price_overrides')->orWhere('price_overrides', '')->orWhere('price_overrides', '{}')->orWhere('price_overrides', 'null');
+                                    })->where(function ($q) {
+                                        $q->whereNull('is_free')->orWhere('is_free', false);
+                                    })->count(),
         ];
 
         return view('admin.dashboard', compact('stats'));
@@ -157,6 +168,84 @@ class AdminController extends Controller
         User::where('role', 'user')->findOrFail($id)->delete();
 
         return back()->with('flash_success', 'User account deleted.');
+    }
+
+    // ----------------------------------------------------------------
+    //  Create user – show form
+    // ----------------------------------------------------------------
+
+    public function createUser(): View
+    {
+        return view('admin.create-user');
+    }
+
+    // ----------------------------------------------------------------
+    //  Create user – store
+    // ----------------------------------------------------------------
+
+    public function storeUser(Request $request): RedirectResponse
+    {
+        $isAdmin = $request->input('role') === 'admin';
+
+        $rules = [
+            'first_name'     => ['required', 'string', 'max:100'],
+            'surname'        => ['required', 'string', 'max:100'],
+            'email'          => ['required', 'email', 'max:255', 'unique:users,email'],
+            'username'       => ['required', 'string', 'alpha_dash', 'min:12', 'max:30', 'unique:users,username', 'regex:/[0-9]/'],
+            'contact_number' => ['nullable', 'string', 'regex:/^[\+\d\s\-\(\)]{7,20}$/'],
+            'role'           => ['required', 'in:user,admin'],
+        ];
+
+        if ($isAdmin) {
+            $rules['admin_password'] = ['required', 'string'];
+        }
+
+        $request->validate($rules, [
+            'username.alpha_dash' => 'Username may only contain letters, numbers, dashes, and underscores.',
+            'username.min'        => 'Username must be at least 12 characters.',
+            'username.regex'      => 'Username must contain at least one number.',
+            'username.unique'     => 'That username is already taken.',
+            'email.unique'        => 'An account with that email already exists.',
+            'contact_number.regex'=> 'Please enter a valid contact number (7–20 digits).',
+        ]);
+
+        if ($isAdmin && ! Hash::check($request->input('admin_password'), auth()->user()->password)) {
+            return back()->withInput()->withErrors(['admin_password' => 'Your password is incorrect.']);
+        }
+
+        $user = User::create([
+            'first_name'     => $request->input('first_name'),
+            'surname'        => $request->input('surname'),
+            'name'           => $request->input('first_name') . ' ' . $request->input('surname'),
+            'email'          => $request->input('email'),
+            'username'       => $request->input('username'),
+            'contact_number' => $request->input('contact_number') ?? '',
+            'password'       => Hash::make(Str::random(32)), // placeholder — user must set via email link
+            'role'           => $request->input('role'),
+        ]);
+
+        return redirect()->route('admin.users.detail', $user->id)
+            ->with('flash_success', 'Account created successfully. You can now send them a setup email.');
+    }
+
+    // ----------------------------------------------------------------
+    //  Create user – send setup email
+    // ----------------------------------------------------------------
+
+    public function sendSetupEmail(int $id): RedirectResponse
+    {
+        $user = User::findOrFail($id);
+
+        $token    = Password::broker()->createToken($user);
+        $setupUrl = url('/reset-password/' . $token . '?email=' . urlencode($user->email));
+
+        try {
+            Mail::to($user->email)->send(new AdminCreatedUserMail($user, $setupUrl));
+        } catch (\Throwable $e) {
+            return back()->with('flash_error', 'Failed to send setup email: ' . $e->getMessage());
+        }
+
+        return back()->with('flash_success', 'Setup email sent to ' . $user->email . '.');
     }
 
     // ----------------------------------------------------------------
@@ -280,6 +369,50 @@ class AdminController extends Controller
     }
 
     // ----------------------------------------------------------------
+    //  Activity logs – export CSV
+    // ----------------------------------------------------------------
+
+    public function exportActivityLogs(Request $request): \Symfony\Component\HttpFoundation\StreamedResponse
+    {
+        $type   = $request->input('type', 'all');
+        $search = $request->input('search', '');
+
+        $query = ActivityLog::with('user')->latest('created_at');
+
+        if ($type !== 'all') {
+            $query->where('type', $type);
+        }
+
+        if ($search !== '') {
+            $query->whereHas('user', function ($q) use ($search) {
+                $q->where('username', 'like', "%{$search}%");
+            });
+        }
+
+        $filename = 'activity-logs-' . now()->format('Y-m-d') . ($type !== 'all' ? '-' . $type : '') . '.csv';
+
+        return response()->streamDownload(function () use ($query) {
+            $handle = fopen('php://output', 'w');
+            fputcsv($handle, ['Date', 'Time', 'Type', 'Description', 'Username', 'IP Address']);
+
+            $query->chunk(500, function ($logs) use ($handle) {
+                foreach ($logs as $log) {
+                    fputcsv($handle, [
+                        $log->created_at->format('d/m/Y'),
+                        $log->created_at->format('H:i:s'),
+                        $log->type,
+                        $log->description,
+                        $log->user?->username ?? 'Guest',
+                        $log->ip_address ?? '',
+                    ]);
+                }
+            });
+
+            fclose($handle);
+        }, $filename, ['Content-Type' => 'text/csv']);
+    }
+
+    // ----------------------------------------------------------------
     //  Activity logs – delete single
     // ----------------------------------------------------------------
 
@@ -313,12 +446,14 @@ class AdminController extends Controller
     // ----------------------------------------------------------------
 
     private const EMAIL_TEMPLATE_DEFAULTS = [
-        'email_order_intro'          => "Your cash quote has been received and we're reviewing it now.\nA member of our team will be in touch shortly with further information about your collection and payment.",
-        'email_order_packaging_note' => "Please ensure your games are ready and packaged securely before the collection date. All prices are estimates and may be adjusted upon physical inspection.",
-        'email_welcome_intro'        => "Thank you for creating an account on {site_name}. Your account is all set — you can now explore thousands of games, browse by platform and genre, and discover your next favourite title.",
-        'email_welcome_footer_note'  => "If you did not create this account, you can safely ignore this email — no action is required.",
-        'email_reset_intro'          => "Hi {first_name}, we received a request to reset the password for your {site_name} account. Click the button below to choose a new password. This link will expire in 60 minutes.",
-        'email_reset_footer_note'    => "If you did not request a password reset, no action is required — your password will remain unchanged.",
+        'email_order_intro'            => "Your cash quote has been received and we're reviewing it now.\nA member of our team will be in touch shortly with further information about your collection and payment.",
+        'email_order_packaging_note'   => "Please ensure your games are ready and packaged securely before the collection date. All prices are estimates and may be adjusted upon physical inspection.",
+        'email_welcome_intro'          => "Thank you for creating an account on {site_name}. Your account is all set — you can now explore thousands of games, browse by platform and genre, and discover your next favourite title.",
+        'email_welcome_footer_note'    => "If you did not create this account, you can safely ignore this email — no action is required.",
+        'email_reset_intro'            => "Hi {first_name}, we received a request to reset the password for your {site_name} account. Click the button below to choose a new password. This link will expire in 60 minutes.",
+        'email_reset_footer_note'      => "If you did not request a password reset, no action is required — your password will remain unchanged.",
+        'email_admin_new_user_body'    => "A new user has just registered on {site_name}.\n\nUsername: {username}\nName: {first_name} {surname}\nEmail: {email}",
+        'email_admin_new_quote_body'   => "A new cash quote has been submitted on {site_name}.\n\nOrder: {order_ref}\nCustomer: {username}\nTotal: {total}\nGames: {items_count}",
     ];
 
     public function showEmailTemplates(): View
@@ -327,14 +462,16 @@ class AdminController extends Controller
         foreach (self::EMAIL_TEMPLATE_DEFAULTS as $key => $default) {
             $templates[$key] = Setting::get($key, $default);
         }
-        return view('admin.email-templates', compact('templates'));
+        $adminNotificationEmail = Setting::get('admin_notification_email', 'thomasthackeray0@gmail.com');
+        return view('admin.email-templates', compact('templates', 'adminNotificationEmail'));
     }
 
     private const EMAIL_TEST_ADDRESS = 'thomasthackeray0@gmail.com';
 
     public function testEmailTemplate(Request $request): RedirectResponse
     {
-        $template = $request->input('template');
+        $template  = $request->input('template');
+        $adminEmail = Setting::get('admin_notification_email', self::EMAIL_TEST_ADDRESS);
 
         $testUser = new \App\Models\User([
             'first_name' => 'Thomas',
@@ -343,58 +480,65 @@ class AdminController extends Controller
             'email'      => self::EMAIL_TEST_ADDRESS,
         ]);
 
+        $testOrder = new \App\Models\CashOrder([
+            'order_ref'         => 'TEST-0001',
+            'status'            => 'pending',
+            'total_gbp'         => 12.50,
+            'house_name_number' => '42',
+            'address_line1'     => 'Example Street',
+            'address_line2'     => null,
+            'address_line3'     => null,
+            'city'              => 'Manchester',
+            'county'            => 'Greater Manchester',
+            'postcode'          => 'M1 1AA',
+            'items'             => [
+                ['game_title' => 'Grand Theft Auto V', 'platform_name' => 'PlayStation 5', 'condition_label' => 'Complete (In Case)', 'display_price' => '£7.50'],
+                ['game_title' => 'Assassin\'s Creed Valhalla', 'platform_name' => 'Xbox Series X|S', 'condition_label' => 'Just Disk', 'display_price' => '£5.00'],
+            ],
+        ]);
+
         try {
             match ($template) {
-                'order' => \Illuminate\Support\Facades\Mail::to(self::EMAIL_TEST_ADDRESS)
-                    ->send(new \App\Mail\OrderConfirmationMail(
-                        $testUser,
-                        new \App\Models\CashOrder([
-                            'order_ref'          => 'TEST-0001',
-                            'status'             => 'pending',
-                            'total_gbp'          => 12.50,
-                            'house_name_number'  => '42',
-                            'address_line1'      => 'Example Street',
-                            'address_line2'      => null,
-                            'address_line3'      => null,
-                            'city'               => 'Manchester',
-                            'county'             => 'Greater Manchester',
-                            'postcode'           => 'M1 1AA',
-                            'items'              => [
-                                ['game_title' => 'Grand Theft Auto V', 'platform_name' => 'PlayStation 5', 'condition_label' => 'Complete (In Case)', 'display_price' => '£7.50'],
-                                ['game_title' => 'Assassin\'s Creed Valhalla', 'platform_name' => 'Xbox Series X|S', 'condition_label' => 'Just Disk', 'display_price' => '£5.00'],
-                            ],
-                        ])
-                    )),
-                'welcome' => \Illuminate\Support\Facades\Mail::to(self::EMAIL_TEST_ADDRESS)
-                    ->send(new \App\Mail\WelcomeEmail($testUser)),
-                'reset' => \Illuminate\Support\Facades\Mail::to(self::EMAIL_TEST_ADDRESS)
-                    ->send(new \App\Mail\PasswordResetMail($testUser, 'test-token-preview-only')),
-                default => throw new \InvalidArgumentException("Unknown template: {$template}"),
+                'order'           => \Illuminate\Support\Facades\Mail::to(self::EMAIL_TEST_ADDRESS)->send(new \App\Mail\OrderConfirmationMail($testUser, $testOrder)),
+                'welcome'         => \Illuminate\Support\Facades\Mail::to(self::EMAIL_TEST_ADDRESS)->send(new \App\Mail\WelcomeEmail($testUser)),
+                'reset'           => \Illuminate\Support\Facades\Mail::to(self::EMAIL_TEST_ADDRESS)->send(new \App\Mail\PasswordResetMail($testUser, 'test-token-preview-only')),
+                'admin_new_user'  => \Illuminate\Support\Facades\Mail::to($adminEmail)->send(new \App\Mail\AdminNewUserMail($testUser)),
+                'admin_new_quote' => \Illuminate\Support\Facades\Mail::to($adminEmail)->send(new \App\Mail\AdminNewQuoteMail($testUser, $testOrder)),
+                default           => throw new \InvalidArgumentException("Unknown template: {$template}"),
             };
         } catch (\Throwable $e) {
             return back()->with('flash_error', 'Failed to send test email: ' . $e->getMessage());
         }
 
         $label = match ($template) {
-            'order'   => 'Order Confirmation',
-            'welcome' => 'Welcome',
-            'reset'   => 'Password Reset',
-            default   => $template,
+            'order'           => 'Order Confirmation',
+            'welcome'         => 'Welcome',
+            'reset'           => 'Password Reset',
+            'admin_new_user'  => 'Admin New Registration',
+            'admin_new_quote' => 'Admin New Quote',
+            default           => $template,
         };
 
-        return back()->with('flash_success', "{$label} test email sent to " . self::EMAIL_TEST_ADDRESS . '.');
+        $sentTo = in_array($template, ['admin_new_user', 'admin_new_quote']) ? $adminEmail : self::EMAIL_TEST_ADDRESS;
+
+        return back()->with('flash_success', "{$label} test email sent to {$sentTo}.");
     }
 
     public function updateEmailTemplates(Request $request): RedirectResponse
     {
         $request->validate([
-            'email_order_intro'          => ['required', 'string', 'max:2000'],
-            'email_order_packaging_note' => ['required', 'string', 'max:2000'],
-            'email_welcome_intro'        => ['required', 'string', 'max:2000'],
-            'email_welcome_footer_note'  => ['required', 'string', 'max:2000'],
-            'email_reset_intro'          => ['required', 'string', 'max:2000'],
-            'email_reset_footer_note'    => ['required', 'string', 'max:2000'],
+            'admin_notification_email'     => ['required', 'email', 'max:255'],
+            'email_order_intro'            => ['required', 'string', 'max:2000'],
+            'email_order_packaging_note'   => ['required', 'string', 'max:2000'],
+            'email_welcome_intro'          => ['required', 'string', 'max:2000'],
+            'email_welcome_footer_note'    => ['required', 'string', 'max:2000'],
+            'email_reset_intro'            => ['required', 'string', 'max:2000'],
+            'email_reset_footer_note'      => ['required', 'string', 'max:2000'],
+            'email_admin_new_user_body'    => ['required', 'string', 'max:2000'],
+            'email_admin_new_quote_body'   => ['required', 'string', 'max:2000'],
         ]);
+
+        Setting::set('admin_notification_email', $request->input('admin_notification_email'));
 
         foreach (array_keys(self::EMAIL_TEMPLATE_DEFAULTS) as $key) {
             Setting::set($key, $request->input($key));
@@ -430,6 +574,7 @@ class AdminController extends Controller
             'usd_to_gbp_rate'          => Setting::get('usd_to_gbp_rate', 1.36),
             'age_reduction_per_year'   => Setting::get('age_reduction_per_year', 1),
             'min_order_gbp'            => Setting::get('min_order_gbp', 20),
+            'cancel_window_minutes'    => Setting::get('cancel_window_minutes', 120),
             'condition_new_pct'        => Setting::get('condition_new_pct', 20),
             'condition_complete_pct'   => Setting::get('condition_complete_pct', 0),
             'condition_disk_pct'       => Setting::get('condition_disk_pct', -50),
@@ -499,6 +644,7 @@ class AdminController extends Controller
             'usd_to_gbp_rate'           => ['required', 'numeric', 'min:0.01', 'max:99.99'],
             'age_reduction_per_year'    => ['required', 'numeric', 'min:0', 'max:9.99'],
             'min_order_gbp'             => ['required', 'numeric', 'min:0', 'max:999.99'],
+            'cancel_window_minutes'     => ['required', 'integer', 'min:0', 'max:10080'],
             'condition_new_pct'         => ['required', 'numeric', 'min:-100', 'max:100'],
             'condition_complete_pct'    => ['required', 'numeric', 'min:-100', 'max:100'],
             'condition_disk_pct'        => ['required', 'numeric', 'min:-100', 'max:100'],
@@ -516,6 +662,7 @@ class AdminController extends Controller
         Setting::set('usd_to_gbp_rate', $request->input('usd_to_gbp_rate'));
         Setting::set('age_reduction_per_year', $request->input('age_reduction_per_year'));
         Setting::set('min_order_gbp', $request->input('min_order_gbp'));
+        Setting::set('cancel_window_minutes', $request->input('cancel_window_minutes'));
         Setting::set('condition_new_pct', $request->input('condition_new_pct'));
         Setting::set('condition_complete_pct', $request->input('condition_complete_pct'));
         Setting::set('condition_disk_pct', $request->input('condition_disk_pct'));

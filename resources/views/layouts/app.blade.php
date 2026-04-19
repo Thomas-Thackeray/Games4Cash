@@ -42,6 +42,10 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ asset('css/style.css') }}?v={{ filemtime(public_path('css/style.css')) }}">
+    {{-- Apply saved theme before first paint to prevent flash --}}
+    <script>
+    (function(){var t=localStorage.getItem('theme');if(t==='light')document.documentElement.setAttribute('data-theme','light');})();
+    </script>
 </head>
 <body>
 
@@ -58,7 +62,7 @@
                     <a href="{{ route('home') }}" class="nav-link {{ ($activePage ?? '') === 'home' ? 'active' : '' }}">Home</a>
                 </li>
                 <li class="nav-item has-dropdown">
-                    <a href="#" class="nav-link">Platforms <span class="chevron">▾</span></a>
+                    <a href="{{ route('platforms.index') }}" class="nav-link">Platforms <span class="chevron">▾</span></a>
                     <div class="dropdown">
                         @foreach(config('igdb.platforms') as $pName => $pData)
                         <a href="{{ route('platform.show', ['id' => $pData['id'], 'name' => $pData['slug'] ?? $pName]) }}" class="dropdown-item">
@@ -69,7 +73,7 @@
                     </div>
                 </li>
                 <li class="nav-item has-dropdown">
-                    <a href="#" class="nav-link">Genres <span class="chevron">▾</span></a>
+                    <a href="{{ route('genres.index') }}" class="nav-link">Genres <span class="chevron">▾</span></a>
                     <div class="dropdown">
                         @foreach(config('igdb.genres') as $gName => $gId)
                         <a href="{{ route('genre.show', ['id' => $gId, 'name' => $gName]) }}" class="dropdown-item">
@@ -123,6 +127,7 @@
                     <a href="{{ route('wishlist.index') }}" class="user-menu__item" role="menuitem">♡ Wishlist</a>
                     <a href="{{ route('cash-basket.index') }}" class="user-menu__item" role="menuitem">💰 Cash Basket</a>
                     <a href="{{ route('cash-orders.index') }}" class="user-menu__item" role="menuitem">📋 My Quotes</a>
+                    <a href="{{ route('evaluations.create') }}" class="user-menu__item" role="menuitem">🔍 Get a Price</a>
                     <a href="{{ route('security') }}" class="user-menu__item" role="menuitem">🔒 Security</a>
                     <div class="user-menu__divider"></div>
                     <form method="POST" action="{{ route('logout') }}">
@@ -137,6 +142,7 @@
                 <a href="{{ route('register') }}" class="btn btn--primary btn--sm">Register</a>
             </div>
             @endauth
+            <button class="theme-toggle" id="theme-toggle" aria-label="Toggle light/dark mode" title="Toggle light/dark mode">🌙</button>
             <button class="nav-toggle" id="nav-toggle" aria-label="Menu">☰</button>
         </div>
     </div>
@@ -189,16 +195,36 @@
 <div class="footer-col">
                 <h4 class="footer-heading">Company</h4>
                 <ul>
+                    <li><a href="{{ route('game.worth') }}">How Much Is My Game Worth?</a></li>
                     <li><a href="{{ route('about') }}">About Us</a></li>
                     <li><a href="{{ route('terms') }}">Terms &amp; Conditions</a></li>
                     <li><a href="{{ route('contact') }}">Contact Us</a></li>
                     <li><a href="{{ route('faq') }}">FAQ</a></li>
                     <li><a href="{{ route('privacy') }}">Privacy Policy</a></li>
                     <li><a href="{{ route('sitemap') }}">Site Map</a></li>
+                    <li><a href="{{ route('gaming-timeline') }}">Gaming Timeline</a></li>
+                    <li><a href="{{ route('gaming-legends') }}">Gaming Legends</a></li>
+                    <li><a href="{{ route('snake') }}">🐍 Play Snake</a></li>
                 </ul>
             </div>
         </div>
     </div>
+    {{-- Newsletter opt-in strip --}}
+    <div style="border-top:1px solid var(--border); padding:2rem 0; text-align:center;">
+        <h4 style="margin:0 0 0.4rem; font-size:1rem; font-weight:700;">Stay in the Loop</h4>
+        <p style="color:var(--text-muted); font-size:0.85rem; margin:0 0 1rem;">Get notified when new games are added and prices update.</p>
+        <form method="POST" action="{{ route('newsletter.subscribe') }}" style="display:flex; gap:0.5rem; justify-content:center; flex-wrap:wrap; max-width:420px; margin:0 auto;">
+            @csrf
+            <input type="hidden" name="source" value="footer">
+            @auth<input type="hidden" name="name" value="{{ auth()->user()->first_name . ' ' . auth()->user()->surname }}">@endauth
+            <input type="email" name="email" placeholder="your@email.com"
+                   value="@auth{{ auth()->user()->email }}@endauth"
+                   required
+                   style="flex:1; min-width:180px; padding:0.6rem 0.9rem; border:1px solid var(--border); border-radius:var(--radius); background:var(--bg-card); color:var(--text); font-family:inherit; font-size:0.9rem;">
+            <button type="submit" class="btn btn--primary btn--sm">Subscribe</button>
+        </form>
+    </div>
+
     <div class="footer-bottom">
         <p>&copy; {{ date('Y') }} {{ config('app.name') }}.</p>
     </div>
@@ -287,6 +313,36 @@
 
 <script src="{{ asset('js/main.js') }}?v={{ filemtime(public_path('js/main.js')) }}"></script>
 @stack('scripts')
+<script>
+(function () {
+    var btn = document.getElementById('theme-toggle');
+    if (!btn) return;
+
+    function isLight() {
+        return document.documentElement.getAttribute('data-theme') === 'light';
+    }
+
+    function applyIcon() {
+        btn.textContent = isLight() ? '☀️' : '🌙';
+        btn.setAttribute('aria-label', isLight() ? 'Switch to dark mode' : 'Switch to light mode');
+        btn.setAttribute('title',      isLight() ? 'Switch to dark mode' : 'Switch to light mode');
+    }
+
+    // Set correct icon on load (theme may already be light from localStorage)
+    applyIcon();
+
+    btn.addEventListener('click', function () {
+        if (isLight()) {
+            document.documentElement.removeAttribute('data-theme');
+            localStorage.removeItem('theme');
+        } else {
+            document.documentElement.setAttribute('data-theme', 'light');
+            localStorage.setItem('theme', 'light');
+        }
+        applyIcon();
+    });
+})();
+</script>
 <script>
 (function () {
     if (!localStorage.getItem('cookies_accepted')) {

@@ -9,13 +9,16 @@
             <h1 class="admin-title">Manage Users</h1>
             <p class="admin-subtitle"><a href="{{ route('admin.dashboard') }}" style="color:var(--accent);">← Dashboard</a></p>
         </div>
-        <form method="POST" action="{{ route('admin.users.force-reset-all') }}">
-            @csrf
-            <button type="submit" class="btn btn--danger btn--sm"
-                data-confirm="Force ALL users to reset their password on next login?">
-                Force All to Reset Password
-            </button>
-        </form>
+        <div style="display:flex; gap:0.75rem; align-items:center; flex-wrap:wrap;">
+            <a href="{{ route('admin.users.create') }}" class="btn btn--primary btn--sm">+ Create User</a>
+            <form method="POST" action="{{ route('admin.users.force-reset-all') }}">
+                @csrf
+                <button type="submit" class="btn btn--danger btn--sm"
+                    data-confirm="Force ALL users to reset their password on next login?">
+                    Force All to Reset Password
+                </button>
+            </form>
+        </div>
     </div>
 
     {{-- Search --}}

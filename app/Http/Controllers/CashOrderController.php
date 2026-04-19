@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\AdminNewQuoteMail;
 use App\Mail\OrderConfirmationMail;
 use App\Models\CashOrder;
 use App\Models\GamePrice;
@@ -124,6 +125,13 @@ class CashOrderController extends Controller
         $user->cashBasketItems()->delete();
 
         Mail::to($user->email)->send(new OrderConfirmationMail($user, $order));
+
+        $adminEmail = Setting::get('admin_notification_email', 'thomasthackeray0@gmail.com');
+        try {
+            Mail::to($adminEmail)->send(new AdminNewQuoteMail($user, $order));
+        } catch (\Throwable) {
+            // Non-critical — don't fail the order submission if admin email fails
+        }
 
         ActivityLogger::quote(
             'Cash quote submitted: ' . $order->order_ref .

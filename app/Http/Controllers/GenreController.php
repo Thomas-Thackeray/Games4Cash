@@ -39,6 +39,8 @@ class GenreController extends Controller
         $games = NoPriceReview::strip($games);
         PriceSyncService::ensureForGames($games);
 
-        return view('genre', compact('games', 'error', 'id', 'genreName', 'page', 'limit'));
+        $genreSeo = config('igdb.genre_descriptions.' . $id);
+
+        return view('genre', compact('games', 'error', 'id', 'genreName', 'page', 'limit', 'genreSeo'));
     }
 }

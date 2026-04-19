@@ -114,17 +114,24 @@
                         </div>
                     </div>
 
-                    <div class="form-group" style="max-width:200px;">
+                    <div class="form-group">
                         <label class="form-label" for="postcode">Postcode <span style="color:var(--accent);">*</span></label>
-                        <input type="text"
-                            id="postcode"
-                            name="postcode"
-                            value="{{ old('postcode') }}"
-                            class="form-input{{ $errors->has('postcode') ? ' form-input--error' : '' }}"
-                            placeholder="e.g. M1 1AE"
-                            maxlength="20"
-                            style="text-transform:uppercase;"
-                            required>
+                        <div style="display:flex; gap:0.5rem; align-items:flex-start; max-width:320px;">
+                            <input type="text"
+                                id="postcode"
+                                name="postcode"
+                                value="{{ old('postcode') }}"
+                                class="form-input{{ $errors->has('postcode') ? ' form-input--error' : '' }}"
+                                placeholder="e.g. M1 1AE"
+                                maxlength="20"
+                                style="text-transform:uppercase; flex:1;"
+                                autocomplete="postal-code"
+                                required>
+                            <button type="button" id="postcode-lookup-btn" class="btn btn--outline btn--sm" style="white-space:nowrap; height:42px; padding:0 0.85rem;">
+                                Find Address
+                            </button>
+                        </div>
+                        <p id="postcode-feedback" style="font-size:0.8rem; margin-top:0.4rem; min-height:1.1em;"></p>
                         @error('postcode')
                         <p class="form-error">{{ $message }}</p>
                         @enderror
@@ -193,4 +200,70 @@
     </div>
 
 </div>
+@push('scripts')
+<script>
+(function () {
+    var btn      = document.getElementById('postcode-lookup-btn');
+    var pcInput  = document.getElementById('postcode');
+    var feedback = document.getElementById('postcode-feedback');
+    var cityEl   = document.getElementById('city');
+    var countyEl = document.getElementById('county');
+
+    function setFeedback(msg, colour) {
+        feedback.textContent = msg;
+        feedback.style.color = colour || 'var(--text-muted)';
+    }
+
+    async function lookup() {
+        var pc = pcInput.value.trim().replace(/\s+/g, '');
+        if (!pc) { setFeedback('Enter a postcode first.', 'var(--accent)'); return; }
+
+        btn.disabled    = true;
+        btn.textContent = '…';
+        setFeedback('Looking up postcode…', 'var(--text-muted)');
+
+        try {
+            var res  = await fetch('/postcode-lookup/' + encodeURIComponent(pc));
+            var data = await res.json();
+
+            if (data.status === 200 && data.result) {
+                var r = data.result;
+
+                // Format postcode with a space (e.g. M11AE → M1 1AE)
+                pcInput.value = r.postcode;
+
+                // Auto-fill city if empty
+                var city = r.admin_district || r.parish || '';
+                if (city && !cityEl.value.trim()) {
+                    cityEl.value = city;
+                }
+
+                // Auto-fill county if empty
+                var county = r.admin_county || r.region || '';
+                if (county && !countyEl.value.trim()) {
+                    countyEl.value = county;
+                }
+
+                setFeedback('✓ Postcode found — please check the fields below.', 'var(--accent-2, #34d399)');
+            } else {
+                setFeedback('Postcode not found. Please enter your address manually.', 'var(--accent)');
+            }
+        } catch (e) {
+            setFeedback('Could not look up postcode. Please enter your address manually.', 'var(--accent)');
+        }
+
+        btn.disabled    = false;
+        btn.textContent = 'Find Address';
+    }
+
+    btn.addEventListener('click', lookup);
+
+    // Also trigger on Enter key inside the postcode field
+    pcInput.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') { e.preventDefault(); lookup(); }
+    });
+})();
+</script>
+@endpush
+
 @endsection

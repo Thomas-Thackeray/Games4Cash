@@ -103,6 +103,57 @@
                 </form>
             </section>
 
+            {{-- Two-Factor Authentication --}}
+            <section class="account-card" id="2fa">
+                <div class="account-card__header">
+                    <h2 class="account-card__title">Two-Factor Authentication</h2>
+                    <p class="account-card__subtitle">Add an extra layer of security by requiring a code from your authenticator app each time you log in.</p>
+                </div>
+
+                @if($user->hasTwoFactorEnabled())
+                <div style="display:flex; align-items:center; gap:0.75rem; margin-bottom:1.25rem;">
+                    <span style="display:inline-flex; align-items:center; gap:0.35rem; background:rgba(52,211,153,0.12); color:#34d399; font-size:0.82rem; font-weight:600; padding:0.3rem 0.7rem; border-radius:20px;">
+                        ✓ Enabled
+                    </span>
+                    <span style="font-size:0.85rem; color:var(--text-muted);">Active since {{ $user->two_factor_confirmed_at->format('d M Y') }}</span>
+                </div>
+
+                <div id="2fa-disable-wrap">
+                    <button type="button" class="btn btn--outline btn--sm" id="2fa-disable-toggle">Disable 2FA</button>
+                    <form method="POST" action="{{ route('two-factor.disable') }}" id="2fa-disable-form" style="display:none; margin-top:1rem;">
+                        @csrf
+                        <div class="form-group">
+                            <label class="form-label" for="disable_password">Confirm your password to disable</label>
+                            <input type="password" id="disable_password" name="password"
+                                class="form-input{{ $errors->has('disable_password') ? ' form-input--error' : '' }}"
+                                placeholder="Your current password"
+                                autocomplete="current-password"
+                                style="max-width:320px;">
+                            @error('disable_password')<p class="form-error">{{ $message }}</p>@enderror
+                        </div>
+                        <div style="display:flex; gap:0.75rem; margin-top:0.75rem;">
+                            <button type="submit" class="btn btn--danger btn--sm">Disable 2FA</button>
+                            <button type="button" class="btn btn--outline btn--sm" id="2fa-disable-cancel">Cancel</button>
+                        </div>
+                    </form>
+                </div>
+                @else
+                <p style="font-size:0.88rem; color:var(--text-muted); margin-bottom:1.25rem;">
+                    2FA is currently <strong style="color:var(--text);">disabled</strong>. We recommend enabling it to protect your account.
+                </p>
+                <a href="{{ route('two-factor.setup') }}" class="btn btn--primary btn--sm">Enable 2FA</a>
+                @endif
+            </section>
+
+            {{-- Data Export --}}
+            <section class="account-card">
+                <div class="account-card__header">
+                    <h2 class="account-card__title">Your Data</h2>
+                    <p class="account-card__subtitle">Download a copy of everything we hold about you — account details, wishlist, cash basket and order history.</p>
+                </div>
+                <a href="{{ route('profile.export') }}" class="btn btn--outline">Download My Data (JSON)</a>
+            </section>
+
             {{-- Danger Zone --}}
             <section class="account-card account-card--danger" id="danger-zone">
                 <div class="account-card__header">
@@ -177,6 +228,19 @@ if (toggle && form) {
     toggle.addEventListener('click', () => { form.style.display = 'block'; toggle.style.display = 'none'; });
     cancel.addEventListener('click', () => { form.style.display = 'none'; toggle.style.display = 'inline-flex'; });
 }
+
+// 2FA disable toggle
+const disableToggle = document.getElementById('2fa-disable-toggle');
+const disableForm   = document.getElementById('2fa-disable-form');
+const disableCancel = document.getElementById('2fa-disable-cancel');
+if (disableToggle && disableForm) {
+    disableToggle.addEventListener('click', () => { disableForm.style.display = 'block'; disableToggle.style.display = 'none'; });
+    if (disableCancel) disableCancel.addEventListener('click', () => { disableForm.style.display = 'none'; disableToggle.style.display = 'inline-flex'; });
+}
+
+@if($errors->has('disable_password'))
+if (disableForm && disableToggle) { disableForm.style.display = 'block'; disableToggle.style.display = 'none'; }
+@endif
 
 // Auto-reveal delete form if there are confirm_password errors
 @if($errors->has('confirm_password'))

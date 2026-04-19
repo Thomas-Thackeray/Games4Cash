@@ -58,7 +58,7 @@
     <div class="container">
         @if($error)
         <div class="error-banner">⚠️ {{ e($error) }}</div>
-        @elseif(empty($games))
+        @elseif(empty($games) && $customGames->isEmpty())
         <div class="empty-state">
             <div class="icon">🔍</div>
             <h3>No games found</h3>
@@ -67,6 +67,9 @@
         </div>
         @else
         <div class="games-grid games-grid--large" style="margin-bottom: 2rem;">
+            @foreach($customGames as $cg)
+            <x-custom-game-card :game="$cg" />
+            @endforeach
             @foreach($games as $game)
             <x-game-card :game="$game" />
             @endforeach

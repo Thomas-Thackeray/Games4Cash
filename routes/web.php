@@ -3,16 +3,26 @@
 use App\Http\Controllers\AdminAnalyticsController;
 use App\Http\Controllers\AdminBlogController;
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\AdminCustomGameController;
+use App\Http\Controllers\AdminCustomGameImportController;
+use App\Http\Controllers\AdminNewsletterController;
+use App\Http\Controllers\PlatformSellController;
+use App\Http\Controllers\AdminEvaluationController;
 use App\Http\Controllers\AdminFaqController;
 use App\Http\Controllers\AdminGamePricesController;
 use App\Http\Controllers\BlogController;
+use App\Http\Controllers\HowMuchController;
+use App\Http\Controllers\NewsletterController;
 use App\Http\Controllers\PasswordResetController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\TwoFactorController;
 use App\Http\Controllers\CashBasketController;
 use App\Http\Controllers\CashOrderController;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\ForcePasswordResetController;
+use App\Http\Controllers\CustomGameController;
 use App\Http\Controllers\GameController;
+use App\Http\Controllers\GameEvaluationController;
 use App\Http\Controllers\GenreController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\ImageProxyController;
@@ -31,6 +41,14 @@ Route::get('/img/{encoded}', [ImageProxyController::class, 'show'])
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
 
+Route::get('/snake', [\App\Http\Controllers\SnakeController::class, 'index'])->name('snake');
+Route::post('/snake/score', [\App\Http\Controllers\SnakeController::class, 'store'])->name('snake.score');
+
+// Custom game — redirect old URL to canonical /game/{slug}
+Route::get('/custom-game/{slug}', fn (string $slug) => redirect()->route('game.show', $slug, 301))
+    ->name('custom-game.show')
+    ->where('slug', '[a-z][a-z0-9\-]*');
+
 // Canonical slug URL — /game/elden-ring
 Route::get('/game/{slug}', [GameController::class, 'showBySlug'])
     ->name('game.show')
@@ -40,11 +58,40 @@ Route::get('/game/{slug}', [GameController::class, 'showBySlug'])
 Route::get('/game/{id}', [GameController::class, 'show'])
     ->where('id', '[0-9]+');
 
-Route::get('/search', [SearchController::class, 'index'])->name('search');
+Route::get('/search', [SearchController::class, 'index'])->name('search')->middleware('throttle:60,1');
+
+Route::get('/postcode-lookup/{postcode}', function (string $postcode) {
+    $postcode = preg_replace('/[^A-Z0-9]/i', '', $postcode);
+    if (!preg_match('/^[A-Z]{1,2}[0-9][0-9A-Z]?[0-9][A-Z]{2}$/i', $postcode)) {
+        return response()->json(['status' => 400, 'error' => 'Invalid postcode format'], 400);
+    }
+    try {
+        $response = \Illuminate\Support\Facades\Http::timeout(5)
+            ->get('https://api.postcodes.io/postcodes/' . urlencode($postcode));
+        return response()->json($response->json(), $response->status());
+    } catch (\Throwable) {
+        return response()->json(['status' => 503, 'error' => 'Lookup unavailable'], 503);
+    }
+})->name('postcode.lookup')->middleware('throttle:30,1')->where('postcode', '[A-Za-z0-9]+');
+
+Route::get('/platforms', [\App\Http\Controllers\PlatformsController::class, 'index'])->name('platforms.index');
 
 Route::get('/platform/{id}/{name}', [PlatformController::class, 'show'])
     ->name('platform.show')
     ->where('id', '[0-9]+');
+
+Route::get('/sell-{slug}-games', [PlatformSellController::class, 'show'])->name('sell.platform');
+
+// How much is my game worth
+Route::get('/how-much-is-my-game-worth', [HowMuchController::class, 'index'])->name('game.worth');
+Route::get('/how-much-is-my-game-worth/search', [HowMuchController::class, 'search'])->name('game.worth.search')->middleware('throttle:60,1');
+
+// Newsletter
+Route::post('/newsletter/subscribe', [NewsletterController::class, 'subscribe'])->name('newsletter.subscribe')->middleware('throttle:5,1');
+Route::get('/newsletter/unsubscribe/{token}', [NewsletterController::class, 'unsubscribe'])->name('newsletter.unsubscribe');
+Route::post('/newsletter/unsubscribe/{token}', [NewsletterController::class, 'confirmUnsubscribe'])->name('newsletter.unsubscribe.confirm');
+
+Route::get('/genres', [\App\Http\Controllers\GenresController::class, 'index'])->name('genres.index');
 
 Route::get('/genre/{id}/{name}', [GenreController::class, 'show'])
     ->name('genre.show')
@@ -66,14 +113,26 @@ Route::middleware('guest')->group(function () {
 
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout')->middleware('auth');
 
+// 2FA challenge — guest-accessible but gated by session key inside controller
+Route::get('/two-factor/challenge', [TwoFactorController::class, 'challenge'])->name('two-factor.challenge');
+Route::post('/two-factor/challenge', [TwoFactorController::class, 'verify'])->name('two-factor.verify')->middleware('throttle:10,1');
+
 // Authenticated user pages
 Route::middleware(['auth', 'track.active', 'force.reset'])->group(function () {
     Route::get('/profile', [ProfileController::class, 'show'])->name('profile');
     Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::get('/profile/export', [ProfileController::class, 'export'])->name('profile.export');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+
+    // 2FA management
+    Route::get('/profile/two-factor/setup', [TwoFactorController::class, 'setup'])->name('two-factor.setup');
+    Route::post('/profile/two-factor/enable', [TwoFactorController::class, 'enable'])->name('two-factor.enable')->middleware('throttle:10,1');
+    Route::post('/profile/two-factor/disable', [TwoFactorController::class, 'disable'])->name('two-factor.disable');
 
     Route::get('/security', [SecurityController::class, 'show'])->name('security');
     Route::put('/security/password', [SecurityController::class, 'updatePassword'])->name('security.password');
+    Route::delete('/security/sessions/all', [SecurityController::class, 'destroyAllSessions'])->name('security.sessions.destroy-all');
+    Route::delete('/security/sessions/{sessionId}', [SecurityController::class, 'destroySession'])->name('security.sessions.destroy');
 
     // Recently viewed
     Route::get('/recently-viewed', [RecentlyViewedController::class, 'index'])->name('recently-viewed');
@@ -82,12 +141,18 @@ Route::middleware(['auth', 'track.active', 'force.reset'])->group(function () {
     Route::get('/wishlist', [WishlistController::class, 'index'])->name('wishlist.index');
     Route::post('/wishlist', [WishlistController::class, 'store'])->name('wishlist.store');
     Route::delete('/wishlist/{igdbGameId}', [WishlistController::class, 'destroy'])->name('wishlist.destroy')->where('igdbGameId', '[0-9]+');
+    Route::delete('/wishlist/custom/{customGameId}', [WishlistController::class, 'destroyCustom'])->name('wishlist.destroy.custom')->where('customGameId', '[0-9]+');
 
     // Cash basket
     Route::get('/cash-basket', [CashBasketController::class, 'index'])->name('cash-basket.index');
     Route::post('/cash-basket', [CashBasketController::class, 'store'])->name('cash-basket.store');
     Route::patch('/cash-basket/{id}/condition', [CashBasketController::class, 'updateCondition'])->name('cash-basket.condition')->where('id', '[0-9]+');
     Route::delete('/cash-basket/{id}', [CashBasketController::class, 'destroy'])->name('cash-basket.destroy')->where('id', '[0-9]+');
+
+    // Game evaluations
+    Route::get('/evaluations', [GameEvaluationController::class, 'index'])->name('evaluations.index');
+    Route::get('/evaluations/create', [GameEvaluationController::class, 'create'])->name('evaluations.create');
+    Route::post('/evaluations', [GameEvaluationController::class, 'store'])->name('evaluations.store')->middleware('throttle:20,1440');
 
     // Cash orders (submitted quotes)
     Route::get('/cash-orders', [CashOrderController::class, 'index'])->name('cash-orders.index');
@@ -110,9 +175,12 @@ Route::middleware(['auth', 'track.active', 'admin'])->prefix('admin')->name('adm
 
     // User management
     Route::get('/users', [AdminController::class, 'users'])->name('users');
+    Route::get('/users/create', [AdminController::class, 'createUser'])->name('users.create');
+    Route::post('/users', [AdminController::class, 'storeUser'])->name('users.store');
     Route::get('/users/{id}', [AdminController::class, 'userDetail'])->name('users.detail')->where('id', '[0-9]+');
     Route::post('/users/{id}/force-reset', [AdminController::class, 'forceReset'])->name('users.force-reset')->where('id', '[0-9]+');
     Route::post('/users/force-reset-all', [AdminController::class, 'forceResetAll'])->name('users.force-reset-all');
+    Route::post('/users/{id}/send-setup-email', [AdminController::class, 'sendSetupEmail'])->name('users.send-setup-email')->where('id', '[0-9]+');
     Route::delete('/users/{id}', [AdminController::class, 'deleteUser'])->name('users.delete')->where('id', '[0-9]+');
 
     // Blacklisted passwords
@@ -127,6 +195,7 @@ Route::middleware(['auth', 'track.active', 'admin'])->prefix('admin')->name('adm
 
     // Activity logs
     Route::get('/activity-logs', [AdminController::class, 'activityLogs'])->name('activity-logs');
+    Route::get('/activity-logs/export', [AdminController::class, 'exportActivityLogs'])->name('activity-logs.export');
     Route::delete('/activity-logs/clear', [AdminController::class, 'clearActivityLogs'])->name('activity-logs.clear');
     Route::delete('/activity-logs/{id}', [AdminController::class, 'deleteActivityLog'])->name('activity-logs.delete')->where('id', '[0-9]+');
 
@@ -169,12 +238,34 @@ Route::middleware(['auth', 'track.active', 'admin'])->prefix('admin')->name('adm
     Route::get('/orders/{id}', [AdminController::class, 'cashOrderDetail'])->name('orders.detail')->where('id', '[0-9]+');
     Route::patch('/orders/{id}/status', [AdminController::class, 'updateOrderStatus'])->name('orders.update-status')->where('id', '[0-9]+');
 
+    // Custom games
+    Route::get('/custom-games', [AdminCustomGameController::class, 'index'])->name('custom-games.index');
+    Route::get('/custom-games/create', [AdminCustomGameController::class, 'create'])->name('custom-games.create');
+    Route::post('/custom-games', [AdminCustomGameController::class, 'store'])->name('custom-games.store');
+    Route::get('/custom-games/import', [AdminCustomGameImportController::class, 'create'])->name('custom-games.import');
+    Route::post('/custom-games/import', [AdminCustomGameImportController::class, 'store'])->name('custom-games.import.store');
+    Route::get('/custom-games/{id}/edit', [AdminCustomGameController::class, 'edit'])->name('custom-games.edit')->where('id', '[0-9]+');
+    Route::patch('/custom-games/{id}', [AdminCustomGameController::class, 'update'])->name('custom-games.update')->where('id', '[0-9]+');
+    Route::delete('/custom-games/{id}', [AdminCustomGameController::class, 'destroy'])->name('custom-games.destroy')->where('id', '[0-9]+');
+
+    // Evaluation requests
+    Route::get('/evaluations', [AdminEvaluationController::class, 'index'])->name('evaluations.index');
+    Route::get('/evaluations/{id}', [AdminEvaluationController::class, 'show'])->name('evaluations.show')->where('id', '[0-9]+');
+    Route::patch('/evaluations/{id}', [AdminEvaluationController::class, 'update'])->name('evaluations.update')->where('id', '[0-9]+');
+    Route::delete('/evaluations/{id}', [AdminEvaluationController::class, 'destroy'])->name('evaluations.destroy')->where('id', '[0-9]+');
+
     // FAQ management
     Route::get('/faqs', [AdminFaqController::class, 'index'])->name('faqs.index');
     Route::post('/faqs', [AdminFaqController::class, 'store'])->name('faqs.store');
     Route::get('/faqs/{id}/edit', [AdminFaqController::class, 'edit'])->name('faqs.edit')->where('id', '[0-9]+');
     Route::patch('/faqs/{id}', [AdminFaqController::class, 'update'])->name('faqs.update')->where('id', '[0-9]+');
     Route::delete('/faqs/{id}', [AdminFaqController::class, 'destroy'])->name('faqs.destroy')->where('id', '[0-9]+');
+
+    // Newsletter management
+    Route::get('/newsletter', [AdminNewsletterController::class, 'index'])->name('newsletter.index');
+    Route::post('/newsletter/send', [AdminNewsletterController::class, 'send'])->name('newsletter.send');
+    Route::post('/newsletter/send-test', [AdminNewsletterController::class, 'sendTest'])->name('newsletter.send-test');
+    Route::delete('/newsletter/{id}', [AdminNewsletterController::class, 'destroy'])->name('newsletter.destroy')->where('id', '[0-9]+');
 
     // Blog management
     Route::get('/blog', [AdminBlogController::class, 'index'])->name('blog.index');
@@ -191,6 +282,8 @@ Route::get('/blog', [BlogController::class, 'index'])->name('blog.index');
 Route::get('/blog/{slug}', [BlogController::class, 'show'])->name('blog.show');
 
 // Static pages
+Route::get('/gaming-timeline', [\App\Http\Controllers\GamingTimelineController::class, 'index'])->name('gaming-timeline');
+Route::get('/gaming-legends', [\App\Http\Controllers\GamingLegendsController::class, 'index'])->name('gaming-legends');
 Route::view('/about', 'pages.about')->name('about');
 Route::view('/terms', 'pages.terms')->name('terms');
 Route::get('/contact', fn () => view('pages.contact'))->name('contact');
@@ -201,6 +294,6 @@ Route::view('/sitemap', 'pages.sitemap')->name('sitemap');
 Route::get('/sitemap.xml', [SitemapController::class, 'xml'])->name('sitemap.xml');
 Route::get('/robots.txt', function () {
     $sitemap = route('sitemap.xml');
-    $content = "User-agent: *\n\n# Private / authenticated pages\nDisallow: /admin\nDisallow: /login\nDisallow: /register\nDisallow: /profile\nDisallow: /security\nDisallow: /cash-basket\nDisallow: /cash-orders\nDisallow: /wishlist\n\n# Internal image proxy\nDisallow: /img/\n\n# Laravel health check\nDisallow: /up\n\nSitemap: {$sitemap}\n";
+    $content = "User-agent: *\n\n# Private / authenticated pages\nDisallow: /admin\nDisallow: /login\nDisallow: /register\nDisallow: /profile\nDisallow: /security\nDisallow: /cash-basket\nDisallow: /cash-orders\nDisallow: /wishlist\nDisallow: /recently-viewed\nDisallow: /password\n\n# API / POST-only endpoints\nDisallow: /snake/score\n\n# Internal image proxy\nDisallow: /img/\n\n# Laravel health check\nDisallow: /up\n\nSitemap: {$sitemap}\n";
     return response($content, 200)->header('Content-Type', 'text/plain');
 })->name('robots');

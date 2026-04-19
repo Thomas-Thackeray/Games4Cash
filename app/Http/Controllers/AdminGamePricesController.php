@@ -34,13 +34,6 @@ class AdminGamePricesController extends Controller
             match ($source) {
                 'cheapshark' => $query->whereNotNull('cheapshark_usd'),
                 'steam'      => $query->whereNotNull('steam_gbp')->whereNull('cheapshark_usd'),
-                'base'       => $query->whereNull('steam_gbp')
-                                      ->whereNull('cheapshark_usd')
-                                      ->when($hasPriceOverrides, fn ($q) =>
-                                          $q->where(fn ($q2) =>
-                                              $q2->whereNull('price_overrides')
-                                                 ->orWhere('price_overrides', 'null')
-                                                 ->orWhere('price_overrides', '{}'))),
                 'none'       => $query->where(function ($q) {
                                     $q->where('is_free', true)
                                       ->orWhere(function ($q2) {
