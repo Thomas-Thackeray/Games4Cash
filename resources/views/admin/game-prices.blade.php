@@ -31,7 +31,7 @@
         @foreach($filters as $val => $label)
         @php
             $active  = $source === $val;
-            $href    = route('admin.game-prices', array_filter(['source' => $val ?: null, 'search' => $search ?: null]));
+            $href    = route('admin.game-prices', array_filter(['source' => $val ?: null, 'search' => $search ?: null, 'price_min' => $priceMin ?? null, 'price_max' => $priceMax ?? null]));
             $colours = [
                 'cheapshark' => ['bg'=>'rgba(59,130,246,0.15)', 'color'=>'#2563eb', 'border'=>'rgba(59,130,246,0.4)' ],
                 'steam'      => ['bg'=>'rgba(249,115,22,0.15)', 'color'=>'#ea580c', 'border'=>'rgba(249,115,22,0.4)' ],
@@ -55,16 +55,31 @@
         @endforeach
     </div>
 
-    {{-- Search --}}
-    <form method="GET" action="{{ route('admin.game-prices') }}" class="admin-search-form">
+    {{-- Search + price filter --}}
+    <form method="GET" action="{{ route('admin.game-prices') }}" class="admin-search-form" style="flex-wrap:wrap; gap:0.5rem; align-items:center;">
         @if($source)
         <input type="hidden" name="source" value="{{ $source }}">
         @endif
         <input type="search" name="search" value="{{ $search }}"
             class="form-input admin-search-input"
-            placeholder="Search by game name or slug…">
-        <button type="submit" class="btn btn--outline btn--sm">Search</button>
-        @if($search)
+            placeholder="Search by game name or slug…"
+            style="flex:1; min-width:180px;">
+        <div style="display:flex; align-items:center; gap:0.35rem; white-space:nowrap;">
+            <span style="font-size:0.8rem; color:var(--text-muted);">Calc. price</span>
+            <span style="font-size:0.82rem; color:var(--text-muted);">£</span>
+            <input type="number" name="price_min" value="{{ $priceMin ?? '' }}"
+                   min="0" step="0.01" placeholder="Min"
+                   class="form-input"
+                   style="width:80px; padding:0.4rem 0.5rem; font-size:0.88rem; text-align:center;">
+            <span style="font-size:0.82rem; color:var(--text-muted);">–</span>
+            <span style="font-size:0.82rem; color:var(--text-muted);">£</span>
+            <input type="number" name="price_max" value="{{ $priceMax ?? '' }}"
+                   min="0" step="0.01" placeholder="Max"
+                   class="form-input"
+                   style="width:80px; padding:0.4rem 0.5rem; font-size:0.88rem; text-align:center;">
+        </div>
+        <button type="submit" class="btn btn--outline btn--sm">Filter</button>
+        @if($search || $priceMin !== null || $priceMax !== null)
         <a href="{{ route('admin.game-prices', array_filter(['source' => $source ?: null])) }}" class="btn btn--outline btn--sm">Clear</a>
         @endif
     </form>
