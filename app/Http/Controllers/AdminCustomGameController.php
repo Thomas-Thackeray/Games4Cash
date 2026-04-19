@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\CashBasketItem;
 use App\Models\CustomGame;
+use App\Models\Wishlist;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -80,6 +82,10 @@ class AdminCustomGameController extends Controller
         if ($game->cover_image_path) {
             Storage::disk('public')->delete($game->cover_image_path);
         }
+
+        // Remove any wishlist / basket references before deleting
+        Wishlist::where('custom_game_id', $game->id)->delete();
+        CashBasketItem::where('custom_game_id', $game->id)->delete();
 
         $game->delete();
 

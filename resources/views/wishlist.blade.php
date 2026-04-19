@@ -21,7 +21,7 @@
         @foreach($items as $item)
         @php
             $gameUrl    = $item->custom_game_id
-                ? route('game.show', $item->customGame->slug)
+                ? ($item->customGame ? route('game.show', $item->customGame->slug) : route('search'))
                 : \App\Models\GamePrice::urlForId($item->igdb_game_id);
             $removeRoute = $item->custom_game_id
                 ? route('wishlist.destroy.custom', $item->custom_game_id)

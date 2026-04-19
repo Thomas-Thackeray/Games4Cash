@@ -39,7 +39,7 @@ class CashBasketController extends Controller
             }
 
             $gameUrl = $item->custom_game_id
-                ? route('game.show', $customGameSlugs[$item->custom_game_id])
+                ? ($customGameSlugs->has($item->custom_game_id) ? route('game.show', $customGameSlugs[$item->custom_game_id]) : route('search'))
                 : GamePrice::urlForId($item->igdb_game_id);
 
             return [
