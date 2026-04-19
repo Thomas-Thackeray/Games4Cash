@@ -2,8 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\CashBasketItem;
+use App\Models\CashOrder;
+use App\Models\Wishlist;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\View\View;
@@ -58,6 +62,73 @@ class ProfileController extends Controller
         ]);
 
         return back()->with('flash_success', 'Your profile has been updated successfully.');
+    }
+
+    public function export(Request $request): Response
+    {
+        $user = auth()->user();
+
+        $data = [
+            'exported_at' => now()->toIso8601String(),
+            'account' => [
+                'id'             => $user->id,
+                'first_name'     => $user->first_name,
+                'surname'        => $user->surname,
+                'username'       => $user->username,
+                'email'          => $user->email,
+                'contact_number' => $user->contact_number,
+                'role'           => $user->role,
+                'registered_at'  => $user->created_at?->toIso8601String(),
+                'last_active_at' => $user->last_active_at?->toIso8601String(),
+            ],
+            'wishlist' => Wishlist::where('user_id', $user->id)
+                ->orderBy('created_at')
+                ->get(['igdb_game_id', 'game_title', 'platform_id', 'cover_url', 'created_at'])
+                ->map(fn ($w) => [
+                    'igdb_game_id' => $w->igdb_game_id,
+                    'game_title'   => $w->game_title,
+                    'added_at'     => $w->created_at?->toIso8601String(),
+                ])
+                ->all(),
+            'cash_basket' => CashBasketItem::where('user_id', $user->id)
+                ->orderBy('created_at')
+                ->get(['igdb_game_id', 'game_title', 'platform_id', 'condition', 'created_at'])
+                ->map(fn ($b) => [
+                    'igdb_game_id' => $b->igdb_game_id,
+                    'game_title'   => $b->game_title,
+                    'condition'    => $b->condition,
+                    'added_at'     => $b->created_at?->toIso8601String(),
+                ])
+                ->all(),
+            'cash_orders' => CashOrder::where('user_id', $user->id)
+                ->orderBy('created_at')
+                ->get()
+                ->map(fn ($o) => [
+                    'order_ref'   => $o->order_ref,
+                    'status'      => $o->status,
+                    'total_gbp'   => $o->total_gbp,
+                    'items'       => $o->items,
+                    'address'     => implode(', ', array_filter([
+                        $o->house_name_number,
+                        $o->address_line1,
+                        $o->address_line2,
+                        $o->address_line3,
+                        $o->city,
+                        $o->county,
+                        $o->postcode,
+                    ])),
+                    'submitted_at' => $o->created_at?->toIso8601String(),
+                ])
+                ->all(),
+        ];
+
+        $filename = 'my-data-' . now()->format('Y-m-d') . '.json';
+        $json     = json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+
+        return response($json, 200, [
+            'Content-Type'        => 'application/json',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+        ]);
     }
 
     public function destroy(Request $request): RedirectResponse

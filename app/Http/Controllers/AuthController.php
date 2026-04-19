@@ -127,6 +127,15 @@ class AuthController extends Controller
         ]);
         ActivityLogger::login('Successful login for user "' . $user->username . '"', $request);
 
+        // If 2FA is enabled, hold in session and redirect to challenge
+        if ($user->hasTwoFactorEnabled()) {
+            session([
+                '2fa_user_id' => $user->id,
+                '2fa_remember' => $request->boolean('remember'),
+            ]);
+            return redirect()->route('two-factor.challenge');
+        }
+
         Auth::login($user, $request->boolean('remember'));
         $request->session()->regenerate();
 

@@ -71,6 +71,24 @@
     if ($seoPlatforms) $videoGameSchema['gamePlatform'] = $seoPlatforms;
     if ($developer)    $videoGameSchema['author']       = ['@type' => 'Organization', 'name' => $developer];
 
+    // Offer schema — cash trade-in price from this site
+    if ($pricing && !$pricing['is_free'] && isset($pricing['price_numeric']) && $pricing['price_numeric'] > 0) {
+        $videoGameSchema['offers'] = [
+            '@type'         => 'Offer',
+            'name'          => 'Cash Trade-In Price',
+            'description'   => 'Sell your copy of ' . $name . ' for cash — instant quote, we collect from you.',
+            'price'         => number_format((float) $pricing['price_numeric'], 2, '.', ''),
+            'priceCurrency' => 'GBP',
+            'url'           => !empty($game['slug']) ? route('game.show', ['slug' => $game['slug']]) : url('/game/' . $game['id']),
+            'availability'  => 'https://schema.org/InStock',
+            'seller'        => [
+                '@type' => 'Organization',
+                'name'  => config('app.name'),
+                'url'   => route('home'),
+            ],
+        ];
+    }
+
     // BreadcrumbList schema — mirrors the visible breadcrumb nav
     $breadcrumbSchema = [
         '@context'        => 'https://schema.org',

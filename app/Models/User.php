@@ -25,21 +25,30 @@ class User extends Authenticatable
         'role',
         'force_password_reset',
         'last_active_at',
+        'two_factor_secret',
+        'two_factor_confirmed_at',
     ];
 
     protected $hidden = [
         'password',
         'remember_token',
+        'two_factor_secret',
     ];
 
     protected function casts(): array
     {
         return [
-            'email_verified_at'    => 'datetime',
-            'last_active_at'       => 'datetime',
-            'password'             => 'hashed',
-            'force_password_reset' => 'boolean',
+            'email_verified_at'       => 'datetime',
+            'last_active_at'          => 'datetime',
+            'two_factor_confirmed_at' => 'datetime',
+            'password'                => 'hashed',
+            'force_password_reset'    => 'boolean',
         ];
+    }
+
+    public function hasTwoFactorEnabled(): bool
+    {
+        return ! is_null($this->two_factor_confirmed_at);
     }
 
     public function isAdmin(): bool

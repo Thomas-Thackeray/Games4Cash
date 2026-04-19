@@ -78,6 +78,67 @@
                 </form>
             </section>
 
+            {{-- Active Sessions --}}
+            <section class="account-card" id="sessions">
+                <div class="account-card__header" style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:0.75rem;">
+                    <div>
+                        <h2 class="account-card__title">Active Sessions</h2>
+                        <p class="account-card__subtitle">Devices currently logged in to your account.</p>
+                    </div>
+                    @if($sessions->count() > 1)
+                    <form method="POST" action="{{ route('security.sessions.destroy-all') }}">
+                        @csrf
+                        @method('DELETE')
+                        <button type="button" class="btn btn--outline btn--sm"
+                            data-confirm="Log out of all other sessions?"
+                            onclick="if(confirm('Log out of all other sessions?')) this.closest('form').submit();">
+                            Log Out Everywhere Else
+                        </button>
+                    </form>
+                    @endif
+                </div>
+
+                @if($sessions->isEmpty())
+                <p style="color:var(--text-muted); font-size:0.88rem;">No active sessions found.</p>
+                @else
+                <div style="display:flex; flex-direction:column; gap:0.75rem; margin-top:0.5rem;">
+                    @foreach($sessions as $session)
+                    <div style="display:flex; align-items:center; justify-content:space-between; gap:1rem; padding:0.85rem 1rem; background:var(--card-bg); border:1px solid var(--border); border-radius:8px; {{ $session->is_current ? 'border-color:var(--accent);' : '' }}">
+                        <div style="display:flex; align-items:center; gap:0.75rem; min-width:0;">
+                            <div style="font-size:1.4rem; flex-shrink:0;">
+                                @if(str_contains($session->platform, 'Android') || str_contains($session->platform, 'iOS'))💬
+                                @else🖥️
+                                @endif
+                            </div>
+                            <div style="min-width:0;">
+                                <div style="font-weight:600; font-size:0.9rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                                    {{ $session->browser }} on {{ $session->platform }}
+                                    @if($session->is_current)
+                                    <span style="font-size:0.75rem; color:var(--accent); font-weight:400; margin-left:0.4rem;">(this session)</span>
+                                    @endif
+                                </div>
+                                <div style="font-size:0.8rem; color:var(--text-muted); margin-top:0.15rem;">
+                                    {{ $session->ip_address }} &mdash; last active {{ $session->last_activity->diffForHumans() }}
+                                </div>
+                            </div>
+                        </div>
+                        @if(! $session->is_current)
+                        <form method="POST" action="{{ route('security.sessions.destroy', $session->id) }}" style="flex-shrink:0;">
+                            @csrf
+                            @method('DELETE')
+                            <button type="button" class="btn btn--outline btn--sm"
+                                onclick="if(confirm('Revoke this session?')) this.closest('form').submit();"
+                                style="color:var(--accent);">
+                                Revoke
+                            </button>
+                        </form>
+                        @endif
+                    </div>
+                    @endforeach
+                </div>
+                @endif
+            </section>
+
             {{-- Login History --}}
             <section class="account-card" id="login-history">
                 <div class="account-card__header">

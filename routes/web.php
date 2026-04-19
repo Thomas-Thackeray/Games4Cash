@@ -8,6 +8,7 @@ use App\Http\Controllers\AdminGamePricesController;
 use App\Http\Controllers\BlogController;
 use App\Http\Controllers\PasswordResetController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\TwoFactorController;
 use App\Http\Controllers\CashBasketController;
 use App\Http\Controllers\CashOrderController;
 use App\Http\Controllers\ContactController;
@@ -87,14 +88,26 @@ Route::middleware('guest')->group(function () {
 
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout')->middleware('auth');
 
+// 2FA challenge — guest-accessible but gated by session key inside controller
+Route::get('/two-factor/challenge', [TwoFactorController::class, 'challenge'])->name('two-factor.challenge');
+Route::post('/two-factor/challenge', [TwoFactorController::class, 'verify'])->name('two-factor.verify')->middleware('throttle:10,1');
+
 // Authenticated user pages
 Route::middleware(['auth', 'track.active', 'force.reset'])->group(function () {
     Route::get('/profile', [ProfileController::class, 'show'])->name('profile');
     Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::get('/profile/export', [ProfileController::class, 'export'])->name('profile.export');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+
+    // 2FA management
+    Route::get('/profile/two-factor/setup', [TwoFactorController::class, 'setup'])->name('two-factor.setup');
+    Route::post('/profile/two-factor/enable', [TwoFactorController::class, 'enable'])->name('two-factor.enable')->middleware('throttle:10,1');
+    Route::post('/profile/two-factor/disable', [TwoFactorController::class, 'disable'])->name('two-factor.disable');
 
     Route::get('/security', [SecurityController::class, 'show'])->name('security');
     Route::put('/security/password', [SecurityController::class, 'updatePassword'])->name('security.password');
+    Route::delete('/security/sessions/all', [SecurityController::class, 'destroyAllSessions'])->name('security.sessions.destroy-all');
+    Route::delete('/security/sessions/{sessionId}', [SecurityController::class, 'destroySession'])->name('security.sessions.destroy');
 
     // Recently viewed
     Route::get('/recently-viewed', [RecentlyViewedController::class, 'index'])->name('recently-viewed');
