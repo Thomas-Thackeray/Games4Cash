@@ -223,7 +223,7 @@
         setFeedback('Looking up postcode…', 'var(--text-muted)');
 
         try {
-            var res  = await fetch('https://api.postcodes.io/postcodes/' + encodeURIComponent(pc));
+            var res  = await fetch('/postcode-lookup/' + encodeURIComponent(pc));
             var data = await res.json();
 
             if (data.status === 200 && data.result) {

@@ -45,6 +45,20 @@ Route::get('/game/{id}', [GameController::class, 'show'])
 
 Route::get('/search', [SearchController::class, 'index'])->name('search')->middleware('throttle:60,1');
 
+Route::get('/postcode-lookup/{postcode}', function (string $postcode) {
+    $postcode = preg_replace('/[^A-Z0-9]/i', '', $postcode);
+    if (!preg_match('/^[A-Z]{1,2}[0-9][0-9A-Z]?[0-9][A-Z]{2}$/i', $postcode)) {
+        return response()->json(['status' => 400, 'error' => 'Invalid postcode format'], 400);
+    }
+    try {
+        $response = \Illuminate\Support\Facades\Http::timeout(5)
+            ->get('https://api.postcodes.io/postcodes/' . urlencode($postcode));
+        return response()->json($response->json(), $response->status());
+    } catch (\Throwable) {
+        return response()->json(['status' => 503, 'error' => 'Lookup unavailable'], 503);
+    }
+})->name('postcode.lookup')->middleware('throttle:30,1')->where('postcode', '[A-Za-z0-9]+');
+
 Route::get('/platforms', [\App\Http\Controllers\PlatformsController::class, 'index'])->name('platforms.index');
 
 Route::get('/platform/{id}/{name}', [PlatformController::class, 'show'])
