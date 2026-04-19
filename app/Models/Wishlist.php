@@ -12,6 +12,7 @@ class Wishlist extends Model
     protected $fillable = [
         'user_id',
         'igdb_game_id',
+        'custom_game_id',
         'game_title',
         'cover_url',
         'steam_app_id',

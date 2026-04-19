@@ -180,6 +180,10 @@ class GameController extends Controller
             }
         }
 
-        return view('custom-game', compact('game', 'pricingRows', 'platforms'));
+        $inWishlist = auth()->check()
+            ? auth()->user()->wishlistItems()->where('custom_game_id', $game->id)->exists()
+            : false;
+
+        return view('custom-game', compact('game', 'pricingRows', 'platforms', 'inWishlist'));
     }
 }

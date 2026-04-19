@@ -125,6 +125,7 @@ Route::middleware(['auth', 'track.active', 'force.reset'])->group(function () {
     Route::get('/wishlist', [WishlistController::class, 'index'])->name('wishlist.index');
     Route::post('/wishlist', [WishlistController::class, 'store'])->name('wishlist.store');
     Route::delete('/wishlist/{igdbGameId}', [WishlistController::class, 'destroy'])->name('wishlist.destroy')->where('igdbGameId', '[0-9]+');
+    Route::delete('/wishlist/custom/{customGameId}', [WishlistController::class, 'destroyCustom'])->name('wishlist.destroy.custom')->where('customGameId', '[0-9]+');
 
     // Cash basket
     Route::get('/cash-basket', [CashBasketController::class, 'index'])->name('cash-basket.index');

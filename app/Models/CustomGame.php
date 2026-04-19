@@ -14,6 +14,7 @@ class CustomGame extends Model
         'developer',
         'publisher',
         'release_year',
+        'mode',
         'genres',
         'platform_prices',
         'published',

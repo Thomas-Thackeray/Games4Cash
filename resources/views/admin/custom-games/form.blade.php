@@ -72,6 +72,14 @@
                 </div>
             </div>
 
+            <div class="form-group" style="margin-top:1rem;">
+                <label class="form-label">Mode</label>
+                <input type="text" name="mode" value="{{ old('mode', $game?->mode) }}"
+                    class="form-input" placeholder="e.g. Single player, Multiplayer">
+                <p class="settings-hint">Optional. Displayed in the game info grid.</p>
+                @error('mode')<span class="field-error">{{ $message }}</span>@enderror
+            </div>
+
             {{-- Genres --}}
             <div class="form-group" style="margin-top:1rem;">
                 <label class="form-label">Genres</label>

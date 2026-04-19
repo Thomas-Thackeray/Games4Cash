@@ -61,7 +61,7 @@
                         <span>{{ $game->developer }}</span>
                     </div>
                     @endif
-                    @if($game->publisher && $game->publisher !== $game->developer)
+                    @if($game->publisher)
                     <div class="gd-meta-item">
                         <label>Publisher</label>
                         <span>{{ $game->publisher }}</span>
@@ -73,11 +73,39 @@
                         <span>{{ implode(', ', $game->genres) }}</span>
                     </div>
                     @endif
+                    @if($game->mode)
+                    <div class="gd-meta-item">
+                        <label>Mode</label>
+                        <span>{{ $game->mode }}</span>
+                    </div>
+                    @endif
                 </div>
 
-                @if(!empty($pricingRows))
                 <div class="gd-action-buttons">
                     @auth
+                    {{-- Wishlist --}}
+                    @if($inWishlist)
+                    <form method="POST" action="{{ route('wishlist.destroy.custom', $game->id) }}">
+                        @csrf
+                        @method('DELETE')
+                        <button type="submit" class="btn gd-wishlist-btn gd-wishlist-btn--active">
+                            ♥ In Wishlist
+                        </button>
+                    </form>
+                    @else
+                    <form method="POST" action="{{ route('wishlist.store') }}">
+                        @csrf
+                        <input type="hidden" name="custom_game_id" value="{{ $game->id }}">
+                        <input type="hidden" name="game_title"     value="{{ $game->title }}">
+                        <input type="hidden" name="cover_url"      value="{{ $coverUrl }}">
+                        <button type="submit" class="btn gd-wishlist-btn">
+                            ♡ Add to Wishlist
+                        </button>
+                    </form>
+                    @endif
+
+                    {{-- Get Cash --}}
+                    @if(!empty($pricingRows))
                     <button type="button"
                         class="btn gd-cash-btn js-cash-btn"
                         data-tpl="ctpl-custom-{{ $game->id }}">
@@ -101,7 +129,21 @@
                         </div>
                         @endforeach
                     </template>
+                    @endif
+
+                    {{-- Admin: edit this custom game --}}
+                    @if(auth()->user()->isAdmin())
+                    <a href="{{ route('admin.custom-games.edit', $game->id) }}"
+                       class="btn gd-wishlist-btn"
+                       style="border-color:var(--accent-2); color:var(--accent-2); font-size:0.82rem;">
+                        ✏️ Edit Game
+                    </a>
+                    @endif
+
                     @else
+                    {{-- Guest --}}
+                    <a href="{{ route('login') }}" class="btn gd-wishlist-btn">♡ Add to Wishlist</a>
+                    @if(!empty($pricingRows))
                     <button type="button"
                         class="btn gd-cash-btn js-cash-btn"
                         data-tpl="ctpl-custom-{{ $game->id }}">
@@ -118,9 +160,9 @@
                         </div>
                         @endforeach
                     </template>
+                    @endif
                     @endauth
                 </div>
-                @endif
 
                 @if($game->summary)
                 <p class="gd-summary" style="margin-top:1.5rem;">{{ $game->summary }}</p>
