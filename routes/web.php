@@ -5,11 +5,14 @@ use App\Http\Controllers\AdminBlogController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AdminCustomGameController;
 use App\Http\Controllers\AdminCustomGameImportController;
+use App\Http\Controllers\AdminNewsletterController;
 use App\Http\Controllers\PlatformSellController;
 use App\Http\Controllers\AdminEvaluationController;
 use App\Http\Controllers\AdminFaqController;
 use App\Http\Controllers\AdminGamePricesController;
 use App\Http\Controllers\BlogController;
+use App\Http\Controllers\HowMuchController;
+use App\Http\Controllers\NewsletterController;
 use App\Http\Controllers\PasswordResetController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\TwoFactorController;
@@ -78,6 +81,15 @@ Route::get('/platform/{id}/{name}', [PlatformController::class, 'show'])
     ->where('id', '[0-9]+');
 
 Route::get('/sell-{slug}-games', [PlatformSellController::class, 'show'])->name('sell.platform');
+
+// How much is my game worth
+Route::get('/how-much-is-my-game-worth', [HowMuchController::class, 'index'])->name('game.worth');
+Route::get('/how-much-is-my-game-worth/search', [HowMuchController::class, 'search'])->name('game.worth.search')->middleware('throttle:60,1');
+
+// Newsletter
+Route::post('/newsletter/subscribe', [NewsletterController::class, 'subscribe'])->name('newsletter.subscribe')->middleware('throttle:5,1');
+Route::get('/newsletter/unsubscribe/{token}', [NewsletterController::class, 'unsubscribe'])->name('newsletter.unsubscribe');
+Route::post('/newsletter/unsubscribe/{token}', [NewsletterController::class, 'confirmUnsubscribe'])->name('newsletter.unsubscribe.confirm');
 
 Route::get('/genres', [\App\Http\Controllers\GenresController::class, 'index'])->name('genres.index');
 
@@ -248,6 +260,11 @@ Route::middleware(['auth', 'track.active', 'admin'])->prefix('admin')->name('adm
     Route::get('/faqs/{id}/edit', [AdminFaqController::class, 'edit'])->name('faqs.edit')->where('id', '[0-9]+');
     Route::patch('/faqs/{id}', [AdminFaqController::class, 'update'])->name('faqs.update')->where('id', '[0-9]+');
     Route::delete('/faqs/{id}', [AdminFaqController::class, 'destroy'])->name('faqs.destroy')->where('id', '[0-9]+');
+
+    // Newsletter management
+    Route::get('/newsletter', [AdminNewsletterController::class, 'index'])->name('newsletter.index');
+    Route::post('/newsletter/send', [AdminNewsletterController::class, 'send'])->name('newsletter.send');
+    Route::delete('/newsletter/{id}', [AdminNewsletterController::class, 'destroy'])->name('newsletter.destroy')->where('id', '[0-9]+');
 
     // Blog management
     Route::get('/blog', [AdminBlogController::class, 'index'])->name('blog.index');

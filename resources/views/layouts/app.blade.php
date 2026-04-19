@@ -195,6 +195,7 @@
 <div class="footer-col">
                 <h4 class="footer-heading">Company</h4>
                 <ul>
+                    <li><a href="{{ route('game.worth') }}">How Much Is My Game Worth?</a></li>
                     <li><a href="{{ route('about') }}">About Us</a></li>
                     <li><a href="{{ route('terms') }}">Terms &amp; Conditions</a></li>
                     <li><a href="{{ route('contact') }}">Contact Us</a></li>
@@ -208,6 +209,22 @@
             </div>
         </div>
     </div>
+    {{-- Newsletter opt-in strip --}}
+    <div style="border-top:1px solid var(--border); padding:2rem 0; text-align:center;">
+        <h4 style="margin:0 0 0.4rem; font-size:1rem; font-weight:700;">Stay in the Loop</h4>
+        <p style="color:var(--text-muted); font-size:0.85rem; margin:0 0 1rem;">Get notified when new games are added and prices update.</p>
+        <form method="POST" action="{{ route('newsletter.subscribe') }}" style="display:flex; gap:0.5rem; justify-content:center; flex-wrap:wrap; max-width:420px; margin:0 auto;">
+            @csrf
+            <input type="hidden" name="source" value="footer">
+            @auth<input type="hidden" name="name" value="{{ auth()->user()->first_name . ' ' . auth()->user()->surname }}">@endauth
+            <input type="email" name="email" placeholder="your@email.com"
+                   value="@auth{{ auth()->user()->email }}@endauth"
+                   required
+                   style="flex:1; min-width:180px; padding:0.6rem 0.9rem; border:1px solid var(--border); border-radius:var(--radius); background:var(--bg-card); color:var(--text); font-family:inherit; font-size:0.9rem;">
+            <button type="submit" class="btn btn--primary btn--sm">Subscribe</button>
+        </form>
+    </div>
+
     <div class="footer-bottom">
         <p>&copy; {{ date('Y') }} {{ config('app.name') }}.</p>
     </div>

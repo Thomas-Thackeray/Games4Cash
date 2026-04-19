@@ -129,6 +129,90 @@
 
     </div>
 
+    {{-- New metrics row: searches / wishlisted / basket abandonment / newsletter --}}
+    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:1rem; margin-bottom:2rem;">
+        <div class="stat-card">
+            <div style="font-size:0.72rem; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:var(--text-muted); margin-bottom:0.75rem;">Newsletter Subscribers</div>
+            <div class="stat-card__value" style="font-size:1.75rem;">{{ number_format($newsletterCount ?? 0) }}</div>
+            <div class="stat-card__label">Active subscribers</div>
+        </div>
+        <div class="stat-card">
+            <div style="font-size:0.72rem; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:var(--text-muted); margin-bottom:0.75rem;">Basket Items</div>
+            <div class="stat-card__value" style="font-size:1.75rem;">{{ number_format($basketStats['total_items'] ?? 0) }}</div>
+            <div class="stat-card__label">Currently in baskets</div>
+        </div>
+        <div class="stat-card">
+            <div style="font-size:0.72rem; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:var(--text-muted); margin-bottom:0.75rem;">Active Baskets</div>
+            <div class="stat-card__value" style="font-size:1.75rem;">{{ number_format($basketStats['active_basket_users'] ?? 0) }}</div>
+            <div class="stat-card__label">Users with items</div>
+        </div>
+        <div class="stat-card">
+            <div style="font-size:0.72rem; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:var(--text-muted); margin-bottom:0.75rem;">Abandoned Baskets</div>
+            <div class="stat-card__value" style="font-size:1.75rem; color:#f59e0b;">{{ number_format($basketStats['abandoned_users'] ?? 0) }}</div>
+            <div class="stat-card__label">Users with no order yet</div>
+        </div>
+    </div>
+
+    {{-- Top searches + most wishlisted --}}
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:1.5rem; margin-bottom:2rem;">
+
+        <div class="admin-section">
+            <h2 class="admin-section__title" style="margin-bottom:0.75rem;">Top Searches <span style="font-size:0.78rem; font-weight:400; color:var(--text-muted);">(last 30 days)</span></h2>
+            <div class="admin-table-wrap">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Search Term</th>
+                            <th style="text-align:right;">Count</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse($topSearches ?? [] as $i => $row)
+                        <tr>
+                            <td style="color:var(--text-muted); width:2rem;">{{ $i + 1 }}</td>
+                            <td>
+                                <a href="{{ route('search', ['q' => $row['term']]) }}" target="_blank"
+                                   style="color:var(--accent); text-decoration:none;">{{ $row['term'] }}</a>
+                            </td>
+                            <td style="text-align:right; font-weight:600;">{{ number_format($row['count']) }}</td>
+                        </tr>
+                        @empty
+                        <tr><td colspan="3" class="admin-td-muted" style="text-align:center; padding:1.5rem;">No search data yet</td></tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="admin-section">
+            <h2 class="admin-section__title" style="margin-bottom:0.75rem;">Most Wishlisted <span style="font-size:0.78rem; font-weight:400; color:var(--text-muted);">(all time)</span></h2>
+            <div class="admin-table-wrap">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Game</th>
+                            <th style="text-align:right;">Count</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse($topWishlisted ?? [] as $i => $row)
+                        <tr>
+                            <td style="color:var(--text-muted); width:2rem;">{{ $i + 1 }}</td>
+                            <td style="font-size:0.85rem;">{{ $row->game_title }}</td>
+                            <td style="text-align:right; font-weight:600;">{{ number_format($row->count) }}</td>
+                        </tr>
+                        @empty
+                        <tr><td colspan="3" class="admin-td-muted" style="text-align:center; padding:1.5rem;">No wishlist data yet</td></tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+
     @endif
 </div>
 

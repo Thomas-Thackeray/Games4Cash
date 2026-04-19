@@ -94,6 +94,7 @@ class SitemapController extends Controller
             ['url' => route('faq'),               'priority' => '0.5', 'freq' => 'monthly', 'mod' => self::STABLE_DATE],
             ['url' => route('gaming-timeline'),   'priority' => '0.5', 'freq' => 'monthly', 'mod' => self::STABLE_DATE],
             ['url' => route('gaming-legends'),    'priority' => '0.5', 'freq' => 'monthly', 'mod' => self::STABLE_DATE],
+            ['url' => route('game.worth'),         'priority' => '0.8', 'freq' => 'weekly',  'mod' => self::STABLE_DATE],
             ['url' => route('contact'),           'priority' => '0.4', 'freq' => 'yearly',  'mod' => self::STABLE_DATE],
             ['url' => route('snake'),             'priority' => '0.3', 'freq' => 'monthly', 'mod' => self::STABLE_DATE],
             ['url' => route('terms'),             'priority' => '0.3', 'freq' => 'yearly',  'mod' => self::STABLE_DATE],

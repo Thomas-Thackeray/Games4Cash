@@ -60,6 +60,21 @@
             @endforeach
         </div>
 
+        {{-- Newsletter opt-in --}}
+        <div style="background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius); padding:1.5rem; margin-bottom:1.5rem; text-align:center;">
+            <div style="font-size:1.5rem; margin-bottom:0.5rem;">📬</div>
+            <h3 style="font-size:1rem; font-weight:700; margin:0 0 0.4rem;">Want to know when new games arrive?</h3>
+            <p style="font-size:0.85rem; color:var(--text-muted); margin:0 0 1rem;">Subscribe to our newsletter and be first to hear about new trade-in titles and price updates.</p>
+            <form method="POST" action="{{ route('newsletter.subscribe') }}" style="display:flex; gap:0.5rem; justify-content:center; flex-wrap:wrap;">
+                @csrf
+                <input type="hidden" name="source" value="order">
+                <input type="hidden" name="name" value="{{ auth()->user()->first_name . ' ' . auth()->user()->surname }}">
+                <input type="email" name="email" value="{{ auth()->user()->email }}" required
+                       style="flex:1; min-width:200px; max-width:280px; padding:0.6rem 0.9rem; border:1px solid var(--border); border-radius:var(--radius); background:var(--bg); color:var(--text); font-family:inherit; font-size:0.9rem;">
+                <button type="submit" class="btn btn--primary btn--sm">Subscribe</button>
+            </form>
+        </div>
+
         <div class="order-confirmation__actions">
             <a href="{{ route('cash-orders.index') }}" class="btn btn--outline">View My Submissions</a>
             <a href="{{ route('search') }}" class="btn btn--primary">Continue Browsing</a>

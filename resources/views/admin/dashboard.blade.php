@@ -195,6 +195,15 @@
                 <a href="{{ route('admin.orders') }}" class="btn btn--outline btn--sm">Open</a>
             </div>
 
+            <div class="admin-action-card">
+                <div class="admin-action-card__icon">📬</div>
+                <div class="admin-action-card__body">
+                    <h3>Newsletter</h3>
+                    <p>Manage subscribers and send newsletters to your audience.</p>
+                </div>
+                <a href="{{ route('admin.newsletter.index') }}" class="btn btn--outline btn--sm">Open</a>
+            </div>
+
             <div class="admin-action-card admin-action-card--danger">
                 <div class="admin-action-card__icon">🔑</div>
                 <div class="admin-action-card__body">
