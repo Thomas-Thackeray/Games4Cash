@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @php
-    $coverUrl    = $game->cover_image_path ? asset('storage/' . $game->cover_image_path) : asset('img/placeholder.jpg');
+    $coverUrl    = $game->cover_image_path ? asset('storage/' . $game->cover_image_path) : asset('img/coming-soon.svg');
     $backdropUrl = $game->cover_image_path ? asset('storage/' . $game->cover_image_path) : '';
 @endphp
 

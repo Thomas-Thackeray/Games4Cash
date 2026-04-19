@@ -1,7 +1,7 @@
 @props(['game'])
 
 @php
-    $coverUrl    = $game->cover_image_path ? asset('storage/' . $game->cover_image_path) : asset('img/placeholder.jpg');
+    $coverUrl    = $game->cover_image_path ? asset('storage/' . $game->cover_image_path) : asset('img/coming-soon.svg');
     $cardUrl     = route('game.show', $game->slug);
     $platforms   = config('igdb.all_platforms', []);
     $pricingRows = [];
