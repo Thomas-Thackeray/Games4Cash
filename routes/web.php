@@ -211,6 +211,6 @@ Route::view('/sitemap', 'pages.sitemap')->name('sitemap');
 Route::get('/sitemap.xml', [SitemapController::class, 'xml'])->name('sitemap.xml');
 Route::get('/robots.txt', function () {
     $sitemap = route('sitemap.xml');
-    $content = "User-agent: *\n\n# Private / authenticated pages\nDisallow: /admin\nDisallow: /login\nDisallow: /register\nDisallow: /profile\nDisallow: /security\nDisallow: /cash-basket\nDisallow: /cash-orders\nDisallow: /wishlist\n\n# Internal image proxy\nDisallow: /img/\n\n# Laravel health check\nDisallow: /up\n\nSitemap: {$sitemap}\n";
+    $content = "User-agent: *\n\n# Private / authenticated pages\nDisallow: /admin\nDisallow: /login\nDisallow: /register\nDisallow: /profile\nDisallow: /security\nDisallow: /cash-basket\nDisallow: /cash-orders\nDisallow: /wishlist\nDisallow: /recently-viewed\nDisallow: /password\n\n# API / POST-only endpoints\nDisallow: /snake/score\n\n# Internal image proxy\nDisallow: /img/\n\n# Laravel health check\nDisallow: /up\n\nSitemap: {$sitemap}\n";
     return response($content, 200)->header('Content-Type', 'text/plain');
 })->name('robots');

@@ -27,13 +27,18 @@ class SitemapController extends Controller
         $now = now()->toAtomString();
 
         return [
-            ['url' => route('home'),                                    'priority' => '1.0', 'freq' => 'daily',   'mod' => $now],
-            ['url' => route('search'),                                  'priority' => '0.9', 'freq' => 'daily',   'mod' => $now],
-            ['url' => route('about'),                                   'priority' => '0.5', 'freq' => 'monthly', 'mod' => $now],
-            ['url' => route('faq'),                                     'priority' => '0.5', 'freq' => 'monthly', 'mod' => $now],
-            ['url' => route('contact'),                                 'priority' => '0.4', 'freq' => 'yearly',  'mod' => $now],
-            ['url' => route('terms'),                                   'priority' => '0.3', 'freq' => 'yearly',  'mod' => $now],
-            ['url' => route('privacy'),                                 'priority' => '0.3', 'freq' => 'yearly',  'mod' => $now],
+            ['url' => route('home'),              'priority' => '1.0', 'freq' => 'daily',   'mod' => $now],
+            ['url' => route('search'),            'priority' => '0.9', 'freq' => 'daily',   'mod' => $now],
+            ['url' => route('platforms.index'),   'priority' => '0.8', 'freq' => 'weekly',  'mod' => $now],
+            ['url' => route('genres.index'),      'priority' => '0.8', 'freq' => 'weekly',  'mod' => $now],
+            ['url' => route('about'),             'priority' => '0.5', 'freq' => 'monthly', 'mod' => $now],
+            ['url' => route('faq'),               'priority' => '0.5', 'freq' => 'monthly', 'mod' => $now],
+            ['url' => route('gaming-timeline'),   'priority' => '0.5', 'freq' => 'monthly', 'mod' => $now],
+            ['url' => route('gaming-legends'),    'priority' => '0.5', 'freq' => 'monthly', 'mod' => $now],
+            ['url' => route('contact'),           'priority' => '0.4', 'freq' => 'yearly',  'mod' => $now],
+            ['url' => route('snake'),             'priority' => '0.3', 'freq' => 'monthly', 'mod' => $now],
+            ['url' => route('terms'),             'priority' => '0.3', 'freq' => 'yearly',  'mod' => $now],
+            ['url' => route('privacy'),           'priority' => '0.3', 'freq' => 'yearly',  'mod' => $now],
         ];
     }
 
