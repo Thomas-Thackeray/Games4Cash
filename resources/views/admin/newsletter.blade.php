@@ -55,10 +55,23 @@
                           required>{{ old('body') }}</textarea>
                 @error('body')<p class="form-error">{{ $message }}</p>@enderror
             </div>
-            <button type="submit" class="btn btn--primary"
-                    data-confirm="Send this newsletter to {{ $activeCount }} subscriber(s)? This cannot be undone.">
-                Send Newsletter to {{ number_format($activeCount) }} Subscriber(s)
-            </button>
+            <div style="display:flex; gap:0.75rem; flex-wrap:wrap; align-items:center;">
+                <button type="submit" class="btn btn--primary"
+                        data-confirm="Send this newsletter to {{ $activeCount }} subscriber(s)? This cannot be undone.">
+                    Send to {{ number_format($activeCount) }} Subscriber(s)
+                </button>
+
+                {{-- Send a test copy to the admin email first --}}
+                <button type="submit" form="newsletter-test-form" class="btn btn--outline">
+                    Send Test to Admin Email
+                </button>
+            </div>
+        </form>
+
+        <form id="newsletter-test-form" method="POST" action="{{ route('admin.newsletter.send-test') }}" style="display:none;">
+            @csrf
+            <input type="hidden" name="subject" id="test-subject-mirror">
+            <input type="hidden" name="body"    id="test-body-mirror">
         </form>
         @endif
     </div>
@@ -119,4 +132,19 @@
     </div>
 
 </div>
+@push('scripts')
+<script>
+(function () {
+    var testForm = document.getElementById('newsletter-test-form');
+    if (!testForm) return;
+    testForm.addEventListener('submit', function () {
+        document.getElementById('test-subject-mirror').value =
+            document.querySelector('[name="subject"]').value;
+        document.getElementById('test-body-mirror').value =
+            document.querySelector('[name="body"]').value;
+    });
+})();
+</script>
+@endpush
+
 @endsection

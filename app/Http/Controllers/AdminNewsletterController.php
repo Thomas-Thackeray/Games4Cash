@@ -21,6 +21,35 @@ class AdminNewsletterController extends Controller
     }
 
     /**
+     * Send a test newsletter to the admin email only.
+     */
+    public function sendTest(Request $request): RedirectResponse
+    {
+        $request->validate([
+            'subject' => ['required', 'string', 'max:200'],
+            'body'    => ['required', 'string', 'max:10000'],
+        ]);
+
+        $adminEmail = \App\Models\Setting::get('admin_notification_email', config('mail.from.address'));
+
+        try {
+            Mail::to($adminEmail)->send(new NewsletterMail(
+                '[TEST] ' . $request->input('subject'),
+                $request->input('body'),
+                'test-token'
+            ));
+        } catch (\Throwable $e) {
+            return back()
+                ->withInput()
+                ->with('flash_error', 'Test email failed: ' . $e->getMessage());
+        }
+
+        return back()
+            ->withInput()
+            ->with('flash_success', "Test email sent to {$adminEmail}. Check your inbox (or spam).");
+    }
+
+    /**
      * Send a newsletter to all active subscribers.
      */
     public function send(Request $request): RedirectResponse
@@ -35,24 +64,32 @@ class AdminNewsletterController extends Controller
 
         $sent   = 0;
         $failed = 0;
+        $lastError = null;
 
         NewsletterSubscriber::whereNull('unsubscribed_at')
             ->orderBy('id')
-            ->chunk(50, function ($batch) use ($subject, $body, &$sent, &$failed) {
+            ->chunk(50, function ($batch) use ($subject, $body, &$sent, &$failed, &$lastError) {
                 foreach ($batch as $subscriber) {
                     try {
                         Mail::to($subscriber->email)
                             ->send(new NewsletterMail($subject, $body, $subscriber->token));
                         $sent++;
-                    } catch (\Throwable) {
+                    } catch (\Throwable $e) {
                         $failed++;
+                        $lastError = $e->getMessage();
                     }
                 }
             });
 
+        if ($sent === 0 && $failed > 0) {
+            return back()
+                ->withInput()
+                ->with('flash_error', "All {$failed} send(s) failed. Last error: {$lastError}");
+        }
+
         $message = "Newsletter sent to {$sent} subscriber(s).";
         if ($failed > 0) {
-            $message .= " {$failed} failed to send.";
+            $message .= " {$failed} failed — last error: {$lastError}";
         }
 
         return back()->with('flash_success', $message);

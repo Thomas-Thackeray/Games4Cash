@@ -264,6 +264,7 @@ Route::middleware(['auth', 'track.active', 'admin'])->prefix('admin')->name('adm
     // Newsletter management
     Route::get('/newsletter', [AdminNewsletterController::class, 'index'])->name('newsletter.index');
     Route::post('/newsletter/send', [AdminNewsletterController::class, 'send'])->name('newsletter.send');
+    Route::post('/newsletter/send-test', [AdminNewsletterController::class, 'sendTest'])->name('newsletter.send-test');
     Route::delete('/newsletter/{id}', [AdminNewsletterController::class, 'destroy'])->name('newsletter.destroy')->where('id', '[0-9]+');
 
     // Blog management
