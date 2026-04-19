@@ -56,7 +56,7 @@ class SitemapController extends Controller
             ->chunk(500, function ($records) use (&$urls, &$count) {
                 foreach ($records as $gp) {
                     if ($count >= self::GAME_LIMIT) return false; // stop chunking
-                    $mod    = $gp->updated_at ? $gp->updated_at->toAtomString() : self::STABLE_DATE;
+                    $mod    = $gp->updated_at ? \Carbon\Carbon::parse($gp->updated_at)->toAtomString() : self::STABLE_DATE;
                     $urls  .= $this->urlTag(['url' => route('game.show', $gp->slug), 'priority' => '0.6', 'freq' => 'weekly', 'mod' => $mod]);
                     $count++;
                 }
@@ -68,7 +68,7 @@ class SitemapController extends Controller
             ->select(['slug', 'updated_at'])
             ->chunk(200, function ($records) use (&$urls) {
                 foreach ($records as $cg) {
-                    $mod   = $cg->updated_at ? $cg->updated_at->toAtomString() : self::STABLE_DATE;
+                    $mod   = $cg->updated_at ? \Carbon\Carbon::parse($cg->updated_at)->toAtomString() : self::STABLE_DATE;
                     $urls .= $this->urlTag(['url' => route('game.show', $cg->slug), 'priority' => '0.65', 'freq' => 'weekly', 'mod' => $mod]);
                 }
             });
