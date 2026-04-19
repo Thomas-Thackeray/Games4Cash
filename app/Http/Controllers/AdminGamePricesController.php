@@ -62,6 +62,21 @@ class AdminGamePricesController extends Controller
                 default      => null,
             };
 
+            // Price range filter — uses base_price_gbp (source price converted to GBP) to
+            // narrow pagination to games in the rough calculated-price range.
+            // Per-platform modifiers are handled client-side (JS hides exact out-of-range rows).
+            if ($priceMin !== null || $priceMax !== null) {
+                $discountPct = (float) \App\Models\Setting::get('pricing_discount_percent', 85);
+                $factor      = max(0.01, 1 - ($discountPct / 100));
+                $query->whereNotNull('base_price_gbp');
+                if ($priceMin !== null) {
+                    $query->where('base_price_gbp', '>=', round($priceMin / $factor, 4));
+                }
+                if ($priceMax !== null) {
+                    $query->where('base_price_gbp', '<=', round($priceMax / $factor, 4));
+                }
+            }
+
             if ($search !== '') {
                 $query->where(function ($q) use ($search, $hasGameTitle) {
                     if ($hasGameTitle) {
