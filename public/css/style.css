@@ -3388,7 +3388,6 @@ h1,h2,h3,h4,h5,h6 { line-height: 1.2; }
 /* ── Display text elements that use var(--white) ── */
 [data-theme="light"] .logo-text,
 [data-theme="light"] .hero__title,
-[data-theme="light"] .gd-title,
 [data-theme="light"] .section-title,
 [data-theme="light"] .auth-card__title,
 [data-theme="light"] .account-card__title,
@@ -3439,21 +3438,20 @@ h1,h2,h3,h4,h5,h6 { line-height: 1.2; }
     background: rgba(0,0,0,0.06);
 }
 
-/* ── Game detail hero backdrop (brighten slightly in light mode) ── */
-[data-theme="light"] .gd-backdrop {
-    filter: blur(30px) brightness(0.55) saturate(0.6);
+/* ── Game detail hero — backdrop is always a dark blurred image,
+      so keep all text inside it light regardless of theme ── */
+[data-theme="light"] .game-detail-hero {
+    --text:       #e8e8f0;
+    --text-muted: #9a9ab8;
+    --text-dim:   #5a5a7a;
+    --border:     rgba(255,255,255,0.1);
 }
-[data-theme="light"] .gd-platform-tag {
-    background: rgba(0,0,0,0.07);
-    color: var(--text-muted);
-}
-[data-theme="light"] .gd-cover {
-    border-color: rgba(0,0,0,0.1);
-    box-shadow: 0 20px 60px rgba(0,0,0,0.15);
-}
-[data-theme="light"] .gd-rating-block { background: rgba(0,0,0,0.04); }
-[data-theme="light"] .gd-price-widget { background: rgba(0,0,0,0.03); }
-[data-theme="light"] .gd-price-source-tag { background: rgba(0,0,0,0.06); }
+[data-theme="light"] .gd-title        { color: #ffffff; }
+[data-theme="light"] .gd-platform-tag { background: rgba(255,255,255,0.1); color: #9a9ab8; }
+[data-theme="light"] .gd-cover        { border-color: rgba(255,255,255,0.1); box-shadow: 0 20px 60px rgba(0,0,0,0.6); }
+[data-theme="light"] .gd-rating-block { background: rgba(255,255,255,0.05); }
+[data-theme="light"] .gd-price-widget { background: rgba(255,255,255,0.04); }
+[data-theme="light"] .gd-price-source-tag { background: rgba(255,255,255,0.06); }
 
 /* ── Platform logo icon ── */
 [data-theme="light"] .platform-logo { background: rgba(0,0,0,0.05); }
