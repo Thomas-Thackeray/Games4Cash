@@ -9,7 +9,12 @@
             <h1 class="admin-title">Email Templates</h1>
             <p class="admin-subtitle"><a href="{{ route('admin.dashboard') }}" style="color:var(--accent);">← Dashboard</a></p>
         </div>
-        <button type="submit" form="email-templates-form" class="btn btn--primary">Save Templates</button>
+        <div style="display:flex; gap:0.75rem; align-items:center; flex-wrap:wrap;">
+            <a href="https://app.brevo.com" target="_blank" rel="noopener noreferrer" class="btn btn--outline btn--sm" style="display:inline-flex; align-items:center; gap:0.4rem;">
+                <span>✉</span> Open Brevo
+            </a>
+            <button type="submit" form="email-templates-form" class="btn btn--primary">Save Templates</button>
+        </div>
     </div>
 
     {{--

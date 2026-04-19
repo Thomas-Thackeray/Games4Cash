@@ -2,12 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\AccountPasswordChangedMail;
 use App\Models\LoginAttempt;
 use App\Rules\NotCommonPassword;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\View\View;
 
@@ -120,6 +122,10 @@ class SecurityController extends Controller
         }
 
         $user->update(['password' => Hash::make($request->input('password'))]);
+
+        try {
+            Mail::to($user->email)->send(new AccountPasswordChangedMail($user));
+        } catch (\Throwable) {}
 
         return back()->with('flash_success', 'Your password has been updated successfully.');
     }

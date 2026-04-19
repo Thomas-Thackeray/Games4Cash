@@ -5,25 +5,25 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class CashBasketItem extends Model
+class GameEvaluation extends Model
 {
-    public $timestamps = false;
-
     protected $fillable = [
         'user_id',
-        'igdb_game_id',
-        'custom_game_id',
-        'platform_id',
-        'condition',
         'game_title',
-        'cover_url',
-        'steam_app_id',
-        'release_date',
+        'platform',
+        'condition',
+        'description',
+        'image_paths',
+        'status',
+        'admin_notes',
     ];
 
-    protected $casts = [
-        'created_at' => 'datetime',
-    ];
+    protected function casts(): array
+    {
+        return [
+            'image_paths' => 'array',
+        ];
+    }
 
     public function user(): BelongsTo
     {

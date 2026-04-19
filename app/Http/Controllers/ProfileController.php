@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\AccountEmailChangedMail;
 use App\Models\CashBasketItem;
 use App\Models\CashOrder;
 use App\Models\Wishlist;
@@ -10,6 +11,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\View\View;
 
 class ProfileController extends Controller
@@ -52,6 +54,8 @@ class ProfileController extends Controller
             return back()->withErrors(['current_password' => 'Password is incorrect.'])->withInput();
         }
 
+        $oldEmail = $user->email;
+
         $user->update([
             'first_name'     => $request->input('first_name'),
             'surname'        => $request->input('surname'),
@@ -60,6 +64,13 @@ class ProfileController extends Controller
             'contact_number' => $request->input('contact_number'),
             'username'       => $request->input('username'),
         ]);
+
+        // Notify the old email address if the email was changed
+        if ($emailChanging) {
+            try {
+                Mail::to($oldEmail)->send(new AccountEmailChangedMail($user, $oldEmail));
+            } catch (\Throwable) {}
+        }
 
         return back()->with('flash_success', 'Your profile has been updated successfully.');
     }

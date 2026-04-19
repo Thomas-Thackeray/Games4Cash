@@ -155,6 +155,24 @@
             </div>
 
             <div class="admin-action-card">
+                <div class="admin-action-card__icon">🎮</div>
+                <div class="admin-action-card__body">
+                    <h3>Custom Games</h3>
+                    <p>Create and manage custom game entries with per-platform cash prices.</p>
+                </div>
+                <a href="{{ route('admin.custom-games.index') }}" class="btn btn--outline btn--sm">Open</a>
+            </div>
+
+            <div class="admin-action-card">
+                <div class="admin-action-card__icon">🔍</div>
+                <div class="admin-action-card__body">
+                    <h3>Evaluation Requests</h3>
+                    <p>Review game price evaluation requests submitted by users.</p>
+                </div>
+                <a href="{{ route('admin.evaluations.index') }}" class="btn btn--outline btn--sm">Open</a>
+            </div>
+
+            <div class="admin-action-card">
                 <div class="admin-action-card__icon">📊</div>
                 <div class="admin-action-card__body">
                     <h3>Analytics</h3>

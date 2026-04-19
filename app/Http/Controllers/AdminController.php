@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\AdminCreatedUserMail;
 use App\Models\ActivityLog;
 use App\Models\BlacklistedPassword;
 use App\Models\FranchiseAdjustment;
@@ -17,6 +18,10 @@ use App\Models\User;
 use App\Models\Wishlist;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Password;
+use Illuminate\Support\Str;
 use Illuminate\View\View;
 
 class AdminController extends Controller
@@ -163,6 +168,84 @@ class AdminController extends Controller
         User::where('role', 'user')->findOrFail($id)->delete();
 
         return back()->with('flash_success', 'User account deleted.');
+    }
+
+    // ----------------------------------------------------------------
+    //  Create user – show form
+    // ----------------------------------------------------------------
+
+    public function createUser(): View
+    {
+        return view('admin.create-user');
+    }
+
+    // ----------------------------------------------------------------
+    //  Create user – store
+    // ----------------------------------------------------------------
+
+    public function storeUser(Request $request): RedirectResponse
+    {
+        $isAdmin = $request->input('role') === 'admin';
+
+        $rules = [
+            'first_name'     => ['required', 'string', 'max:100'],
+            'surname'        => ['required', 'string', 'max:100'],
+            'email'          => ['required', 'email', 'max:255', 'unique:users,email'],
+            'username'       => ['required', 'string', 'alpha_dash', 'min:12', 'max:30', 'unique:users,username', 'regex:/[0-9]/'],
+            'contact_number' => ['nullable', 'string', 'regex:/^[\+\d\s\-\(\)]{7,20}$/'],
+            'role'           => ['required', 'in:user,admin'],
+        ];
+
+        if ($isAdmin) {
+            $rules['admin_password'] = ['required', 'string'];
+        }
+
+        $request->validate($rules, [
+            'username.alpha_dash' => 'Username may only contain letters, numbers, dashes, and underscores.',
+            'username.min'        => 'Username must be at least 12 characters.',
+            'username.regex'      => 'Username must contain at least one number.',
+            'username.unique'     => 'That username is already taken.',
+            'email.unique'        => 'An account with that email already exists.',
+            'contact_number.regex'=> 'Please enter a valid contact number (7–20 digits).',
+        ]);
+
+        if ($isAdmin && ! Hash::check($request->input('admin_password'), auth()->user()->password)) {
+            return back()->withInput()->withErrors(['admin_password' => 'Your password is incorrect.']);
+        }
+
+        $user = User::create([
+            'first_name'     => $request->input('first_name'),
+            'surname'        => $request->input('surname'),
+            'name'           => $request->input('first_name') . ' ' . $request->input('surname'),
+            'email'          => $request->input('email'),
+            'username'       => $request->input('username'),
+            'contact_number' => $request->input('contact_number') ?? '',
+            'password'       => Hash::make(Str::random(32)), // placeholder — user must set via email link
+            'role'           => $request->input('role'),
+        ]);
+
+        return redirect()->route('admin.users.detail', $user->id)
+            ->with('flash_success', 'Account created successfully. You can now send them a setup email.');
+    }
+
+    // ----------------------------------------------------------------
+    //  Create user – send setup email
+    // ----------------------------------------------------------------
+
+    public function sendSetupEmail(int $id): RedirectResponse
+    {
+        $user = User::findOrFail($id);
+
+        $token    = Password::broker()->createToken($user);
+        $setupUrl = url('/reset-password/' . $token . '?email=' . urlencode($user->email));
+
+        try {
+            Mail::to($user->email)->send(new AdminCreatedUserMail($user, $setupUrl));
+        } catch (\Throwable $e) {
+            return back()->with('flash_error', 'Failed to send setup email: ' . $e->getMessage());
+        }
+
+        return back()->with('flash_success', 'Setup email sent to ' . $user->email . '.');
     }
 
     // ----------------------------------------------------------------

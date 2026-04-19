@@ -127,6 +127,7 @@
                     <a href="{{ route('wishlist.index') }}" class="user-menu__item" role="menuitem">♡ Wishlist</a>
                     <a href="{{ route('cash-basket.index') }}" class="user-menu__item" role="menuitem">💰 Cash Basket</a>
                     <a href="{{ route('cash-orders.index') }}" class="user-menu__item" role="menuitem">📋 My Quotes</a>
+                    <a href="{{ route('evaluations.create') }}" class="user-menu__item" role="menuitem">🔍 Get a Price</a>
                     <a href="{{ route('security') }}" class="user-menu__item" role="menuitem">🔒 Security</a>
                     <div class="user-menu__divider"></div>
                     <form method="POST" action="{{ route('logout') }}">

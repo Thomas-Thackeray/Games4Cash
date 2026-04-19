@@ -10,6 +10,13 @@
             <p class="admin-subtitle"><a href="{{ route('admin.users') }}" style="color:var(--accent);">← Back to Users</a></p>
         </div>
         <div style="display:flex; gap:0.75rem; flex-wrap:wrap;">
+            <form method="POST" action="{{ route('admin.users.send-setup-email', $subject->id) }}">
+                @csrf
+                <button type="submit" class="btn btn--outline btn--sm"
+                    data-confirm="Send a setup / password-reset email to {{ $subject->email }}?">
+                    Send Setup Email
+                </button>
+            </form>
             @unless($subject->force_password_reset)
             <form method="POST" action="{{ route('admin.users.force-reset', $subject->id) }}">
                 @csrf

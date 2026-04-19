@@ -3,6 +3,8 @@
 use App\Http\Controllers\AdminAnalyticsController;
 use App\Http\Controllers\AdminBlogController;
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\AdminCustomGameController;
+use App\Http\Controllers\AdminEvaluationController;
 use App\Http\Controllers\AdminFaqController;
 use App\Http\Controllers\AdminGamePricesController;
 use App\Http\Controllers\BlogController;
@@ -13,7 +15,9 @@ use App\Http\Controllers\CashBasketController;
 use App\Http\Controllers\CashOrderController;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\ForcePasswordResetController;
+use App\Http\Controllers\CustomGameController;
 use App\Http\Controllers\GameController;
+use App\Http\Controllers\GameEvaluationController;
 use App\Http\Controllers\GenreController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\ImageProxyController;
@@ -34,6 +38,11 @@ Route::get('/', [HomeController::class, 'index'])->name('home');
 
 Route::get('/snake', [\App\Http\Controllers\SnakeController::class, 'index'])->name('snake');
 Route::post('/snake/score', [\App\Http\Controllers\SnakeController::class, 'store'])->name('snake.score');
+
+// Custom game public page
+Route::get('/custom-game/{slug}', [CustomGameController::class, 'show'])
+    ->name('custom-game.show')
+    ->where('slug', '[a-z][a-z0-9\-]*');
 
 // Canonical slug URL — /game/elden-ring
 Route::get('/game/{slug}', [GameController::class, 'showBySlug'])
@@ -123,6 +132,11 @@ Route::middleware(['auth', 'track.active', 'force.reset'])->group(function () {
     Route::patch('/cash-basket/{id}/condition', [CashBasketController::class, 'updateCondition'])->name('cash-basket.condition')->where('id', '[0-9]+');
     Route::delete('/cash-basket/{id}', [CashBasketController::class, 'destroy'])->name('cash-basket.destroy')->where('id', '[0-9]+');
 
+    // Game evaluations
+    Route::get('/evaluations', [GameEvaluationController::class, 'index'])->name('evaluations.index');
+    Route::get('/evaluations/create', [GameEvaluationController::class, 'create'])->name('evaluations.create');
+    Route::post('/evaluations', [GameEvaluationController::class, 'store'])->name('evaluations.store')->middleware('throttle:20,1440');
+
     // Cash orders (submitted quotes)
     Route::get('/cash-orders', [CashOrderController::class, 'index'])->name('cash-orders.index');
     Route::get('/cash-orders/create', [CashOrderController::class, 'create'])->name('cash-orders.create');
@@ -144,9 +158,12 @@ Route::middleware(['auth', 'track.active', 'admin'])->prefix('admin')->name('adm
 
     // User management
     Route::get('/users', [AdminController::class, 'users'])->name('users');
+    Route::get('/users/create', [AdminController::class, 'createUser'])->name('users.create');
+    Route::post('/users', [AdminController::class, 'storeUser'])->name('users.store');
     Route::get('/users/{id}', [AdminController::class, 'userDetail'])->name('users.detail')->where('id', '[0-9]+');
     Route::post('/users/{id}/force-reset', [AdminController::class, 'forceReset'])->name('users.force-reset')->where('id', '[0-9]+');
     Route::post('/users/force-reset-all', [AdminController::class, 'forceResetAll'])->name('users.force-reset-all');
+    Route::post('/users/{id}/send-setup-email', [AdminController::class, 'sendSetupEmail'])->name('users.send-setup-email')->where('id', '[0-9]+');
     Route::delete('/users/{id}', [AdminController::class, 'deleteUser'])->name('users.delete')->where('id', '[0-9]+');
 
     // Blacklisted passwords
@@ -203,6 +220,20 @@ Route::middleware(['auth', 'track.active', 'admin'])->prefix('admin')->name('adm
     Route::get('/orders', [AdminController::class, 'cashOrders'])->name('orders');
     Route::get('/orders/{id}', [AdminController::class, 'cashOrderDetail'])->name('orders.detail')->where('id', '[0-9]+');
     Route::patch('/orders/{id}/status', [AdminController::class, 'updateOrderStatus'])->name('orders.update-status')->where('id', '[0-9]+');
+
+    // Custom games
+    Route::get('/custom-games', [AdminCustomGameController::class, 'index'])->name('custom-games.index');
+    Route::get('/custom-games/create', [AdminCustomGameController::class, 'create'])->name('custom-games.create');
+    Route::post('/custom-games', [AdminCustomGameController::class, 'store'])->name('custom-games.store');
+    Route::get('/custom-games/{id}/edit', [AdminCustomGameController::class, 'edit'])->name('custom-games.edit')->where('id', '[0-9]+');
+    Route::patch('/custom-games/{id}', [AdminCustomGameController::class, 'update'])->name('custom-games.update')->where('id', '[0-9]+');
+    Route::delete('/custom-games/{id}', [AdminCustomGameController::class, 'destroy'])->name('custom-games.destroy')->where('id', '[0-9]+');
+
+    // Evaluation requests
+    Route::get('/evaluations', [AdminEvaluationController::class, 'index'])->name('evaluations.index');
+    Route::get('/evaluations/{id}', [AdminEvaluationController::class, 'show'])->name('evaluations.show')->where('id', '[0-9]+');
+    Route::patch('/evaluations/{id}', [AdminEvaluationController::class, 'update'])->name('evaluations.update')->where('id', '[0-9]+');
+    Route::delete('/evaluations/{id}', [AdminEvaluationController::class, 'destroy'])->name('evaluations.destroy')->where('id', '[0-9]+');
 
     // FAQ management
     Route::get('/faqs', [AdminFaqController::class, 'index'])->name('faqs.index');
