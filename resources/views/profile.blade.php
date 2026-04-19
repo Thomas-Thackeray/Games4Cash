@@ -145,6 +145,48 @@
                 @endif
             </section>
 
+            {{-- Referral --}}
+            <section class="account-card">
+                <div class="account-card__header">
+                    <h2 class="account-card__title">Refer a Friend</h2>
+                    <p class="account-card__subtitle">
+                        Share your unique link. When a friend signs up and completes their first cash order,
+                        you earn <strong>£{{ number_format((float) \App\Models\Setting::get('referral_bonus_gbp', 5.00), 2) }}</strong> credit.
+                    </p>
+                </div>
+
+                <div style="display:flex; gap:0.5rem; margin-bottom:1.25rem; flex-wrap:wrap;">
+                    <input type="text" id="referral-link" readonly
+                           value="{{ $user->referralLink() }}"
+                           style="flex:1; min-width:0; padding:0.6rem 0.9rem; border:1px solid var(--border); border-radius:var(--radius); background:var(--bg); color:var(--text); font-size:0.88rem; font-family:inherit;">
+                    <button type="button" class="btn btn--outline btn--sm" id="copy-referral-btn"
+                            onclick="navigator.clipboard.writeText(document.getElementById('referral-link').value).then(()=>{this.textContent='Copied!'; setTimeout(()=>this.textContent='Copy Link',2000)})">
+                        Copy Link
+                    </button>
+                </div>
+
+                <div style="display:flex; gap:1.5rem; flex-wrap:wrap;">
+                    <div>
+                        <div style="font-size:1.5rem; font-weight:800; color:var(--accent);">
+                            £{{ number_format((float) $user->referral_bonus_gbp, 2) }}
+                        </div>
+                        <div style="font-size:0.8rem; color:var(--text-muted); margin-top:0.2rem;">Earnings so far</div>
+                    </div>
+                    <div>
+                        <div style="font-size:1.5rem; font-weight:800;">
+                            {{ $user->referrals()->count() }}
+                        </div>
+                        <div style="font-size:0.8rem; color:var(--text-muted); margin-top:0.2rem;">Friends referred</div>
+                    </div>
+                </div>
+
+                @if((float) $user->referral_bonus_gbp > 0)
+                <p style="font-size:0.82rem; color:var(--text-muted); margin-top:1rem; padding-top:1rem; border-top:1px solid var(--border);">
+                    Your referral credit will be applied to your next payout. If you have questions, <a href="{{ route('contact') }}" style="color:var(--accent);">contact us</a>.
+                </p>
+                @endif
+            </section>
+
             {{-- Data Export --}}
             <section class="account-card">
                 <div class="account-card__header">

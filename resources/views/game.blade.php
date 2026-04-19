@@ -31,16 +31,16 @@
     }
 @endphp
 
-@section('title', $game ? ($game['name'] ?? 'Game') : 'Game Not Found')
+@section('title', $game ? 'Sell ' . ($game['name'] ?? 'Game') . ' for Cash | ' . config('app.name') : 'Game Not Found')
 
 @php
     $seoDesc      = '';
     $seoGenres    = '';
     $seoPlatforms = '';
     if ($game) {
-        $seoDesc = $summary
-            ? \Illuminate\Support\Str::limit(strip_tags($summary), 160)
-            : ($name . ' — browse game info, platforms, ratings, and get a cash quote.');
+        $seoDesc = 'Sell ' . $name . ' for cash — get an instant trade-in price'
+            . ($seoPlatforms ? ' for ' . $seoPlatforms : '')
+            . '. Free doorstep collection. Fast payment.';
         $seoGenres    = implode(', ', array_column($genres, 'name'));
         $seoPlatforms = implode(', ', array_column($platforms, 'name'));
     }

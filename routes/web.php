@@ -82,6 +82,12 @@ Route::get('/platform/{id}/{name}', [PlatformController::class, 'show'])
 
 Route::get('/sell-{slug}-games', [PlatformSellController::class, 'show'])->name('sell.platform');
 
+// Referral landing — store code in session then redirect to register
+Route::get('/ref/{code}', function (string $code, \Illuminate\Http\Request $request) {
+    $request->session()->put('referral_code', strtoupper($code));
+    return redirect()->route('register')->with('flash_success', 'Referral applied! Create your account to get started.');
+})->name('referral.landing')->where('code', '[A-Za-z0-9]+');
+
 // How much is my game worth
 Route::get('/how-much-is-my-game-worth', [HowMuchController::class, 'index'])->name('game.worth');
 Route::get('/how-much-is-my-game-worth/search', [HowMuchController::class, 'search'])->name('game.worth.search')->middleware('throttle:60,1');
@@ -161,6 +167,7 @@ Route::middleware(['auth', 'track.active', 'force.reset'])->group(function () {
     Route::get('/cash-orders/{ref}/confirmation', [CashOrderController::class, 'confirmation'])->name('cash-orders.confirmation');
     Route::get('/cash-orders/{ref}', [CashOrderController::class, 'show'])->name('cash-orders.show');
     Route::post('/cash-orders/{ref}/cancel', [CashOrderController::class, 'cancel'])->name('cash-orders.cancel');
+    Route::post('/cash-orders/{ref}/resubmit', [CashOrderController::class, 'resubmit'])->name('cash-orders.resubmit');
 });
 
 // Forced password reset (auth required, but bypass force.reset check)
@@ -235,6 +242,7 @@ Route::middleware(['auth', 'track.active', 'admin'])->prefix('admin')->name('adm
 
     // Cash orders management
     Route::get('/orders', [AdminController::class, 'cashOrders'])->name('orders');
+    Route::get('/orders/export', [AdminController::class, 'exportOrders'])->name('orders.export');
     Route::get('/orders/{id}', [AdminController::class, 'cashOrderDetail'])->name('orders.detail')->where('id', '[0-9]+');
     Route::patch('/orders/{id}/status', [AdminController::class, 'updateOrderStatus'])->name('orders.update-status')->where('id', '[0-9]+');
 

@@ -619,6 +619,56 @@ class AdminController extends Controller
         return view('admin.order-detail', compact('order'));
     }
 
+    public function exportOrders(Request $request): \Symfony\Component\HttpFoundation\StreamedResponse
+    {
+        $from   = $request->input('from') ? \Carbon\Carbon::parse($request->input('from'))->startOfDay() : null;
+        $to     = $request->input('to')   ? \Carbon\Carbon::parse($request->input('to'))->endOfDay()     : null;
+        $status = $request->input('status', 'all');
+
+        $query = CashOrder::with('user')->orderBy('created_at');
+
+        if ($from) $query->where('created_at', '>=', $from);
+        if ($to)   $query->where('created_at', '<=', $to);
+        if ($status !== 'all') $query->where('status', $status);
+
+        $filename = 'orders-' . now()->format('Y-m-d') . '.csv';
+
+        return response()->streamDownload(function () use ($query) {
+            $handle = fopen('php://output', 'w');
+
+            // Header row
+            fputcsv($handle, [
+                'Order Ref', 'Status', 'Username', 'Email',
+                'Total (£)', 'Games', 'Submitted',
+                'House/Number', 'Address Line 1', 'Address Line 2',
+                'City', 'County', 'Postcode',
+            ]);
+
+            $query->chunk(200, function ($orders) use ($handle) {
+                foreach ($orders as $order) {
+                    $gameTitles = implode('; ', array_column($order->items ?? [], 'game_title'));
+                    fputcsv($handle, [
+                        $order->order_ref,
+                        $order->statusLabel(),
+                        $order->user->username ?? '',
+                        $order->user->email    ?? '',
+                        number_format((float) $order->total_gbp, 2),
+                        $gameTitles,
+                        $order->created_at->format('d/m/Y H:i'),
+                        $order->house_name_number,
+                        $order->address_line1,
+                        $order->address_line2 ?? '',
+                        $order->city,
+                        $order->county ?? '',
+                        $order->postcode,
+                    ]);
+                }
+            });
+
+            fclose($handle);
+        }, $filename, ['Content-Type' => 'text/csv']);
+    }
+
     public function updateOrderStatus(Request $request, int $id): RedirectResponse
     {
         $request->validate([

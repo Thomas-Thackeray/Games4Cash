@@ -11,6 +11,32 @@
         </div>
     </div>
 
+    {{-- Export CSV --}}
+    <details class="admin-section" style="margin-bottom:1.25rem; padding:1rem 1.25rem;">
+        <summary style="cursor:pointer; font-weight:600; font-size:0.9rem; list-style:none; display:flex; align-items:center; gap:0.5rem;">
+            ⬇ Export Orders to CSV
+        </summary>
+        <form method="GET" action="{{ route('admin.orders.export') }}" style="margin-top:1rem; display:flex; gap:0.75rem; flex-wrap:wrap; align-items:flex-end;">
+            <div>
+                <label style="font-size:0.8rem; color:var(--text-muted); display:block; margin-bottom:0.3rem;">From</label>
+                <input type="date" name="from" value="{{ request('from') }}" class="form-input" style="padding:0.45rem 0.7rem; font-size:0.88rem;">
+            </div>
+            <div>
+                <label style="font-size:0.8rem; color:var(--text-muted); display:block; margin-bottom:0.3rem;">To</label>
+                <input type="date" name="to" value="{{ request('to') }}" class="form-input" style="padding:0.45rem 0.7rem; font-size:0.88rem;">
+            </div>
+            <div>
+                <label style="font-size:0.8rem; color:var(--text-muted); display:block; margin-bottom:0.3rem;">Status</label>
+                <select name="status" class="form-input" style="padding:0.45rem 0.7rem; font-size:0.88rem;">
+                    @foreach(['all' => 'All', 'pending' => 'Pending', 'contacted' => 'Contacted', 'completed' => 'Paid', 'cancelled' => 'Cancelled'] as $val => $label)
+                    <option value="{{ $val }}" {{ request('status', 'all') === $val ? 'selected' : '' }}>{{ $label }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <button type="submit" class="btn btn--primary btn--sm">Download CSV</button>
+        </form>
+    </details>
+
     {{-- Status filter tabs --}}
     <div style="display:flex; gap:0.5rem; flex-wrap:wrap; margin-bottom:1.5rem;">
         @foreach(['all' => 'All', 'pending' => 'Pending', 'contacted' => 'Contacted', 'completed' => 'Completed', 'cancelled' => 'Cancelled'] as $val => $label)
