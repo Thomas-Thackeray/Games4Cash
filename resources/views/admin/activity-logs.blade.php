@@ -35,7 +35,7 @@
 
     {{-- Filter tabs --}}
     <div style="display:flex; gap:0.5rem; margin-bottom:1.25rem; flex-wrap:wrap; align-items:center;">
-        @foreach(['all' => 'All', 'search' => '🔍 Search', 'login' => '🔑 Login', 'filter' => '🎮 Filter', 'quote' => '💰 Quote', 'security' => '🚨 Security'] as $key => $label)
+        @foreach(['all' => 'All', 'search' => '🔍 Search', 'login' => '🔑 Login', 'account' => '👤 Account', 'filter' => '🎮 Filter', 'quote' => '💰 Quote', 'security' => '🚨 Security'] as $key => $label)
         <a href="{{ route('admin.activity-logs', array_filter(['type' => $key === 'all' ? null : $key, 'search' => $search ?: null])) }}"
             class="btn btn--sm {{ $type === $key ? 'btn--primary' : 'btn--outline' }}">
             {{ $label }}

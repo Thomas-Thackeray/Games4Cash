@@ -33,6 +33,11 @@ class ActivityLogger
         self::write('security', $description, $request);
     }
 
+    public static function account(string $description, Request $request): void
+    {
+        self::write('account', $description, $request);
+    }
+
     private static function write(string $type, string $description, Request $request): void
     {
         ActivityLog::create([
