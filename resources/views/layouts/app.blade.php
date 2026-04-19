@@ -42,6 +42,10 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ asset('css/style.css') }}?v={{ filemtime(public_path('css/style.css')) }}">
+    {{-- Apply saved theme before first paint to prevent flash --}}
+    <script>
+    (function(){var t=localStorage.getItem('theme');if(t==='light')document.documentElement.setAttribute('data-theme','light');})();
+    </script>
 </head>
 <body>
 
@@ -137,6 +141,7 @@
                 <a href="{{ route('register') }}" class="btn btn--primary btn--sm">Register</a>
             </div>
             @endauth
+            <button class="theme-toggle" id="theme-toggle" aria-label="Toggle light/dark mode" title="Toggle light/dark mode">🌙</button>
             <button class="nav-toggle" id="nav-toggle" aria-label="Menu">☰</button>
         </div>
     </div>
@@ -290,6 +295,36 @@
 
 <script src="{{ asset('js/main.js') }}?v={{ filemtime(public_path('js/main.js')) }}"></script>
 @stack('scripts')
+<script>
+(function () {
+    var btn = document.getElementById('theme-toggle');
+    if (!btn) return;
+
+    function isLight() {
+        return document.documentElement.getAttribute('data-theme') === 'light';
+    }
+
+    function applyIcon() {
+        btn.textContent = isLight() ? '☀️' : '🌙';
+        btn.setAttribute('aria-label', isLight() ? 'Switch to dark mode' : 'Switch to light mode');
+        btn.setAttribute('title',      isLight() ? 'Switch to dark mode' : 'Switch to light mode');
+    }
+
+    // Set correct icon on load (theme may already be light from localStorage)
+    applyIcon();
+
+    btn.addEventListener('click', function () {
+        if (isLight()) {
+            document.documentElement.removeAttribute('data-theme');
+            localStorage.removeItem('theme');
+        } else {
+            document.documentElement.setAttribute('data-theme', 'light');
+            localStorage.setItem('theme', 'light');
+        }
+        applyIcon();
+    });
+})();
+</script>
 <script>
 (function () {
     if (!localStorage.getItem('cookies_accepted')) {
