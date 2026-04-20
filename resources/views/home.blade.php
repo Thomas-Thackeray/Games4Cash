@@ -2,8 +2,45 @@
 
 @php $activePage = 'home'; @endphp
 @section('seo_title', config('app.name') . ' | Get Cash for Your Old Games')
-@section('meta_description', 'Turn your old games into cash. Browse thousands of titles across every platform, see what they\'re worth, and get a free collection quote. Fast, easy, free pickup.')
+@section('meta_description', 'Turn your old games into cash. Browse thousands of titles, check what they\'re worth, and get a free collection quote. Fast, easy, free pickup.')
 @section('canonical', route('home'))
+
+@push('head_meta')
+<script type="application/ld+json">
+{
+    "@context": "https://schema.org",
+    "@graph": [
+        {
+            "@type": "Organization",
+            "name": "{{ config('app.name') }}",
+            "url": "{{ route('home') }}",
+            "logo": {
+                "@type": "ImageObject",
+                "url": "{{ asset('img/og-default.jpg') }}"
+            },
+            "contactPoint": {
+                "@type": "ContactPoint",
+                "contactType": "customer support",
+                "url": "{{ route('contact') }}"
+            }
+        },
+        {
+            "@type": "WebSite",
+            "name": "{{ config('app.name') }}",
+            "url": "{{ route('home') }}",
+            "potentialAction": {
+                "@type": "SearchAction",
+                "target": {
+                    "@type": "EntryPoint",
+                    "urlTemplate": "{{ route('search') }}?q={search_term_string}"
+                },
+                "query-input": "required name=search_term_string"
+            }
+        }
+    ]
+}
+</script>
+@endpush
 
 @section('content')
 
