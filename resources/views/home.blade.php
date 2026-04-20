@@ -6,40 +6,31 @@
 @section('canonical', route('home'))
 
 @push('head_meta')
-<script type="application/ld+json">
-{
-    "@context": "https://schema.org",
-    "@graph": [
-        {
-            "@type": "Organization",
-            "name": "{{ config('app.name') }}",
-            "url": "{{ route('home') }}",
-            "logo": {
-                "@type": "ImageObject",
-                "url": "{{ asset('img/og-default.jpg') }}"
-            },
-            "contactPoint": {
-                "@type": "ContactPoint",
-                "contactType": "customer support",
-                "url": "{{ route('contact') }}"
-            }
-        },
-        {
-            "@type": "WebSite",
-            "name": "{{ config('app.name') }}",
-            "url": "{{ route('home') }}",
-            "potentialAction": {
-                "@type": "SearchAction",
-                "target": {
-                    "@type": "EntryPoint",
-                    "urlTemplate": "{{ route('search') }}?q={search_term_string}"
-                },
-                "query-input": "required name=search_term_string"
-            }
-        }
-    ]
-}
-</script>
+@php
+    $homeSchema = json_encode([
+        '@context' => 'https://schema.org',
+        '@graph'   => [
+            [
+                '@type'        => 'Organization',
+                'name'         => config('app.name'),
+                'url'          => route('home'),
+                'logo'         => ['@type' => 'ImageObject', 'url' => asset('img/og-default.jpg')],
+                'contactPoint' => ['@type' => 'ContactPoint', 'contactType' => 'customer support', 'url' => route('contact')],
+            ],
+            [
+                '@type'           => 'WebSite',
+                'name'            => config('app.name'),
+                'url'             => route('home'),
+                'potentialAction' => [
+                    '@type'       => 'SearchAction',
+                    'target'      => ['@type' => 'EntryPoint', 'urlTemplate' => route('search') . '?q={search_term_string}'],
+                    'query-input' => 'required name=search_term_string',
+                ],
+            ],
+        ],
+    ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+@endphp
+<script type="application/ld+json">{!! $homeSchema !!}</script>
 @endpush
 
 @section('content')
