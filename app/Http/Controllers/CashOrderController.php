@@ -10,6 +10,7 @@ use App\Models\Setting;
 use App\Services\ActivityLogger;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\View\View;
 
@@ -124,13 +125,20 @@ class CashOrderController extends Controller
 
         $user->cashBasketItems()->delete();
 
-        Mail::to($user->email)->send(new OrderConfirmationMail($user, $order));
+        // Emails are best-effort: the order is already saved, so a mail transport
+        // failure (e.g. SMTP misconfiguration on the server) must never 500 the
+        // submission and leave the customer stranded with an empty basket.
+        try {
+            Mail::to($user->email)->send(new OrderConfirmationMail($user, $order));
+        } catch (\Throwable $e) {
+            Log::error('Order confirmation email failed for ' . $order->order_ref . ': ' . $e->getMessage());
+        }
 
         $adminEmail = Setting::get('admin_notification_email', 'thomasthackeray0@gmail.com');
         try {
             Mail::to($adminEmail)->send(new AdminNewQuoteMail($user, $order));
-        } catch (\Throwable) {
-            // Non-critical — don't fail the order submission if admin email fails
+        } catch (\Throwable $e) {
+            Log::error('Admin new-quote email failed for ' . $order->order_ref . ': ' . $e->getMessage());
         }
 
         ActivityLogger::quote(
