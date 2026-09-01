@@ -37,6 +37,16 @@ return [
 
     'mailers' => [
 
+        // Brevo transactional email over their HTTP API. The transport itself is
+        // registered in AppServiceProvider via Mail::extend('brevo', ...); this
+        // entry is what maps the mailer name (MAIL_MAILER=brevo) to it. Without
+        // it Laravel throws "Mailer [brevo] is not defined". Uses the HTTP API
+        // (BREVO_KEY) rather than SMTP, so it works even where SMTP ports are blocked.
+        'brevo' => [
+            'transport' => 'brevo',
+            'key' => env('BREVO_KEY'),
+        ],
+
         'smtp' => [
             'transport' => 'smtp',
             'scheme' => env('MAIL_SCHEME'),
