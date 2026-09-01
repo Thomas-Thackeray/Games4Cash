@@ -12,6 +12,10 @@ REPO="https://github.com/Thomas-Thackeray/Games4Cash.git"
 
 echo "==> Installing system packages..."
 apt update && apt upgrade -y
+# PHP 8.2 is not in the stock Ubuntu repos (22.04 ships 8.1, 24.04 ships 8.3) — add ondrej/php.
+apt install -y software-properties-common ca-certificates
+add-apt-repository -y ppa:ondrej/php
+apt update
 apt install -y nginx git curl unzip sqlite3 \
     php8.2 php8.2-fpm php8.2-cli php8.2-sqlite3 \
     php8.2-mbstring php8.2-xml php8.2-zip php8.2-curl \
@@ -21,6 +25,10 @@ echo "==> Installing Composer..."
 curl -sS https://getcomposer.org/installer | php
 mv composer.phar /usr/local/bin/composer
 
+echo "==> Installing Node.js 20 (to build the Vite/Tailwind frontend)..."
+curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+apt install -y nodejs
+
 echo "==> Cloning repository..."
 mkdir -p /var/www
 git clone "$REPO" "$APP_DIR"
@@ -28,6 +36,10 @@ cd "$APP_DIR"
 
 echo "==> Installing PHP dependencies..."
 composer install --no-dev --optimize-autoloader --no-interaction
+
+echo "==> Building frontend assets (Vite/Tailwind)..."
+npm install --no-audit --no-fund
+npm run build
 
 echo "==> Creating .env file..."
 cp .env.example .env
@@ -42,6 +54,9 @@ chmod 664 "$APP_DIR/database/database.sqlite"
 
 echo "==> Running migrations..."
 php artisan migrate --force
+
+echo "==> Linking public storage (uploaded images etc.)..."
+php artisan storage:link
 
 echo "==> Configuring Nginx..."
 cat > /etc/nginx/sites-available/games4cash << NGINX
