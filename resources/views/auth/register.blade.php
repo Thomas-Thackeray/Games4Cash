@@ -92,24 +92,6 @@
                 @enderror
             </div>
 
-            {{-- Username --}}
-            <div class="form-group">
-                <label for="username">Username <span class="required">*</span></label>
-                <input
-                    type="text"
-                    id="username"
-                    name="username"
-                    value="{{ old('username') }}"
-                    class="form-input {{ $errors->has('username') ? 'is-invalid' : '' }}"
-                    placeholder="johngamer99"
-                    autocomplete="username"
-                    required>
-                <p class="password-hint">At least 12 characters and must include a number. Letters, numbers, dashes, and underscores only.</p>
-                @error('username')
-                <span class="field-error">{{ $message }}</span>
-                @enderror
-            </div>
-
             {{-- Password --}}
             <div class="form-group">
                 <label for="password">Create Password <span class="required">*</span></label>

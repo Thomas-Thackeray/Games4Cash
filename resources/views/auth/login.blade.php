@@ -18,23 +18,6 @@
         <form method="POST" action="{{ route('login') }}" novalidate>
             @csrf
 
-            {{-- Username --}}
-            <div class="form-group">
-                <label for="username">Username <span class="required">*</span></label>
-                <input
-                    type="text"
-                    id="username"
-                    name="username"
-                    value="{{ old('username') }}"
-                    class="form-input {{ $errors->has('username') ? 'is-invalid' : '' }}"
-                    placeholder="Your username"
-                    autocomplete="username"
-                    required>
-                @error('username')
-                <span class="field-error">{{ $message }}</span>
-                @enderror
-            </div>
-
             {{-- Email --}}
             <div class="form-group">
                 <label for="email">Email Address <span class="required">*</span></label>

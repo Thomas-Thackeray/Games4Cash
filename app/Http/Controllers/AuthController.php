@@ -36,7 +36,6 @@ class AuthController extends Controller
             'surname'               => ['required', 'string', 'max:100'],
             'email'                 => ['required', 'email', 'max:255', 'unique:users,email'],
             'contact_number'        => ['required', 'string', 'regex:/^[\+\d\s\-\(\)]{7,20}$/'],
-            'username'              => ['required', 'string', 'alpha_dash', 'min:12', 'max:30', 'unique:users,username', 'regex:/[0-9]/'],
             'password'              => [
                 'required',
                 'confirmed',
@@ -45,19 +44,21 @@ class AuthController extends Controller
             ],
         ], [
             'contact_number.regex'   => 'Please enter a valid contact number (7–20 digits).',
-            'username.alpha_dash'    => 'Username may only contain letters, numbers, dashes, and underscores.',
-            'username.min'           => 'Username must be at least 12 characters.',
-            'username.regex'         => 'Username must contain at least one number.',
-            'username.unique'        => 'That username is already taken.',
             'email.unique'           => 'An account with that email already exists.',
             'password.confirmed'     => 'Passwords do not match.',
         ]);
+
+        // Username is no longer collected at signup — auto-generate a unique one
+        // (kept populated for admin lists / activity logs).
+        $base = preg_replace('/[^a-z0-9]/', '', strtolower($request->first_name . $request->surname));
+        $base = $base !== '' ? substr($base, 0, 20) : 'user';
+        do { $username = $base . mt_rand(1000, 999999); } while (User::where('username', $username)->exists());
 
         $user = User::create([
             'first_name'     => $request->first_name,
             'surname'        => $request->surname,
             'name'           => $request->first_name . ' ' . $request->surname,
-            'username'       => $request->username,
+            'username'       => $username,
             'email'          => $request->email,
             'contact_number' => $request->contact_number,
             'password'       => Hash::make($request->password),
@@ -93,14 +94,11 @@ class AuthController extends Controller
     public function login(Request $request): RedirectResponse
     {
         $request->validate([
-            'username' => ['required', 'string'],
             'email'    => ['required', 'email'],
             'password' => ['required', 'string'],
         ]);
 
-        $user     = User::where('username', $request->username)
-                        ->where('email', $request->email)
-                        ->first();
+        $user     = User::where('email', $request->email)->first();
         $location = GeoLocationService::lookup($request->ip());
 
         if (! $user || ! Hash::check($request->password, $user->password)) {
@@ -118,7 +116,7 @@ class AuthController extends Controller
 
             return back()
                 ->withErrors(['login' => 'The provided credentials do not match our records.'])
-                ->onlyInput('username', 'email');
+                ->onlyInput('email');
         }
 
         LoginAttempt::create([
